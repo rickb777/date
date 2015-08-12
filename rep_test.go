@@ -5,6 +5,7 @@
 package date
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -41,6 +42,9 @@ func TestEncodeDecode(t *testing.T) {
 		{2004, time.February, 28},
 		{2004, time.February, 29},
 		{2004, time.March, 1},
+		{2100, time.February, 28},
+		{2100, time.February, 29},
+		{2100, time.March, 1},
 		{0, time.January, 1},
 		{1, time.February, 3},
 		{19, time.March, 4},
@@ -63,6 +67,23 @@ func TestEncodeDecode(t *testing.T) {
 		tOut := decode(d)
 		if !tIn.Equal(tOut) {
 			t.Errorf("EncodeDecode(%v) == %v, want %v", c, tOut, tIn)
+		}
+	}
+}
+
+func TestDecodeEncode(t *testing.T) {
+	for i := 0; i < 1000; i++ {
+		c := rand.Int31()
+		d := encode(decode(c))
+		if d != c {
+			t.Errorf("DecodeEncode(%v) == %v, want %v", i, d, c)
+		}
+	}
+	for i := 0; i < 1000; i++ {
+		c := -rand.Int31()
+		d := encode(decode(c))
+		if d != c {
+			t.Errorf("DecodeEncode(%v) == %v, want %v", i, d, c)
 		}
 	}
 }
