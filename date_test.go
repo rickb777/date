@@ -131,3 +131,35 @@ func TestPredicates(t *testing.T) {
 		t.Errorf("IsZero(%q) == true, want false", today)
 	}
 }
+
+func TestArithmetic(t *testing.T) {
+	cases := []struct {
+		year  int
+		month time.Month
+		day   int
+	}{
+		{-1234, time.February, 5},
+		{0, time.April, 12},
+		{1, time.January, 1},
+		{1946, time.February, 4},
+		{1970, time.January, 1},
+		{1976, time.April, 1},
+		{1999, time.December, 1},
+		{1111111, time.June, 21},
+	}
+	offsets := []int{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
+	for _, c := range cases {
+		d := date.New(c.year, c.month, c.day)
+		for _, days := range offsets {
+			d2 := d.Add(days)
+			days2 := d2.Sub(d)
+			if days2 != days {
+				t.Errorf("AddSub(%q,%q) == %q, want %q", d, days, days2, days)
+			}
+			d3 := d2.Add(-days)
+			if d3 != d {
+				t.Errorf("AddNeg(%q,%q) == %q, want %q", d, days, d3, d)
+			}
+		}
+	}
+}
