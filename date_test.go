@@ -5,6 +5,7 @@
 package date_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -206,5 +207,75 @@ func TestArithmetic(t *testing.T) {
 				t.Errorf("AddNeg(%q,%q) == %q, want %q", d, days, d3, d)
 			}
 		}
+	}
+}
+
+func TestJSONMarshalling(t *testing.T) {
+	var d date.Date
+	cases := []struct {
+		value date.Date
+		want  string
+	}{
+		{date.New(-11111, time.February, 3), `"-11111-02-03"`},
+		{date.New(-1, time.December, 31), `"-0001-12-31"`},
+		{date.New(0, time.January, 1), `"0000-01-01"`},
+		{date.New(1, time.January, 1), `"0001-01-01"`},
+		{date.New(1970, time.January, 1), `"1970-01-01"`},
+		{date.New(2012, time.June, 25), `"2012-06-25"`},
+		{date.New(12345, time.June, 7), `"+12345-06-07"`},
+	}
+	for _, c := range cases {
+		bytes, err := json.Marshal(c.value)
+		if err != nil {
+			t.Errorf("JSON(%q) marshal error %q", c, err)
+		} else if string(bytes) != c.want {
+			t.Errorf("%v JSON(%q) == %q, want %q", c.value, string(bytes), c.want)
+		} else {
+			err = json.Unmarshal(bytes, &d)
+			if err != nil {
+				t.Errorf("JSON(%q) unmarshal error %q", c.value, err)
+			}
+		}
+	}
+
+	// Test bad date
+	err := json.Unmarshal([]byte("not-a-date"), &d)
+	if err == nil {
+		t.Errorf("JSON(not-a-date) unmarshal error %q", d)
+	}
+}
+
+func TestTextMarshalling(t *testing.T) {
+	var d date.Date
+	cases := []struct {
+		value date.Date
+		want  string
+	}{
+		{date.New(-11111, time.February, 3), "-11111-02-03"},
+		{date.New(-1, time.December, 31), "-0001-12-31"},
+		{date.New(0, time.January, 1), "0000-01-01"},
+		{date.New(1, time.January, 1), "0001-01-01"},
+		{date.New(1970, time.January, 1), "1970-01-01"},
+		{date.New(2012, time.June, 25), "2012-06-25"},
+		{date.New(12345, time.June, 7), "+12345-06-07"},
+	}
+	for _, c := range cases {
+		bytes, err := c.value.MarshalText()
+		if err != nil {
+			t.Errorf("Text(%q) marshal error %q", c, err)
+		} else if string(bytes) != c.want {
+			t.Errorf("%v Text(%q) == %q, want %q", c.value, string(bytes), c.want)
+		} else {
+			err = d.UnmarshalText(bytes)
+			if err != nil {
+				t.Errorf("Text(%q) unmarshal error %q", c.value, err)
+			}
+		}
+	}
+
+	// Test bad date
+	err := d.UnmarshalText([]byte("not-a-date"))
+	if err == nil {
+		t.Errorf("Text(not-a-date) unmarshal error %q", d)
 	}
 }
