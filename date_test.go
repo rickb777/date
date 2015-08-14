@@ -73,6 +73,51 @@ func TestToday(t *testing.T) {
 	}
 }
 
+func TestTime(t *testing.T) {
+	cases := []struct {
+		year  int
+		month time.Month
+		day   int
+	}{
+		{-1234, time.February, 5},
+		{0, time.April, 12},
+		{1, time.January, 1},
+		{1946, time.February, 4},
+		{1970, time.January, 1},
+		{1976, time.April, 1},
+		{1999, time.December, 1},
+		{1111111, time.June, 21},
+	}
+	zones := []int{-12, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 12}
+	for _, c := range cases {
+		d := date.New(c.year, c.month, c.day)
+		tUTC := d.UTC()
+		if !same(d, tUTC) {
+			t.Errorf("TimeUTC(%q) == %q, want date part %q", d, tUTC, d)
+		}
+		if tUTC.Location() != time.UTC {
+			t.Errorf("TimeUTC(%q) == %q, want %q", d, tUTC.Location(), time.UTC)
+		}
+		tLocal := d.Local()
+		if !same(d, tLocal) {
+			t.Errorf("TimeLocal(%q) == %q, want date part %q", d, tLocal, d)
+		}
+		if tLocal.Location() != time.Local {
+			t.Errorf("TimeLocal(%q) == %q, want %q", d, tLocal.Location(), time.Local)
+		}
+		for _, z := range zones {
+			location := time.FixedZone("zone", z*60*60)
+			tInLoc := d.In(location)
+			if !same(d, tInLoc) {
+				t.Errorf("TimeIn(%q) == %q, want date part %q", d, tInLoc, d)
+			}
+			if tInLoc.Location() != location {
+				t.Errorf("TimeIn(%q) == %q, want %q", d, tInLoc.Location(), location)
+			}
+		}
+	}
+}
+
 func TestPredicates(t *testing.T) {
 	// The list of case dates must be sorted in ascending order
 	cases := []struct {
