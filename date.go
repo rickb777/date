@@ -175,7 +175,8 @@ func (d Date) YearDay() int {
 func (d Date) Weekday() time.Weekday {
 	// Date zero, January 1, 1970, fell on a Thursday
 	wdayZero := time.Thursday
-	return time.Weekday((int32(wdayZero) + d.day) % 7)
+	// Taking into account potential for overflow and negative offset
+	return time.Weekday((int32(wdayZero) + d.day%7 + 7) % 7)
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which d occurs.
