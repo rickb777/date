@@ -5,6 +5,8 @@
 package date_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"testing"
 	"time"
@@ -210,6 +212,54 @@ func TestArithmetic(t *testing.T) {
 	}
 }
 
+func TestGobEncoding(t *testing.T) {
+	var b bytes.Buffer
+	encoder := gob.NewEncoder(&b)
+	decoder := gob.NewDecoder(&b)
+	cases := []date.Date{
+		date.New(-11111, time.February, 3),
+		date.New(-1, time.December, 31),
+		date.New(0, time.January, 1),
+		date.New(1, time.January, 1),
+		date.New(1970, time.January, 1),
+		date.New(2012, time.June, 25),
+		date.New(12345, time.June, 7),
+	}
+	for _, c := range cases {
+		var d date.Date
+		err := encoder.Encode(&c)
+		if err != nil {
+			t.Errorf("Gob(%q) encode error %q", c, err)
+		} else {
+			err = decoder.Decode(&d)
+			if err != nil {
+				t.Errorf("Gob(%q) decode error %q", c, err)
+			}
+		}
+	}
+}
+
+func TestInvalidGob(t *testing.T) {
+	cases := []struct {
+		bytes []byte
+		want  string
+	}{
+		{[]byte{}, "Date.UnmarshalBinary: no data"},
+		{[]byte{1, 2, 3}, "Date.UnmarshalBinary: invalid length"},
+	}
+	for _, c := range cases {
+		var ignored date.Date
+		err := ignored.GobDecode(c.bytes)
+		if err == nil || err.Error() != c.want {
+			t.Errorf("InvalidGobDecode(%q) == %q, want %q", c.bytes, err, c.want)
+		}
+		err = ignored.UnmarshalBinary(c.bytes)
+		if err == nil || err.Error() != c.want {
+			t.Errorf("InvalidUnmarshalBinary(%q) == %q, want %q", c.bytes, err, c.want)
+		}
+	}
+}
+
 func TestJSONMarshalling(t *testing.T) {
 	var d date.Date
 	cases := []struct {
@@ -237,11 +287,24 @@ func TestJSONMarshalling(t *testing.T) {
 			}
 		}
 	}
+}
 
-	// Test bad date
-	err := json.Unmarshal([]byte("not-a-date"), &d)
-	if err == nil {
-		t.Errorf("JSON(not-a-date) unmarshal error %q", d)
+func TestInvalidJSON(t *testing.T) {
+	cases := []struct {
+		value string
+		want  string
+	}{
+		{`"not-a-date"`, `Date.ParseISO: cannot parse not-a-date`},
+		{`2015-08-15"`, `Date.UnmarshalJSON: missing double quotes (2015-08-15")`},
+		{`"2015-08-15`, `Date.UnmarshalJSON: missing double quotes ("2015-08-15)`},
+		{`"215-08-15"`, `Date.ParseISO: cannot parse 215-08-15`},
+	}
+	for _, c := range cases {
+		var d date.Date
+		err := d.UnmarshalJSON([]byte(c.value))
+		if err == nil || err.Error() != c.want {
+			t.Errorf("InvalidJSON(%q) == %q, want %q", c.value, err, c.want)
+		}
 	}
 }
 
@@ -272,10 +335,21 @@ func TestTextMarshalling(t *testing.T) {
 			}
 		}
 	}
+}
 
-	// Test bad date
-	err := d.UnmarshalText([]byte("not-a-date"))
-	if err == nil {
-		t.Errorf("Text(not-a-date) unmarshal error %q", d)
+func TestInvalidText(t *testing.T) {
+	cases := []struct {
+		value string
+		want  string
+	}{
+		{`not-a-date`, `Date.ParseISO: cannot parse not-a-date`},
+		{`215-08-15`, `Date.ParseISO: cannot parse 215-08-15`},
+	}
+	for _, c := range cases {
+		var d date.Date
+		err := d.UnmarshalText([]byte(c.value))
+		if err == nil || err.Error() != c.want {
+			t.Errorf("InvalidText(%q) == %q, want %q", c.value, err, c.want)
+		}
 	}
 }
