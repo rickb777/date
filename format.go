@@ -102,6 +102,8 @@ func (d Date) String() string {
 // according to the expanded year variant of the ISO 8601 extended format;
 // the year of the date is represented as a signed integer using the
 // specified number of digits (ignored if less than four).
+// The string representation of the year will take more than the specified
+// number of digits if the magniture of the year is too large to fit.
 //
 // Function Date.Format can be used to format Date values in other formats,
 // but it is currently not able to format dates according to the expanded
