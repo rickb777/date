@@ -72,3 +72,62 @@ func TestToday(t *testing.T) {
 		}
 	}
 }
+
+func TestPredicates(t *testing.T) {
+	// The list of case dates must be sorted in ascending order
+	cases := []struct {
+		year  int
+		month time.Month
+		day   int
+	}{
+		{-1234, time.February, 5},
+		{0, time.April, 12},
+		{1, time.January, 1},
+		{1946, time.February, 4},
+		{1970, time.January, 1},
+		{1976, time.April, 1},
+		{1999, time.December, 1},
+		{1111111, time.June, 21},
+	}
+	for i, ci := range cases {
+		di := date.New(ci.year, ci.month, ci.day)
+		for j, cj := range cases {
+			dj := date.New(cj.year, cj.month, cj.day)
+			p := di.Equal(dj)
+			q := i == j
+			if p != q {
+				t.Errorf("Equal(%q, %q) == %q, want %q", di, dj, p, q)
+			}
+			p = di.Before(dj)
+			q = i < j
+			if p != q {
+				t.Errorf("Before(%q, %q) == %q, want %q", di, dj, p, q)
+			}
+			p = di.After(dj)
+			q = i > j
+			if p != q {
+				t.Errorf("After(%q, %q) == %q, want %q", di, dj, p, q)
+			}
+			p = di == dj
+			q = i == j
+			if p != q {
+				t.Errorf("Equal(%q, %q) == %q, want %q", di, dj, p, q)
+			}
+			p = di != dj
+			q = i != j
+			if p != q {
+				t.Errorf("Equal(%q, %q) == %q, want %q", di, dj, p, q)
+			}
+		}
+	}
+
+	// Test IsZero
+	zero := date.Date{}
+	if !zero.IsZero() {
+		t.Errorf("IsZero(%q) == false, want true", zero)
+	}
+	today := date.Today()
+	if today.IsZero() {
+		t.Errorf("IsZero(%q) == true, want false", today)
+	}
+}
