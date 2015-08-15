@@ -144,12 +144,12 @@ func TestFormatISO(t *testing.T) {
 	for _, c := range cases {
 		d, err := date.ParseISO(c.value)
 		if err != nil {
-			t.Errorf("FormatISO(%q) cannot parse input: %q", c.value, err)
+			t.Errorf("FormatISO(%v) cannot parse input: %v", c.value, err)
 			continue
 		}
 		value := d.FormatISO(c.n)
 		if value != c.value {
-			t.Errorf("FormatISO(%q) == %q, want %q", c, value, c.value)
+			t.Errorf("FormatISO(%v) == %v, want %v", c, value, c.value)
 		}
 	}
 }

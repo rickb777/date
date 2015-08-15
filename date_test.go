@@ -40,16 +40,16 @@ func TestNew(t *testing.T) {
 	for _, c := range cases {
 		tIn, err := time.Parse(time.RFC3339, c)
 		if err != nil {
-			t.Errorf("New(%q) cannot parse input: %q", c, err)
+			t.Errorf("New(%v) cannot parse input: %v", c, err)
 			continue
 		}
 		dOut := date.New(tIn.Year(), tIn.Month(), tIn.Day())
 		if !same(dOut, tIn) {
-			t.Errorf("New(%q) == %q, want date of %q", c, dOut, tIn)
+			t.Errorf("New(%v) == %v, want date of %v", c, dOut, tIn)
 		}
 		dOut = date.NewAt(tIn)
 		if !same(dOut, tIn) {
-			t.Errorf("NewAt(%q) == %q, want date of %q", c, dOut, tIn)
+			t.Errorf("NewAt(%v) == %v, want date of %v", c, dOut, tIn)
 		}
 	}
 }
@@ -58,12 +58,12 @@ func TestToday(t *testing.T) {
 	today := date.Today()
 	now := time.Now()
 	if !same(today, now) {
-		t.Errorf("Today == %q, want date of %q", today, now)
+		t.Errorf("Today == %v, want date of %v", today, now)
 	}
 	today = date.TodayUTC()
 	now = time.Now().UTC()
 	if !same(today, now) {
-		t.Errorf("TodayUTC == %q, want date of %q", today, now)
+		t.Errorf("TodayUTC == %v, want date of %v", today, now)
 	}
 	cases := []int{-10, -5, -3, 0, 1, 4, 8, 12}
 	for _, c := range cases {
@@ -71,7 +71,7 @@ func TestToday(t *testing.T) {
 		today = date.TodayIn(location)
 		now = time.Now().In(location)
 		if !same(today, now) {
-			t.Errorf("TodayIn(%q) == %q, want date of %q", c, today, now)
+			t.Errorf("TodayIn(%v) == %v, want date of %v", c, today, now)
 		}
 	}
 }
@@ -96,26 +96,26 @@ func TestTime(t *testing.T) {
 		d := date.New(c.year, c.month, c.day)
 		tUTC := d.UTC()
 		if !same(d, tUTC) {
-			t.Errorf("TimeUTC(%q) == %q, want date part %q", d, tUTC, d)
+			t.Errorf("TimeUTC(%v) == %v, want date part %v", d, tUTC, d)
 		}
 		if tUTC.Location() != time.UTC {
-			t.Errorf("TimeUTC(%q) == %q, want %q", d, tUTC.Location(), time.UTC)
+			t.Errorf("TimeUTC(%v) == %v, want %v", d, tUTC.Location(), time.UTC)
 		}
 		tLocal := d.Local()
 		if !same(d, tLocal) {
-			t.Errorf("TimeLocal(%q) == %q, want date part %q", d, tLocal, d)
+			t.Errorf("TimeLocal(%v) == %v, want date part %v", d, tLocal, d)
 		}
 		if tLocal.Location() != time.Local {
-			t.Errorf("TimeLocal(%q) == %q, want %q", d, tLocal.Location(), time.Local)
+			t.Errorf("TimeLocal(%v) == %v, want %v", d, tLocal.Location(), time.Local)
 		}
 		for _, z := range zones {
 			location := time.FixedZone("zone", z*60*60)
 			tInLoc := d.In(location)
 			if !same(d, tInLoc) {
-				t.Errorf("TimeIn(%q) == %q, want date part %q", d, tInLoc, d)
+				t.Errorf("TimeIn(%v) == %v, want date part %v", d, tInLoc, d)
 			}
 			if tInLoc.Location() != location {
-				t.Errorf("TimeIn(%q) == %q, want %q", d, tInLoc.Location(), location)
+				t.Errorf("TimeIn(%v) == %v, want %v", d, tInLoc.Location(), location)
 			}
 		}
 	}
@@ -144,27 +144,27 @@ func TestPredicates(t *testing.T) {
 			p := di.Equal(dj)
 			q := i == j
 			if p != q {
-				t.Errorf("Equal(%q, %q) == %q, want %q", di, dj, p, q)
+				t.Errorf("Equal(%v, %v) == %v, want %v", di, dj, p, q)
 			}
 			p = di.Before(dj)
 			q = i < j
 			if p != q {
-				t.Errorf("Before(%q, %q) == %q, want %q", di, dj, p, q)
+				t.Errorf("Before(%v, %v) == %v, want %v", di, dj, p, q)
 			}
 			p = di.After(dj)
 			q = i > j
 			if p != q {
-				t.Errorf("After(%q, %q) == %q, want %q", di, dj, p, q)
+				t.Errorf("After(%v, %v) == %v, want %v", di, dj, p, q)
 			}
 			p = di == dj
 			q = i == j
 			if p != q {
-				t.Errorf("Equal(%q, %q) == %q, want %q", di, dj, p, q)
+				t.Errorf("Equal(%v, %v) == %v, want %v", di, dj, p, q)
 			}
 			p = di != dj
 			q = i != j
 			if p != q {
-				t.Errorf("Equal(%q, %q) == %q, want %q", di, dj, p, q)
+				t.Errorf("Equal(%v, %v) == %v, want %v", di, dj, p, q)
 			}
 		}
 	}
@@ -172,11 +172,11 @@ func TestPredicates(t *testing.T) {
 	// Test IsZero
 	zero := date.Date{}
 	if !zero.IsZero() {
-		t.Errorf("IsZero(%q) == false, want true", zero)
+		t.Errorf("IsZero(%v) == false, want true", zero)
 	}
 	today := date.Today()
 	if today.IsZero() {
-		t.Errorf("IsZero(%q) == true, want false", today)
+		t.Errorf("IsZero(%v) == true, want false", today)
 	}
 }
 
@@ -202,11 +202,11 @@ func TestArithmetic(t *testing.T) {
 			d2 := d.Add(days)
 			days2 := d2.Sub(d)
 			if days2 != days {
-				t.Errorf("AddSub(%q,%q) == %q, want %q", d, days, days2, days)
+				t.Errorf("AddSub(%v,%v) == %v, want %v", d, days, days2, days)
 			}
 			d3 := d2.Add(-days)
 			if d3 != d {
-				t.Errorf("AddNeg(%q,%q) == %q, want %q", d, days, d3, d)
+				t.Errorf("AddNeg(%v,%v) == %v, want %v", d, days, d3, d)
 			}
 		}
 	}
@@ -229,11 +229,11 @@ func TestGobEncoding(t *testing.T) {
 		var d date.Date
 		err := encoder.Encode(&c)
 		if err != nil {
-			t.Errorf("Gob(%q) encode error %q", c, err)
+			t.Errorf("Gob(%v) encode error %v", c, err)
 		} else {
 			err = decoder.Decode(&d)
 			if err != nil {
-				t.Errorf("Gob(%q) decode error %q", c, err)
+				t.Errorf("Gob(%v) decode error %v", c, err)
 			}
 		}
 	}
@@ -251,11 +251,11 @@ func TestInvalidGob(t *testing.T) {
 		var ignored date.Date
 		err := ignored.GobDecode(c.bytes)
 		if err == nil || err.Error() != c.want {
-			t.Errorf("InvalidGobDecode(%q) == %q, want %q", c.bytes, err, c.want)
+			t.Errorf("InvalidGobDecode(%v) == %v, want %v", c.bytes, err, c.want)
 		}
 		err = ignored.UnmarshalBinary(c.bytes)
 		if err == nil || err.Error() != c.want {
-			t.Errorf("InvalidUnmarshalBinary(%q) == %q, want %q", c.bytes, err, c.want)
+			t.Errorf("InvalidUnmarshalBinary(%v) == %v, want %v", c.bytes, err, c.want)
 		}
 	}
 }
@@ -277,13 +277,13 @@ func TestJSONMarshalling(t *testing.T) {
 	for _, c := range cases {
 		bytes, err := json.Marshal(c.value)
 		if err != nil {
-			t.Errorf("JSON(%q) marshal error %q", c, err)
+			t.Errorf("JSON(%v) marshal error %v", c, err)
 		} else if string(bytes) != c.want {
-			t.Errorf("%v JSON(%q) == %q, want %q", c.value, string(bytes), c.want)
+			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bytes), c.want)
 		} else {
 			err = json.Unmarshal(bytes, &d)
 			if err != nil {
-				t.Errorf("JSON(%q) unmarshal error %q", c.value, err)
+				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
 			}
 		}
 	}
@@ -303,7 +303,7 @@ func TestInvalidJSON(t *testing.T) {
 		var d date.Date
 		err := d.UnmarshalJSON([]byte(c.value))
 		if err == nil || err.Error() != c.want {
-			t.Errorf("InvalidJSON(%q) == %q, want %q", c.value, err, c.want)
+			t.Errorf("InvalidJSON(%v) == %v, want %v", c.value, err, c.want)
 		}
 	}
 }
@@ -325,13 +325,13 @@ func TestTextMarshalling(t *testing.T) {
 	for _, c := range cases {
 		bytes, err := c.value.MarshalText()
 		if err != nil {
-			t.Errorf("Text(%q) marshal error %q", c, err)
+			t.Errorf("Text(%v) marshal error %v", c, err)
 		} else if string(bytes) != c.want {
-			t.Errorf("%v Text(%q) == %q, want %q", c.value, string(bytes), c.want)
+			t.Errorf("Text(%v) == %v, want %v", c.value, string(bytes), c.want)
 		} else {
 			err = d.UnmarshalText(bytes)
 			if err != nil {
-				t.Errorf("Text(%q) unmarshal error %q", c.value, err)
+				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
 			}
 		}
 	}
@@ -349,7 +349,7 @@ func TestInvalidText(t *testing.T) {
 		var d date.Date
 		err := d.UnmarshalText([]byte(c.value))
 		if err == nil || err.Error() != c.want {
-			t.Errorf("InvalidText(%q) == %q, want %q", c.value, err, c.want)
+			t.Errorf("InvalidText(%v) == %v, want %v", c.value, err, c.want)
 		}
 	}
 }
