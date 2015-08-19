@@ -1,7 +1,8 @@
 # date
 
-[![Build Status](https://api.travis-ci.org/fxtlabs/date.svg?branch=master)](https://travis-ci.org/fxtlabs/date)
 [![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg?style=flat-square)](https://godoc.org/github.com/fxtlabs/date)
+[![Build Status](https://api.travis-ci.org/fxtlabs/date.svg?branch=master)](https://travis-ci.org/fxtlabs/date)
+[![Coverage Status](https://coveralls.io/repos/fxtlabs/date/badge.svg?branch=master&service=github)](https://coveralls.io/github/fxtlabs/date?branch=master)
 
 Package `date` provides functionality for working with dates.
 
