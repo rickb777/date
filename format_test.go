@@ -2,13 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package date_test
+package date
 
 import (
 	"testing"
 	"time"
-
-	"github.com/fxtlabs/date"
 )
 
 func TestParseISO(t *testing.T) {
@@ -44,7 +42,7 @@ func TestParseISO(t *testing.T) {
 		{"-5000000-09-17", -5000000, time.September, 17},
 	}
 	for _, c := range cases {
-		d, err := date.ParseISO(c.value)
+		d, err := ParseISO(c.value)
 		if err != nil {
 			t.Errorf("ParseISO(%v) == %v", c.value, err)
 		}
@@ -74,7 +72,7 @@ func TestParseISO(t *testing.T) {
 		"-123-05-06",
 	}
 	for _, c := range badCases {
-		d, err := date.ParseISO(c)
+		d, err := ParseISO(c)
 		if err == nil {
 			t.Errorf("ParseISO(%v) == %v", c, d)
 		}
@@ -90,17 +88,17 @@ func TestParse(t *testing.T) {
 		month  time.Month
 		day    int
 	}{
-		{date.ISO8601, "1969-12-31", 1969, time.December, 31},
-		{date.ISO8601B, "19700101", 1970, time.January, 1},
-		{date.RFC822, "29-Feb-00", 2000, time.February, 29},
-		{date.RFC822W, "Mon, 01-Mar-04", 2004, time.March, 1},
-		{date.RFC850, "Wednesday, 12-Aug-15", 2015, time.August, 12},
-		{date.RFC1123, "05 Dec 1928", 1928, time.December, 5},
-		{date.RFC1123W, "Mon, 05 Dec 1928", 1928, time.December, 5},
-		{date.RFC3339, "2345-06-07", 2345, time.June, 7},
+		{ISO8601, "1969-12-31", 1969, time.December, 31},
+		{ISO8601B, "19700101", 1970, time.January, 1},
+		{RFC822, "29-Feb-00", 2000, time.February, 29},
+		{RFC822W, "Mon, 01-Mar-04", 2004, time.March, 1},
+		{RFC850, "Wednesday, 12-Aug-15", 2015, time.August, 12},
+		{RFC1123, "05 Dec 1928", 1928, time.December, 5},
+		{RFC1123W, "Mon, 05 Dec 1928", 1928, time.December, 5},
+		{RFC3339, "2345-06-07", 2345, time.June, 7},
 	}
 	for _, c := range cases {
-		d, err := date.Parse(c.layout, c.value)
+		d, err := Parse(c.layout, c.value)
 		if err != nil {
 			t.Errorf("Parse(%v) == %v", c.value, err)
 		}
@@ -118,7 +116,7 @@ func TestParse(t *testing.T) {
 		"-12345-06-07",
 	}
 	for _, c := range badCases {
-		d, err := date.Parse(date.ISO8601, c)
+		d, err := Parse(ISO8601, c)
 		if err == nil {
 			t.Errorf("Parse(%v) == %v", c, d)
 		}
@@ -142,7 +140,7 @@ func TestFormatISO(t *testing.T) {
 		{"+999999-12-31", 6},
 	}
 	for _, c := range cases {
-		d, err := date.ParseISO(c.value)
+		d, err := ParseISO(c.value)
 		if err != nil {
 			t.Errorf("FormatISO(%v) cannot parse input: %v", c.value, err)
 			continue
