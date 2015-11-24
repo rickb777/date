@@ -171,6 +171,7 @@ func TestFormat(t *testing.T) {
 		{"2016-08-23", "Jan 2nd 2006", "Aug 23rd 2016"},
 		{"2016-09-30", "Jan 2nd 2006", "Sep 30th 2016"},
 		{"2016-10-31", "Jan 2nd 2006", "Oct 31st 2016"},
+		{"2016-11-01", "2nd 2nd 2nd", "1st 1st 1st"},
 	}
 	for _, c := range cases {
 		d, err := ParseISO(c.value)

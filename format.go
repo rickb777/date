@@ -151,13 +151,16 @@ func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
 	switch len(parts) {
 	case 1:
 		return t.Format(layout)
-	case 2:
-		front := t.Format(parts[0])
-		mid := suffixes[d.Day() - 1]
-		back := t.Format(parts[1])
-		return front + mid + back
+
 	default:
-		panic("Unsupported format string: " + layout)
+		a := make([]string, 0, 2*len(parts) - 1)
+		for i, p := range parts {
+			if i > 0 {
+				a = append(a, suffixes[d.Day() - 1])
+			}
+			a = append(a, t.Format(p))
+		}
+		return strings.Join(a, "")
 	}
 }
 
