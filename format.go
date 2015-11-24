@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"strings"
 )
 
 // These are predefined layouts for use in Date.Format and Date.Parse.
@@ -21,14 +22,14 @@ import (
 // so that the Parse function and Format method can apply the same
 // transformation to a general date value.
 const (
-	ISO8601  = "2006-01-02" // ISO 8601 extended format
+	ISO8601 = "2006-01-02" // ISO 8601 extended format
 	ISO8601B = "20060102"   // ISO 8601 basic format
-	RFC822   = "02-Jan-06"
-	RFC822W  = "Mon, 02-Jan-06" // RFC822 with day of the week
-	RFC850   = "Monday, 02-Jan-06"
-	RFC1123  = "02 Jan 2006"
+	RFC822 = "02-Jan-06"
+	RFC822W = "Mon, 02-Jan-06" // RFC822 with day of the week
+	RFC850 = "Monday, 02-Jan-06"
+	RFC1123 = "02 Jan 2006"
 	RFC1123W = "Mon, 02 Jan 2006" // RFC1123 with day of the week
-	RFC3339  = "2006-01-02"
+	RFC3339 = "2006-01-02"
 )
 
 // reISO8601 is the regular expression used to parse date strings in the
@@ -128,9 +129,48 @@ func (d Date) FormatISO(yearDigits int) string {
 // layout accepted by time.Format by extending its date to a time at
 // 00:00:00.000 UTC.
 //
+// Additionally, it is able to insert the day-number suffix into the output string.
+// This is done by including "nd" in the format string, which will become
+//     Mon, Jan 2nd, 2006
+// For example, New Year's Day might be rendered as "Fri, Jan 1st, 2016". To alter
+// the suffix strings for a different locale, change DaySuffixes or use FormatWithSuffixes
+// instead.
+//
 // This function cannot currently format Date values according to the expanded
 // year variant of ISO 8601; you should use Date.FormatISO to that effect.
 func (d Date) Format(layout string) string {
+	return d.FormatWithSuffixes(layout, DaySuffixes)
+}
+
+// FormatWithSuffixes is the same as Format, except the suffix strings can be specified
+// explicitly, which allows multiple locales to be supported. The suffixes slice should
+// contain 31 strings covering the days 1 (index 0) to 31 (index 30).
+func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
 	t := decode(d.day)
-	return t.Format(layout)
+	parts := strings.Split(layout, "nd")
+	switch len(parts) {
+	case 1:
+		return t.Format(layout)
+	case 2:
+		front := t.Format(parts[0])
+		mid := suffixes[d.Day() - 1]
+		back := t.Format(parts[1])
+		return front + mid + back
+	default:
+		panic("Unsupported format string: " + layout)
+	}
+}
+
+// DaySuffixes is the default array of strings used as suffixes when a format string
+// contains "nd" (as in "second"). This can be altered at startup in order to change
+// the default locale strings used for formatting dates. It supports every locale that
+// uses the Gregorian calendar and has a suffix after the day-of-month number.
+var DaySuffixes = []string{
+	"st", "nd", "rd", "th", "th", // 1 - 5
+	"th", "th", "th", "th", "th", // 6 - 10
+	"th", "th", "th", "th", "th", // 11 - 15
+	"th", "th", "th", "th", "th", // 16 - 20
+	"st", "nd", "rd", "th", "th", // 21 - 25
+	"th", "th", "th", "th", "th", // 26 - 30
+	"st",                         // 31
 }
