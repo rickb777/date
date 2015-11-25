@@ -123,6 +123,30 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestString(t *testing.T) {
+	cases := []struct {
+		value string
+	}{
+		{"-0001-01-01"},
+		{"0000-01-01"},
+		{"1000-01-01"},
+		{"1970-01-01"},
+		{"2000-11-22"},
+		{"+10000-01-01"},
+	}
+	for _, c := range cases {
+		d, err := ParseISO(c.value)
+		if err != nil {
+			t.Errorf("ParseISO(%v) cannot parse input: %v", c.value, err)
+			continue
+		}
+		value := d.String()
+		if value != c.value {
+			t.Errorf("String() == %v, want %v", value, c.value)
+		}
+	}
+}
+
 func TestFormatISO(t *testing.T) {
 	cases := []struct {
 		value string
