@@ -16,6 +16,7 @@ var d0327 = New(2015, time.March, 27)
 var d0401 = New(2015, time.April, 1)
 var d0403 = New(2015, time.April, 3)
 var d0408 = New(2015, time.April, 8)
+var d0410 = New(2015, time.April, 10)
 
 func TestNewDateRangeOf(t *testing.T) {
 	dr := NewDateRangeOf(t0327, time.Duration(7*24*60*60*1e9))
@@ -71,10 +72,17 @@ func TestExtendByPos(t *testing.T) {
 }
 
 func TestExtendByNeg(t *testing.T) {
-	timeSpan := OneDayRange(d0327).ExtendBy(-7)
-	isEq(t, timeSpan.Start, d0320)
-	isEq(t, timeSpan.End, d0327)
-	isEq(t, timeSpan.String(), "2015-03-20 to 2015-03-27")
+	dr := OneDayRange(d0327).ExtendBy(-7)
+	isEq(t, dr.Start, d0320)
+	isEq(t, dr.End, d0327)
+	isEq(t, dr.String(), "2015-03-20 to 2015-03-27")
+}
+
+func TestContains(t *testing.T) {
+	dr := OneDayRange(d0327).ExtendBy(7)
+	isEq(t, dr.Contains(d0401), true)
+	isEq(t, dr.Contains(d0410), false)
+	isEq(t, dr.Contains(d0320), false)
 }
 
 func isEq(t *testing.T, a, b interface{}) {

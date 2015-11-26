@@ -87,17 +87,13 @@ func (dateRange DateRange) ExtendBy(days int) DateRange {
 	return DateRange{dateRange.Start, newEnd}.Normalise()
 }
 
-//func (dateRange DateRange) AddWeek() DateRange {
-//	return dateRange.AddDays(7)
-//}
-
 func (dateRange DateRange) String() string {
 	return fmt.Sprintf("%s to %s", dateRange.Start, dateRange.End)
 }
 
-//func (dateRange DateRange) Contains(d Date) bool {
-//	return !(d.Before(dateRange.Start) || d.After(dateRange.End))
-//}
+func (dateRange DateRange) Contains(d Date) bool {
+	return !(d.Before(dateRange.Start) || d.After(dateRange.End))
+}
 
 //func (dateRange DateRange) Merge(other DateRange) DateRange {
 //	if dateRange.Start.After(other.Start) {
