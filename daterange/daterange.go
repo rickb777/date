@@ -91,6 +91,11 @@ func (dateRange DateRange) String() string {
 	return fmt.Sprintf("%s to %s", dateRange.Start, dateRange.End)
 }
 
+// Contains tests whether the date range contains a specified date. The start and end of
+// the range are both treated inclusively.
+//
+// If a calculation needs to be 'half-open' (i.e. the end is exclusive), simply use the
+// expression 'dateRange.ExtendBy(-1).Contains(d)'
 func (dateRange DateRange) Contains(d Date) bool {
 	return !(d.Before(dateRange.Start) || d.After(dateRange.End))
 }
@@ -109,22 +114,29 @@ func (dateRange DateRange) EndUTC() time.Time {
 
 const minusOneNano time.Duration = -1
 
-// ContainsTime tests whether a given local time is within the date range.
+// ContainsTime tests whether a given local time is within the date range. The time range is
+// from midnight on the start day to one nanosecond before midnight on the day after the end date.
+//
+// If a calculation needs to be 'half-open' (i.e. the end is exclusive), simply use the
+// expression 'dateRange.ExtendBy(-1).ContainsTime(t)'
 func (dateRange DateRange) ContainsTime(t time.Time) bool {
 	utc := t.In(time.UTC)
 	return !(utc.Before(dateRange.StartUTC()) || dateRange.EndUTC().Before(utc))
 }
 
-//func (dateRange DateRange) Merge(other DateRange) DateRange {
-//	if dateRange.Start.After(other.Start) {
-//		// swap the ranges to simplify the logic
-//		return other.Merge(dateRange)
-//
-//	} else if dateRange.End.After(other.End) {
-//		// other is a proper subrange of dateRange
-//		return dateRange
-//
-//	} else {
-//		return DateRange{dateRange.Start, other.End}
-//	}
-//}
+// Merge conjoins two date ranges. As a special case, if one range is entirely contained within
+// the other range, the larger of the two is returned. Otherwise, the result is the start of the
+// earlier one to the end of the later one, even if the two ranges don't overlap.
+func (dateRange DateRange) Merge(other DateRange) DateRange {
+	if dateRange.Start.After(other.Start) {
+		// swap the ranges to simplify the logic
+		return other.Merge(dateRange)
+
+	} else if dateRange.End.After(other.End) {
+		// other is a proper subrange of dateRange
+		return dateRange
+
+	} else {
+		return DateRange{dateRange.Start, other.End}
+	}
+}
