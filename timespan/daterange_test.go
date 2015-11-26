@@ -10,6 +10,7 @@ import (
 	"time"
 	"fmt"
 	"strings"
+	"runtime/debug"
 )
 
 var t0327 = time.Date(2015, 3, 27, 0, 0, 0, 0, time.UTC)
@@ -19,11 +20,13 @@ var d0325 = New(2015, time.March, 25)
 var d0326 = New(2015, time.March, 26)
 var d0327 = New(2015, time.March, 27)
 var d0328 = New(2015, time.March, 28)
+var d0329 = New(2015, time.March, 29)
 var d0401 = New(2015, time.April, 1)
 var d0403 = New(2015, time.April, 3)
 var d0408 = New(2015, time.April, 8)
 var d0410 = New(2015, time.April, 10)
 var d0501 = New(2015, time.May, 1)
+var d1025 = New(2015, time.October, 25)
 
 func TestNewDateRangeOf(t *testing.T) {
 	dr := NewDateRangeOf(t0327, time.Duration(7*24*60*60*1e9))
@@ -118,7 +121,7 @@ func TestContainsTimeUTC(t *testing.T) {
 
 	dr := OneDayRange(d0327).ExtendBy(1)
 	isEq(t, dr.StartUTC(), t0327, dr, t0327)
-	isEq(t, dr.EndUTC(), t0328e, dr, t0328e)
+	isEq(t, dr.EndUTC(), t0329, dr, t0329)
 	isEq(t, dr.ContainsTime(t0327), true, dr, t0327)
 	isEq(t, dr.ContainsTime(t0328), true, dr, t0328)
 	isEq(t, dr.ContainsTime(t0328e), true, dr, t0328e)
@@ -166,12 +169,27 @@ func TestMergeNonOverlapping(t *testing.T) {
 	isEq(t, m1, m2)
 }
 
+func TestDurationNormalUTC(t *testing.T) {
+	dr := OneDayRange(d0329)
+	isEq(t, dr.Duration(), time.Hour * 24)
+}
+
+func TestDurationInZoneWithDaylightSaving(t *testing.T) {
+	london, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		panic(err)
+	}
+	isEq(t, OneDayRange(d0328).DurationIn(london), time.Hour * 24)
+	isEq(t, OneDayRange(d0329).DurationIn(london), time.Hour * 23)
+	isEq(t, OneDayRange(d1025).DurationIn(london), time.Hour * 25)
+}
+
 func isEq(t *testing.T, a, b interface{}, msg ...interface{}) {
 	if a != b {
 		sa := make([]string, len(msg))
 		for i, m := range msg {
 			sa[i] = fmt.Sprintf(", %v", m)
 		}
-		t.Errorf("%v (%#v) is not equal to %v (%#v)%s", a, a, b, b, strings.Join(sa, ""))
+		t.Errorf("%v (%#v) is not equal to %v (%#v)%s\n%s", a, a, b, b, strings.Join(sa, ""), debug.Stack())
 	}
 }

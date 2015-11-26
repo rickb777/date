@@ -106,10 +106,11 @@ func (dateRange DateRange) StartUTC() time.Time {
 	return dateRange.Start.UTC()
 }
 
-// EndUTC assumes that the end date is a UTC date and gets the end time of that date, as UTC.
-// It returns the very last nanosecond before midnight the following day.
+// EndUTC assumes that the end date is a UTC date and returns the nanosecond after the end time
+// in a specified location. Along with StartUTC, this gives a 'half-open' range where the start
+// is inclusive and the end is exclusive.
 func (dateRange DateRange) EndUTC() time.Time {
-	return dateRange.End.Add(1).UTC().Add(minusOneNano)
+	return dateRange.End.Add(1).UTC()
 }
 
 const minusOneNano time.Duration = -1
@@ -121,7 +122,7 @@ const minusOneNano time.Duration = -1
 // expression 'dateRange.ExtendBy(-1).ContainsTime(t)'
 func (dateRange DateRange) ContainsTime(t time.Time) bool {
 	utc := t.In(time.UTC)
-	return !(utc.Before(dateRange.StartUTC()) || dateRange.EndUTC().Before(utc))
+	return !(utc.Before(dateRange.StartUTC()) || dateRange.EndUTC().Add(minusOneNano).Before(utc))
 }
 
 // Merge conjoins two date ranges. As a special case, if one range is entirely contained within
@@ -140,3 +141,37 @@ func (dateRange DateRange) Merge(other DateRange) DateRange {
 		return DateRange{dateRange.Start, other.End}
 	}
 }
+
+// Duration computes the duration (in nanoseconds) from midnight at the start of the date
+// range up to and including the very last nanosecond before midnight the following day after the end.
+// The calculation is for UTC, which does not have daylight saving and every day has 24 hours.
+//
+// If the range is greater than approximately 290 years, the result will hard-limit to the
+// minimum or maximum possible duration (see time.Sub(t)).
+func (dateRange DateRange) Duration() time.Duration {
+	return dateRange.End.Add(1).UTC().Sub(dateRange.Start.UTC())
+}
+
+// DurationIn computes the duration (in nanoseconds) from midnight at the start of the date
+// range up to and including the very last nanosecond before midnight the following day after the end.
+// The calculation is for the specified location, which may have daylight saving, so not every day has
+// 24 hours. If the date range spans the day the clocks are changed, this is taken into account.
+//
+// If the range is greater than approximately 290 years, the result will hard-limit to the
+// minimum or maximum possible duration (see time.Sub(t)).
+func (dateRange DateRange) DurationIn(loc *time.Location) time.Duration {
+	return dateRange.EndTimeIn(loc).Sub(dateRange.StartTimeIn(loc))
+}
+
+// StartTimeIn returns the start time in a specified location.
+func (dateRange DateRange) StartTimeIn(loc *time.Location) time.Time {
+	return dateRange.Start.In(loc)
+}
+
+// EndTimeIn returns the nanosecond after the end time in a specified location. Along with
+// StartTimeIn, this gives a 'half-open' range where the start is inclusive and the end is
+// exclusive.
+func (dateRange DateRange) EndTimeIn(loc *time.Location) time.Time {
+	return dateRange.End.Add(1).In(loc)
+}
+
