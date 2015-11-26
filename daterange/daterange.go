@@ -95,6 +95,26 @@ func (dateRange DateRange) Contains(d Date) bool {
 	return !(d.Before(dateRange.Start) || d.After(dateRange.End))
 }
 
+// StartUTC assumes that the start date is a UTC date and gets the start time of that date, as UTC.
+// It returns midnight on the first day of the range.
+func (dateRange DateRange) StartUTC() time.Time {
+	return dateRange.Start.UTC()
+}
+
+// EndUTC assumes that the end date is a UTC date and gets the end time of that date, as UTC.
+// It returns the very last nanosecond before midnight the following day.
+func (dateRange DateRange) EndUTC() time.Time {
+	return dateRange.End.Add(1).UTC().Add(minusOneNano)
+}
+
+const minusOneNano time.Duration = -1
+
+// ContainsTime tests whether a given local time is within the date range.
+func (dateRange DateRange) ContainsTime(t time.Time) bool {
+	utc := t.In(time.UTC)
+	return !(utc.Before(dateRange.StartUTC()) || dateRange.EndUTC().Before(utc))
+}
+
 //func (dateRange DateRange) Merge(other DateRange) DateRange {
 //	if dateRange.Start.After(other.Start) {
 //		// swap the ranges to simplify the logic
