@@ -65,6 +65,17 @@ func (dateRange DateRange) Normalise() DateRange {
 	return dateRange
 }
 
+// ShiftBy moves the date range by moving both the start and end dates similarly.
+// A negative parameter is allowed.
+func (dateRange DateRange) ShiftBy(days int) DateRange {
+	if days == 0 {
+		return dateRange
+	}
+	newStart := dateRange.Start.Add(days)
+	newEnd := dateRange.End.Add(days)
+	return DateRange{newStart, newEnd}
+}
+
 // ExtendBy extends (or reduces) the date range by moving the end date.
 // A negative parameter is allowed and the result is normalised.
 func (dateRange DateRange) ExtendBy(days int) DateRange {
