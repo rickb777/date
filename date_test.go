@@ -190,7 +190,7 @@ func TestArithmetic(t *testing.T) {
 		{1999, time.December, 1},
 		{1111111, time.June, 21},
 	}
-	offsets := []int{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
+	offsets := []Days{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
 	for _, c := range cases {
 		d := New(c.year, c.month, c.day)
 		for _, days := range offsets {

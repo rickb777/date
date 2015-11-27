@@ -71,6 +71,10 @@ type Date struct {
 	day int32
 }
 
+// Days describes a period of time measured in whole days. Negative values
+// indicate days earlier than some mark.
+type Days int32
+
 // New returns the Date value corresponding to the given year, month, and day.
 //
 // The month and day may be outside their usual ranges and will be normalized
@@ -206,8 +210,8 @@ func (d Date) After(u Date) bool {
 	return d.day > u.day
 }
 
-// Add returns the date d plus the given number of days.
-func (d Date) Add(days int) Date {
+// Add returns the date d plus the given number of days. The parameter may be negative.
+func (d Date) Add(days Days) Date {
 	return Date{d.day + int32(days)}
 }
 
@@ -221,6 +225,6 @@ func (d Date) AddDate(years, months, days int) Date {
 }
 
 // Sub returns d-u as the number of days between the two dates.
-func (d Date) Sub(u Date) (days int) {
-	return int(d.day - u.day)
+func (d Date) Sub(u Date) (days Days) {
+	return Days(d.day - u.day)
 }
