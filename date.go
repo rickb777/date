@@ -68,7 +68,7 @@ import (
 //
 type Date struct {
 	// day gives the number of days elapsed since date zero.
-	day int32
+	day Days
 }
 
 // Days describes a period of time measured in whole days. Negative values
@@ -178,7 +178,7 @@ func (d Date) Weekday() time.Weekday {
 	// Date zero, January 1, 1970, fell on a Thursday
 	wdayZero := time.Thursday
 	// Taking into account potential for overflow and negative offset
-	return time.Weekday((int32(wdayZero) + d.day % 7 + 7) % 7)
+	return time.Weekday((Days(wdayZero) + d.day % 7 + 7) % 7)
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which d occurs.
@@ -212,7 +212,7 @@ func (d Date) After(u Date) bool {
 
 // Add returns the date d plus the given number of days. The parameter may be negative.
 func (d Date) Add(days Days) Date {
-	return Date{d.day + int32(days)}
+	return Date{d.day + days}
 }
 
 // AddDate returns the date corresponding to adding the given number of years,
