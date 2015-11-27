@@ -28,14 +28,14 @@ var d0410 = New(2015, time.April, 10)
 var d0501 = New(2015, time.May, 1)
 var d1025 = New(2015, time.October, 25)
 
-var london *time.Location
+var london *time.Location = mustLoadLocation("Europe/London")
 
-func init() {
-	var err error
-	london, err = time.LoadLocation("Europe/London")
+func mustLoadLocation(name string) *time.Location {
+	loc, err := time.LoadLocation("Europe/London")
 	if err != nil {
 		panic(err)
 	}
+	return loc
 }
 
 func TestNewDateRangeOf(t *testing.T) {
