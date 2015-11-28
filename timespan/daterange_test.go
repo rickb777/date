@@ -41,7 +41,7 @@ func mustLoadLocation(name string) *time.Location {
 func TestNewDateRangeOf(t *testing.T) {
 	dr := NewDateRangeOf(t0327, time.Duration(7*24*60*60*1e9))
 	isEq(t, dr.mark, d0327)
-	isEq(t, dr.Days(), Days(7))
+	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.End(), d0402)
 	isEq(t, dr.Next(), d0403)
@@ -61,29 +61,29 @@ func TestNewDateRangeWithNormalise(t *testing.T) {
 
 func TestOneDayRange(t *testing.T) {
 	drN0 := DateRange{d0327, -1}
-	isEq(t, drN0.Days(), Days(-1))
+	isEq(t, drN0.Days(), PeriodOfDays(-1))
 	isEq(t, drN0.Start(), d0327)
 	isEq(t, drN0.End(), d0327)
 	isEq(t, drN0.String(), "1 day on 2015-03-27")
 
 	dr0 := DateRange{}
-	isEq(t, dr0.Days(), Days(0))
+	isEq(t, dr0.Days(), PeriodOfDays(0))
 	isEq(t, dr0.String(), "0 days from 1970-01-01")
 
-	dr1 := OneDayRange(Date{})
-	isEq(t, dr1.Days(), Days(1))
+	dr1 := OneDayRange(0)
+	isEq(t, dr1.Days(), PeriodOfDays(1))
 
 	dr2 := OneDayRange(d0327)
 	isEq(t, dr2.Start(), d0327)
 	isEq(t, dr2.End(), d0327)
 	isEq(t, dr2.Next(), d0328)
-	isEq(t, dr2.Days(), Days(1))
+	isEq(t, dr2.Days(), PeriodOfDays(1))
 	isEq(t, dr2.String(), "1 day on 2015-03-27")
 }
 
 func TestNewYearOf(t *testing.T) {
 	dr := NewYearOf(2015)
-	isEq(t, dr.Days(), Days(365))
+	isEq(t, dr.Days(), PeriodOfDays(365))
 	isEq(t, dr.Start(), New(2015, time.January, 1))
 	isEq(t, dr.End(), New(2015, time.December, 31))
 	isEq(t, dr.Next(), New(2016, time.January, 1))
@@ -91,7 +91,7 @@ func TestNewYearOf(t *testing.T) {
 
 func TestNewMonthOf(t *testing.T) {
 	dr := NewMonthOf(2015, time.February)
-	isEq(t, dr.Days(), Days(28))
+	isEq(t, dr.Days(), PeriodOfDays(28))
 	isEq(t, dr.Start(), New(2015, time.February, 1))
 	isEq(t, dr.End(), New(2015, time.February, 28))
 	isEq(t, dr.Next(), New(2015, time.March, 1))
@@ -99,21 +99,21 @@ func TestNewMonthOf(t *testing.T) {
 
 func TestShiftByPos(t *testing.T) {
 	dr := NewDateRange(d0327, d0401).ShiftBy(7)
-	isEq(t, dr.Days(), Days(6))
+	isEq(t, dr.Days(), PeriodOfDays(6))
 	isEq(t, dr.Start(), d0403)
 	isEq(t, dr.End(), d0408)
 }
 
 func TestShiftByNeg(t *testing.T) {
 	dr := NewDateRange(d0403, d0408).ShiftBy(-7)
-	isEq(t, dr.Days(), Days(6))
+	isEq(t, dr.Days(), PeriodOfDays(6))
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.End(), d0401)
 }
 
 func TestExtendByPos(t *testing.T) {
 	dr := OneDayRange(d0327).ExtendBy(6)
-	isEq(t, dr.Days(), Days(7))
+	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.End(), d0402)
 	isEq(t, dr.Next(), d0403)
@@ -122,7 +122,7 @@ func TestExtendByPos(t *testing.T) {
 
 func TestExtendByNeg(t *testing.T) {
 	dr := OneDayRange(d0327).ExtendBy(-9)
-	isEq(t, dr.Days(), Days(-8))
+	isEq(t, dr.Days(), PeriodOfDays(-8))
 	isEq(t, dr.Start(), d0320)
 	isEq(t, dr.End(), d0327)
 	isEq(t, dr.String(), "8 days from 2015-03-20 to 2015-03-27")

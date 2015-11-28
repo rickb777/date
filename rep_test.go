@@ -17,11 +17,11 @@ func TestEncode(t *testing.T) {
 	tBase := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
 	for i, c := range cases {
 		d := encode(tBase.AddDate(0, 0, c))
-		if d != Days(c) {
+		if d != Date(c) {
 			t.Errorf("Encode(%v) == %v, want %v", i, d, c)
 		}
 		d = encode(tBase.AddDate(0, 0, -c))
-		if d != Days(-c) {
+		if d != Date(-c) {
 			t.Errorf("Encode(%v) == %v, want %v", i, d, c)
 		}
 	}
@@ -73,14 +73,14 @@ func TestEncodeDecode(t *testing.T) {
 
 func TestDecodeEncode(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		c := Days(rand.Int31())
+		c := Date(rand.Int31())
 		d := encode(decode(c))
 		if d != c {
 			t.Errorf("DecodeEncode(%v) == %v, want %v", i, d, c)
 		}
 	}
 	for i := 0; i < 1000; i++ {
-		c := -Days(rand.Int31())
+		c := -Date(rand.Int31())
 		d := encode(decode(c))
 		if d != c {
 			t.Errorf("DecodeEncode(%v) == %v, want %v", i, d, c)

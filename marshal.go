@@ -12,10 +12,10 @@ import (
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 func (d Date) MarshalBinary() ([]byte, error) {
 	enc := []byte{
-		byte(d.day >> 24),
-		byte(d.day >> 16),
-		byte(d.day >> 8),
-		byte(d.day),
+		byte(d >> 24),
+		byte(d >> 16),
+		byte(d >> 8),
+		byte(d),
 	}
 	return enc, nil
 }
@@ -29,8 +29,8 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 		return errors.New("Date.UnmarshalBinary: invalid length")
 	}
 
-	d.day = Days(data[3]) | Days(data[2])<<8 | Days(data[1])<<16 | Days(data[0])<<24
-
+	v := Date(int32(data[3]) | int32(data[2])<<8 | int32(data[1])<<16 | int32(data[0])<<24)
+	d = &v
 	return nil
 }
 
@@ -69,7 +69,7 @@ func (d *Date) UnmarshalJSON(data []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	d.day = u.day
+	d = &u
 	return nil
 }
 
@@ -88,11 +88,8 @@ func (d Date) MarshalText() ([]byte, error) {
 // (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
 // the year must use at least 4 digits and if outside the [0,9999] range
 // must be prefixed with a + or - sign.
-func (d *Date) UnmarshalText(data []byte) error {
+func (d *Date) UnmarshalText(data []byte) (err error) {
 	u, err := ParseISO(string(data))
-	if err != nil {
-		return err
-	}
-	d.day = u.day
-	return nil
+	d = &u
+	return err
 }

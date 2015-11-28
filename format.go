@@ -52,7 +52,7 @@ var reISO8601 = regexp.MustCompile(`^([-+]?\d{4,})-(\d{2})-(\d{2})$`)
 func ParseISO(value string) (Date, error) {
 	m := reISO8601.FindStringSubmatch(value)
 	if len(m) != 4 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s", value)
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %s", value)
 	}
 	// No need to check for errors since the regexp guarantees the matches
 	// are valid integers
@@ -62,7 +62,7 @@ func ParseISO(value string) (Date, error) {
 
 	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-	return Date{encode(t)}, nil
+	return encode(t), nil
 }
 
 // Parse parses a formatted string and returns the Date value it represents.
@@ -81,9 +81,9 @@ func ParseISO(value string) (Date, error) {
 func Parse(layout, value string) (Date, error) {
 	t, err := time.Parse(layout, value)
 	if err != nil {
-		return Date{0}, err
+		return 0, err
 	}
-	return Date{encode(t)}, nil
+	return encode(t), nil
 }
 
 // String returns the time formatted in ISO 8601 extended format
@@ -146,7 +146,7 @@ func (d Date) Format(layout string) string {
 // explicitly, which allows multiple locales to be supported. The suffixes slice should
 // contain 31 strings covering the days 1 (index 0) to 31 (index 30).
 func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
-	t := decode(d.day)
+	t := decode(d)
 	parts := strings.Split(layout, "nd")
 	switch len(parts) {
 	case 1:
