@@ -5,12 +5,13 @@
 package timespan
 
 import (
-	"time"
 	"fmt"
 	"github.com/rickb777/date"
+	"time"
 )
 
 const TimestampFormat = "2006-01-02 15:04:05"
+
 //const ISOFormat = "2006-01-02T15:04:05"
 
 // TimeSpan holds a span of time between two instants with a 1 nanosecond resolution.

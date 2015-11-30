@@ -5,8 +5,8 @@
 package date
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
@@ -29,7 +29,7 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 		return errors.New("Date.UnmarshalBinary: invalid length")
 	}
 
-	d.day = int32(data[3]) | int32(data[2]) << 8 | int32(data[1]) << 16 | int32(data[0]) << 24
+	d.day = int32(data[3]) | int32(data[2])<<8 | int32(data[1])<<16 | int32(data[0])<<24
 	//	d.decoded = time.Time{}
 
 	return nil
@@ -63,10 +63,10 @@ func (d Date) MarshalJSON() ([]byte, error) {
 func (d *Date) UnmarshalJSON(data []byte) (err error) {
 	value := string(data)
 	n := len(value)
-	if n < 2 || value[0] != '"' || value[n - 1] != '"' {
+	if n < 2 || value[0] != '"' || value[n-1] != '"' {
 		return fmt.Errorf("Date.UnmarshalJSON: missing double quotes (%s)", value)
 	}
-	u, err := ParseISO(value[1 : n - 1])
+	u, err := ParseISO(value[1 : n-1])
 	if err != nil {
 		return err
 	}

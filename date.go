@@ -67,7 +67,7 @@ import (
 // a simple way of detecting a date that has not been initialized explicitly.
 //
 type Date struct {
-	day     int32     // day gives the number of days elapsed since date zero.
+	day int32 // day gives the number of days elapsed since date zero.
 }
 
 // PeriodOfDays describes a period of time measured in whole days. Negative values
@@ -177,7 +177,7 @@ func (d Date) Weekday() time.Weekday {
 	// Date zero, January 1, 1970, fell on a Thursday
 	wdayZero := time.Thursday
 	// Taking into account potential for overflow and negative offset
-	return time.Weekday((int32(wdayZero) + d.day % 7 + 7) % 7)
+	return time.Weekday((int32(wdayZero) + d.day%7 + 7) % 7)
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which d occurs.

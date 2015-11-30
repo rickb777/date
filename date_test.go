@@ -13,11 +13,11 @@ func same(d Date, t time.Time) bool {
 	yd, wd := d.ISOWeek()
 	yt, wt := t.ISOWeek()
 	return d.Year() == t.Year() &&
-	d.Month() == t.Month() &&
-	d.Day() == t.Day() &&
-	d.Weekday() == t.Weekday() &&
-	d.YearDay() == t.YearDay() &&
-	yd == yt && wd == wt
+		d.Month() == t.Month() &&
+		d.Day() == t.Day() &&
+		d.Weekday() == t.Weekday() &&
+		d.YearDay() == t.YearDay() &&
+		yd == yt && wd == wt
 }
 
 func TestNew(t *testing.T) {
@@ -62,7 +62,7 @@ func TestToday(t *testing.T) {
 	}
 	cases := []int{-10, -5, -3, 0, 1, 4, 8, 12}
 	for _, c := range cases {
-		location := time.FixedZone("zone", c * 60 * 60)
+		location := time.FixedZone("zone", c*60*60)
 		today = TodayIn(location)
 		now = time.Now().In(location)
 		if !same(today, now) {
@@ -104,7 +104,7 @@ func TestTime(t *testing.T) {
 			t.Errorf("TimeLocal(%v) == %v, want %v", d, tLocal.Location(), time.Local)
 		}
 		for _, z := range zones {
-			location := time.FixedZone("zone", z * 60 * 60)
+			location := time.FixedZone("zone", z*60*60)
 			tInLoc := d.In(location)
 			if !same(d, tInLoc) {
 				t.Errorf("TimeIn(%v) == %v, want date part %v", d, tInLoc, d)

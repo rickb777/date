@@ -5,9 +5,9 @@
 package timespan
 
 import (
+	"fmt"
 	. "github.com/rickb777/date"
 	"time"
-	"fmt"
 )
 
 const minusOneNano time.Duration = -1
@@ -38,7 +38,7 @@ func NewDateRange(start, end Date) DateRange {
 // NewYearOf constructs the range encompassing the whole year specified.
 func NewYearOf(year int) DateRange {
 	start := New(year, time.January, 1)
-	end := New(year + 1, time.January, 1)
+	end := New(year+1, time.January, 1)
 	return DateRange{start, PeriodOfDays(end.Sub(start))}
 }
 
@@ -46,7 +46,7 @@ func NewYearOf(year int) DateRange {
 // It handles leap years correctly.
 func NewMonthOf(year int, month time.Month) DateRange {
 	start := New(year, month, 1)
-	endT := time.Date(year, month + 1, 1, 0, 0, 0, 0, time.UTC)
+	endT := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
 	end := NewAt(endT)
 	return DateRange{start, PeriodOfDays(end.Sub(start))}
 }
@@ -241,4 +241,3 @@ func (dateRange DateRange) TimeSpanIn(loc *time.Location) TimeSpan {
 	d := dr.DurationIn(loc)
 	return TimeSpan{s, d}
 }
-

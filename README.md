@@ -31,4 +31,4 @@ of the `time.Time` type and much of the documentation is copied directly
 from that package.
 
 The original [Good Work](https://github.com/fxtlabs/date) on which this was
-based was done by Fxtlabs.
+based was done by Filippo Tampieri at Fxtlabs.

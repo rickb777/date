@@ -60,18 +60,18 @@ func TestParseISO(t *testing.T) {
 		"1234-5-6",
 		"1234-05-6",
 		"1234-5-06",
-//		"1234/05/06",
-//		"1234-0A-06",
-//		"1234-05-0B",
-//		"1234-05-06trailing",
-//		"padding1234-05-06",
-//		"1-02-03",
-//		"10-11-12",
-//		"100-02-03",
-//		"+1-02-03",
-//		"+10-11-12",
-//		"+100-02-03",
-//		"-123-05-06",
+		"1234/05/06",
+		"1234-0A-06",
+		"1234-05-0B",
+		"1234-05-06trailing",
+		"padding1234-05-06",
+		"1-02-03",
+		"10-11-12",
+		"100-02-03",
+		"+1-02-03",
+		"+10-11-12",
+		"+100-02-03",
+		"-123-05-06",
 	}
 	for _, c := range badCases {
 		d, err := ParseISO(c)
@@ -99,7 +99,7 @@ func BenchmarkParseISO(b *testing.B) {
 		{ISO8601, "2000-05-06", 2000, time.May, 6},
 	}
 	for n := 0; n < b.N; n++ {
-		c := cases[n % len(cases)]
+		c := cases[n%len(cases)]
 		_, err := ParseISO(c.value)
 		if err != nil {
 			b.Errorf("ParseISO(%v) == %v", c.value, err)
@@ -170,7 +170,7 @@ func BenchmarkParse(b *testing.B) {
 		{ISO8601, "2000-05-06", 2000, time.May, 6},
 	}
 	for n := 0; n < b.N; n++ {
-		c := cases[n % len(cases)]
+		c := cases[n%len(cases)]
 		_, err := Parse(c.layout, c.value)
 		if err != nil {
 			b.Errorf("Parse(%v) == %v", c.value, err)

@@ -7,8 +7,8 @@ package date
 import (
 	"fmt"
 	"strconv"
-	"time"
 	"strings"
+	"time"
 )
 
 // These are predefined layouts for use in Date.Format and Date.Parse.
@@ -21,14 +21,14 @@ import (
 // so that the Parse function and Format method can apply the same
 // transformation to a general date value.
 const (
-	ISO8601 = "2006-01-02" // ISO 8601 extended format
+	ISO8601  = "2006-01-02" // ISO 8601 extended format
 	ISO8601B = "20060102"   // ISO 8601 basic format
-	RFC822 = "02-Jan-06"
-	RFC822W = "Mon, 02-Jan-06" // RFC822 with day of the week
-	RFC850 = "Monday, 02-Jan-06"
-	RFC1123 = "02 Jan 2006"
+	RFC822   = "02-Jan-06"
+	RFC822W  = "Mon, 02-Jan-06" // RFC822 with day of the week
+	RFC850   = "Monday, 02-Jan-06"
+	RFC1123  = "02 Jan 2006"
 	RFC1123W = "Mon, 02 Jan 2006" // RFC1123 with day of the week
-	RFC3339 = "2006-01-02"
+	RFC3339  = "2006-01-02"
 )
 
 // ParseISO parses an ISO 8601 formatted string and returns the date value it represents.
@@ -83,7 +83,7 @@ func ParseISO(value string) (Date, error) {
 		return Date{}, err
 	}
 
-	month, err := parseField(value, abs[fm1 : fm2], "month", -1, 2)
+	month, err := parseField(value, abs[fm1:fm2], "month", -1, 2)
 	if err != nil {
 		return Date{}, err
 	}
@@ -201,10 +201,10 @@ func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
 		return t.Format(layout)
 
 	default:
-		a := make([]string, 0, 2 * len(parts) - 1)
+		a := make([]string, 0, 2*len(parts)-1)
 		for i, p := range parts {
 			if i > 0 {
-				a = append(a, suffixes[d.Day() - 1])
+				a = append(a, suffixes[d.Day()-1])
 			}
 			a = append(a, t.Format(p))
 		}

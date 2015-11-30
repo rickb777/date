@@ -5,12 +5,12 @@
 package timespan
 
 import (
+	"fmt"
 	. "github.com/rickb777/date"
+	"runtime/debug"
+	"strings"
 	"testing"
 	"time"
-	"fmt"
-	"strings"
-	"runtime/debug"
 )
 
 var d0320 = New(2015, time.March, 20)
@@ -134,8 +134,8 @@ func xTestContains1(t *testing.T) {
 	dr := OneDayRange(d0326).ExtendBy(1)
 	isEq(t, dr.Contains(d0320), false, dr, d0320)
 	isEq(t, dr.Contains(d0325), false, dr, d0325)
-	isEq(t, dr.Contains(d0326), true,  dr, d0326)
-	isEq(t, dr.Contains(d0327), true,  dr, d0327)
+	isEq(t, dr.Contains(d0326), true, dr, d0326)
+	isEq(t, dr.Contains(d0327), true, dr, d0327)
 	isEq(t, dr.Contains(d0328), false, dr, d0328)
 	isEq(t, dr.Contains(d0401), false, dr, d0401)
 	isEq(t, dr.Contains(d0410), false, dr, d0410)
@@ -148,7 +148,7 @@ func xTestContains2(t *testing.T) {
 	time.Local = time.FixedZone("Test", 7200)
 	dr := OneDayRange(d0326)
 	isEq(t, dr.Contains(d0325), false, dr, d0325)
-	isEq(t, dr.Contains(d0326), true,  dr, d0326)
+	isEq(t, dr.Contains(d0326), true, dr, d0326)
 	isEq(t, dr.Contains(d0327), false, dr, d0327)
 	time.Local = old
 }
@@ -211,14 +211,14 @@ func xTestMergeNonOverlapping(t *testing.T) {
 
 func xTestDurationNormalUTC(t *testing.T) {
 	dr := OneDayRange(d0329)
-	isEq(t, dr.Duration(), time.Hour * 24)
+	isEq(t, dr.Duration(), time.Hour*24)
 }
 
 func xTestDurationInZoneWithDaylightSaving(t *testing.T) {
-	isEq(t, OneDayRange(d0328).DurationIn(london), time.Hour * 24)
-	isEq(t, OneDayRange(d0329).DurationIn(london), time.Hour * 23)
-	isEq(t, OneDayRange(d1025).DurationIn(london), time.Hour * 25)
-	isEq(t, NewDateRange(d0328, d0330).DurationIn(london), time.Hour * 71)
+	isEq(t, OneDayRange(d0328).DurationIn(london), time.Hour*24)
+	isEq(t, OneDayRange(d0329).DurationIn(london), time.Hour*23)
+	isEq(t, OneDayRange(d1025).DurationIn(london), time.Hour*25)
+	isEq(t, NewDateRange(d0328, d0330).DurationIn(london), time.Hour*71)
 }
 
 func isEq(t *testing.T, a, b interface{}, msg ...interface{}) {
