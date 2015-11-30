@@ -6,7 +6,6 @@ package date
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"time"
 	"strings"
@@ -32,37 +31,86 @@ const (
 	RFC3339 = "2006-01-02"
 )
 
-// reISO8601 is the regular expression used to parse date strings in the
-// ISO 8601 extended format, with or without an expanded year representation.
-var reISO8601 = regexp.MustCompile(`^([-+]?\d{4,})-(\d{2})-(\d{2})$`)
-
 // ParseISO parses an ISO 8601 formatted string and returns the date value it represents.
-// In addition to the common extended format (e.g. 2006-01-02), this function
+// In addition to the common formats (e.g. 2006-01-02 and 20060102), this function
 // accepts date strings using the expanded year representation
 // with possibly extra year digits beyond the prescribed four-digit minimum
 // and with a + or - sign prefix (e.g. , "+12345-06-07", "-0987-06-05").
 //
 // Note that ParseISO is a little looser than the ISO 8601 standard and will
-// be happy to parse dates with a year longer than the four-digit minimum even
+// be happy to parse dates with a year longer in length than the four-digit minimum even
 // if they are missing the + sign prefix.
 //
 // Function Date.Parse can be used to parse date strings in other formats, but it
 // is currently not able to parse ISO 8601 formatted strings that use the
 // expanded year format.
+//
+// Background: https://en.wikipedia.org/wiki/ISO_8601#Dates
 func ParseISO(value string) (Date, error) {
-	m := reISO8601.FindStringSubmatch(value)
-	if len(m) != 4 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s", value)
+	if len(value) < 8 {
+		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s: incorrect length", value)
 	}
-	// No need to check for errors since the regexp guarantees the matches
-	// are valid integers
-	year, _ := strconv.Atoi(m[1])
-	month, _ := strconv.Atoi(m[2])
-	day, _ := strconv.Atoi(m[3])
+
+	abs := value
+	if value[0] == '+' || value[0] == '-' {
+		abs = value[1:]
+	}
+
+	dash1 := strings.IndexByte(abs, '-')
+	fm1 := dash1 + 1
+	fm2 := dash1 + 3
+	fd1 := dash1 + 4
+	fd2 := dash1 + 6
+
+	if dash1 < 0 {
+		// switch to YYYYMMDD format
+		dash1 = 4
+		fm1 = 4
+		fm2 = 6
+		fd1 = 6
+		fd2 = 8
+	} else if abs[fm2] != '-' {
+		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s: incorrect syntax", value)
+	}
+	//fmt.Printf("%s %d %d %d %d %d\n", value, dash1, fm1, fm2, fd1, fd2)
+
+	if len(abs) != fd2 {
+		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s: incorrect length", value)
+	}
+
+	year, err := parseField(value, abs[:dash1], "year", 4, -1)
+	if err != nil {
+		return Date{}, err
+	}
+
+	month, err := parseField(value, abs[fm1 : fm2], "month", -1, 2)
+	if err != nil {
+		return Date{}, err
+	}
+
+	day, err := parseField(value, abs[fd1:], "day", -1, 2)
+	if err != nil {
+		return Date{}, err
+	}
+
+	if value[0] == '-' {
+		year = -year
+	}
 
 	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-	return Date{day: encode(t)}, nil
+	return Date{encode(t)}, nil
+}
+
+func parseField(value, field, name string, minLength, requiredLength int) (int, error) {
+	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %s: invalid %s", value, name)
+	}
+	number, err := strconv.Atoi(field)
+	if err != nil {
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %s: invalid %s", value, name)
+	}
+	return number, nil
 }
 
 // Parse parses a formatted string and returns the Date value it represents.
@@ -83,7 +131,7 @@ func Parse(layout, value string) (Date, error) {
 	if err != nil {
 		return Date{}, err
 	}
-	return Date{day: encode(t)}, nil
+	return Date{encode(t)}, nil
 }
 
 // String returns the time formatted in ISO 8601 extended format
@@ -153,7 +201,7 @@ func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
 		return t.Format(layout)
 
 	default:
-		a := make([]string, 0, 2*len(parts) - 1)
+		a := make([]string, 0, 2 * len(parts) - 1)
 		for i, p := range parts {
 			if i > 0 {
 				a = append(a, suffixes[d.Day() - 1])
@@ -175,5 +223,5 @@ var DaySuffixes = []string{
 	"th", "th", "th", "th", "th", // 16 - 20
 	"st", "nd", "rd", "th", "th", // 21 - 25
 	"th", "th", "th", "th", "th", // 26 - 30
-	"st",                         // 31
+	"st", // 31
 }

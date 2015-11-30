@@ -94,10 +94,10 @@ func TestInvalidJSON(t *testing.T) {
 		value string
 		want  string
 	}{
-		{`"not-a-date"`, `Date.ParseISO: cannot parse not-a-date`},
+		{`"not-a-date"`, `Date.ParseISO: cannot parse not-a-date: incorrect syntax`},
 		{`2015-08-15"`, `Date.UnmarshalJSON: missing double quotes (2015-08-15")`},
 		{`"2015-08-15`, `Date.UnmarshalJSON: missing double quotes ("2015-08-15)`},
-		{`"215-08-15"`, `Date.ParseISO: cannot parse 215-08-15`},
+		{`"215-08-15"`, `Date.ParseISO: cannot parse 215-08-15: invalid year`},
 	}
 	for _, c := range cases {
 		var d Date
@@ -142,8 +142,8 @@ func TestInvalidText(t *testing.T) {
 		value string
 		want  string
 	}{
-		{`not-a-date`, `Date.ParseISO: cannot parse not-a-date`},
-		{`215-08-15`, `Date.ParseISO: cannot parse 215-08-15`},
+		{`not-a-date`, `Date.ParseISO: cannot parse not-a-date: incorrect syntax`},
+		{`215-08-15`, `Date.ParseISO: cannot parse 215-08-15: invalid year`},
 	}
 	for _, c := range cases {
 		var d Date
