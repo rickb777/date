@@ -82,7 +82,7 @@ func (dateRange DateRange) End() Date {
 	if dateRange.days < 0 {
 		return dateRange.mark
 	} else if dateRange.days == 0 {
-		return 0
+		return Date{}
 	}
 	return dateRange.mark.Add(dateRange.days - 1)
 }
@@ -93,7 +93,7 @@ func (dateRange DateRange) Next() Date {
 	if dateRange.days < 0 {
 		return dateRange.mark.Add(1)
 	} else if dateRange.days == 0 {
-		return 0
+		return Date{}
 	}
 	return dateRange.mark.Add(dateRange.days)
 }

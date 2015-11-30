@@ -12,10 +12,10 @@ import (
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
 func (d Date) MarshalBinary() ([]byte, error) {
 	enc := []byte{
-		byte(d >> 24),
-		byte(d >> 16),
-		byte(d >> 8),
-		byte(d),
+		byte(d.day >> 24),
+		byte(d.day >> 16),
+		byte(d.day >> 8),
+		byte(d.day),
 	}
 	return enc, nil
 }
@@ -29,8 +29,9 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 		return errors.New("Date.UnmarshalBinary: invalid length")
 	}
 
-	v := Date(int32(data[3]) | int32(data[2])<<8 | int32(data[1])<<16 | int32(data[0])<<24)
-	d = &v
+	d.day = int32(data[3]) | int32(data[2]) << 8 | int32(data[1]) << 16 | int32(data[0]) << 24
+	//	d.decoded = time.Time{}
+
 	return nil
 }
 
@@ -62,14 +63,15 @@ func (d Date) MarshalJSON() ([]byte, error) {
 func (d *Date) UnmarshalJSON(data []byte) (err error) {
 	value := string(data)
 	n := len(value)
-	if n < 2 || value[0] != '"' || value[n-1] != '"' {
+	if n < 2 || value[0] != '"' || value[n - 1] != '"' {
 		return fmt.Errorf("Date.UnmarshalJSON: missing double quotes (%s)", value)
 	}
-	u, err := ParseISO(value[1 : n-1])
+	u, err := ParseISO(value[1 : n - 1])
 	if err != nil {
 		return err
 	}
-	d = &u
+	d.day = u.day
+	//	d.decoded = time.Time{}
 	return nil
 }
 
@@ -90,6 +92,10 @@ func (d Date) MarshalText() ([]byte, error) {
 // must be prefixed with a + or - sign.
 func (d *Date) UnmarshalText(data []byte) (err error) {
 	u, err := ParseISO(string(data))
-	d = &u
-	return err
+	if err != nil {
+		return err
+	}
+	d.day = u.day
+	//	d.decoded = time.Time{}
+	return nil
 }

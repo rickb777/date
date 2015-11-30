@@ -165,7 +165,7 @@ func TestPredicates(t *testing.T) {
 	}
 
 	// Test IsZero
-	zero := Date(0)
+	zero := Date{}
 	if !zero.IsZero() {
 		t.Errorf("IsZero(%v) == false, want true", zero)
 	}

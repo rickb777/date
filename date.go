@@ -66,7 +66,9 @@ import (
 // As this date is unlikely to come up in practice, the IsZero method gives
 // a simple way of detecting a date that has not been initialized explicitly.
 //
-type Date int32
+type Date struct {
+	day     int32     // day gives the number of days elapsed since date zero.
+}
 
 // PeriodOfDays describes a period of time measured in whole days. Negative values
 // indicate days earlier than some mark.
@@ -78,49 +80,49 @@ type PeriodOfDays int32
 // during the conversion.
 func New(year int, month time.Month, day int) Date {
 	t := time.Date(year, month, day, 12, 0, 0, 0, time.UTC)
-	return encode(t)
+	return Date{encode(t)}
 }
 
 // NewAt returns the Date value corresponding to the given time.
 // Note that the date is computed relative to the time zone specified by
 // the given Time value.
 func NewAt(t time.Time) Date {
-	return encode(t)
+	return Date{encode(t)}
 }
 
 // Today returns today's date according to the current local time.
 func Today() Date {
 	t := time.Now()
-	return encode(t)
+	return Date{encode(t)}
 }
 
 // TodayUTC returns today's date according to the current UTC time.
 func TodayUTC() Date {
 	t := time.Now().UTC()
-	return encode(t)
+	return Date{encode(t)}
 }
 
 // TodayIn returns today's date according to the current time relative to
 // the specified location.
 func TodayIn(loc *time.Location) Date {
 	t := time.Now().In(loc)
-	return encode(t)
+	return Date{encode(t)}
 }
 
 // Min returns the smallest representable date.
 func Min() Date {
-	return Date(math.MinInt32)
+	return Date{day: math.MinInt32}
 }
 
 // Max returns the largest representable date.
 func Max() Date {
-	return Date(math.MaxInt32)
+	return Date{day: math.MaxInt32}
 }
 
 // UTC returns a Time value corresponding to midnight on the given date,
 // UTC time.  Note that midnight is the beginning of the day rather than the end.
 func (d Date) UTC() time.Time {
-	return decode(d)
+	return decode(d.day)
 }
 
 // Local returns a Time value corresponding to midnight on the given date,
@@ -133,40 +135,40 @@ func (d Date) Local() time.Time {
 // relative to the specified time zone.  Note that midnight is the beginning
 // of the day rather than the end.
 func (d Date) In(loc *time.Location) time.Time {
-	t := decode(d).In(loc)
+	t := decode(d.day).In(loc)
 	_, offset := t.Zone()
 	return t.Add(time.Duration(-offset) * time.Second)
 }
 
 // Date returns the year, month, and day of d.
 func (d Date) Date() (year int, month time.Month, day int) {
-	t := decode(d)
+	t := decode(d.day)
 	return t.Date()
 }
 
 // Day returns the day of the month specified by d.
 // The first day of the month is 1.
 func (d Date) Day() int {
-	t := decode(d)
+	t := decode(d.day)
 	return t.Day()
 }
 
 // Month returns the month of the year specified by d.
 func (d Date) Month() time.Month {
-	t := decode(d)
+	t := decode(d.day)
 	return t.Month()
 }
 
 // Year returns the year specified by d.
 func (d Date) Year() int {
-	t := decode(d)
+	t := decode(d.day)
 	return t.Year()
 }
 
 // YearDay returns the day of the year specified by d, in the range [1,365] for
 // non-leap years, and [1,366] in leap years.
 func (d Date) YearDay() int {
-	t := decode(d)
+	t := decode(d.day)
 	return t.YearDay()
 }
 
@@ -175,7 +177,7 @@ func (d Date) Weekday() time.Weekday {
 	// Date zero, January 1, 1970, fell on a Thursday
 	wdayZero := time.Thursday
 	// Taking into account potential for overflow and negative offset
-	return time.Weekday((Date(wdayZero) + d % 7 + 7) % 7)
+	return time.Weekday((int32(wdayZero) + d.day % 7 + 7) % 7)
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which d occurs.
@@ -183,45 +185,44 @@ func (d Date) Weekday() time.Weekday {
 // week 52 or 53 of year n-1, and Dec 29 to Dec 31 might belong to week 1
 // of year n+1.
 func (d Date) ISOWeek() (year, week int) {
-	t := decode(d)
+	t := decode(d.day)
 	return t.ISOWeek()
 }
 
 // IsZero reports whether t represents the zero date.
 func (d Date) IsZero() bool {
-	return d == 0
+	return d.day == 0
 }
 
 // Equal reports whether d and u represent the same date.
 func (d Date) Equal(u Date) bool {
-	return d == u
+	return d.day == u.day
 }
 
 // Before reports whether the date d is before u.
 func (d Date) Before(u Date) bool {
-	return d < u
+	return d.day < u.day
 }
 
 // After reports whether the date d is after u.
 func (d Date) After(u Date) bool {
-	return d > u
+	return d.day > u.day
 }
 
 // Add returns the date d plus the given number of days. The parameter may be negative.
 func (d Date) Add(days PeriodOfDays) Date {
-	return d + Date(days)
+	return Date{d.day + int32(days)}
 }
 
 // AddDate returns the date corresponding to adding the given number of years,
 // months, and days to d. For example, AddData(-1, 2, 3) applied to
 // January 1, 2011 returns March 4, 2010.
 func (d Date) AddDate(years, months, days int) Date {
-	t := decode(d)
-	t = t.AddDate(years, months, days)
-	return encode(t)
+	t := decode(d.day).AddDate(years, months, days)
+	return Date{encode(t)}
 }
 
 // Sub returns d-u as the number of days between the two dates.
 func (d Date) Sub(u Date) (days PeriodOfDays) {
-	return PeriodOfDays(d - u)
+	return PeriodOfDays(d.day - u.day)
 }

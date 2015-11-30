@@ -70,7 +70,7 @@ func TestOneDayRange(t *testing.T) {
 	isEq(t, dr0.Days(), PeriodOfDays(0))
 	isEq(t, dr0.String(), "0 days from 1970-01-01")
 
-	dr1 := OneDayRange(0)
+	dr1 := OneDayRange(Date{})
 	isEq(t, dr1.Days(), PeriodOfDays(1))
 
 	dr2 := OneDayRange(d0327)
