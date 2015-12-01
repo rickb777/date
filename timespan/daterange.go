@@ -27,18 +27,17 @@ func NewDateRangeOf(start time.Time, duration time.Duration) DateRange {
 	return DateRange{sd, PeriodOfDays(ed.Sub(sd))}
 }
 
-// NewDateRange assembles a new date range from two dates.
+// NewDateRange assembles a new date range from two dates. These are half-open, so
+// if start and end are the same, the range spans zero (not one) day. Similarly, if they
+// are on subsequent days, the range is one date (not two).
 func NewDateRange(start, end Date) DateRange {
-	if end.Before(start) {
-		return DateRange{start, PeriodOfDays(end.Sub(start) - 1)}
-	}
-	return DateRange{start, PeriodOfDays(end.Sub(start) + 1)}
+	return DateRange{start, PeriodOfDays(end.Sub(start))}.Normalise()
 }
 
 // NewYearOf constructs the range encompassing the whole year specified.
 func NewYearOf(year int) DateRange {
 	start := New(year, time.January, 1)
-	end := New(year+1, time.January, 1)
+	end := New(year + 1, time.January, 1)
 	return DateRange{start, PeriodOfDays(end.Sub(start))}
 }
 
@@ -46,7 +45,7 @@ func NewYearOf(year int) DateRange {
 // It handles leap years correctly.
 func NewMonthOf(year int, month time.Month) DateRange {
 	start := New(year, month, 1)
-	endT := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
+	endT := time.Date(year, month + 1, 1, 0, 0, 0, 0, time.UTC)
 	end := NewAt(endT)
 	return DateRange{start, PeriodOfDays(end.Sub(start))}
 }
@@ -68,6 +67,11 @@ func (dateRange DateRange) Days() PeriodOfDays {
 	return dateRange.days
 }
 
+// IsEmpty returns true if this is an empty range (zero days).
+func (dateRange DateRange) IsEmpty() bool {
+	return dateRange.days == 0
+}
+
 // Start returns the earliest date represented by this range.
 func (dateRange DateRange) Start() Date {
 	if dateRange.days < 0 {
@@ -76,24 +80,28 @@ func (dateRange DateRange) Start() Date {
 	return dateRange.mark
 }
 
-// End returns the latest date (inclusive) represented by this range. If the range is empty (i.e.
-// has zero days), then an empty date is returned.
-func (dateRange DateRange) End() Date {
+// Last returns the last date (inclusive) represented by this range. Be careful because
+// if the range is empty (i.e. has zero days), then the last is undefined so an empty date
+// is returned. Therefore it is often more useful to use End() instead of Last().
+// See also IsEmpty().
+func (dateRange DateRange) Last() Date {
 	if dateRange.days < 0 {
-		return dateRange.mark
+		return dateRange.mark // because mark is at the end
 	} else if dateRange.days == 0 {
 		return Date{}
 	}
 	return dateRange.mark.Add(dateRange.days - 1)
 }
 
-// Next returns the date that follows the end date of the range. If the range is empty (i.e.
-// has zero days), then an empty date is returned.
-func (dateRange DateRange) Next() Date {
+// End returns the date following the last date of the range. End can be considered to
+// be the exclusive end, i.e. the final value of a half-open range.
+//
+// If the range is empty (i.e. has zero days), then the start date is returned, this being
+// also the (half-open) end value in that case. This is more useful than the undefined result
+// returned by Last() for empty ranges.
+func (dateRange DateRange) End() Date {
 	if dateRange.days < 0 {
-		return dateRange.mark.Add(1)
-	} else if dateRange.days == 0 {
-		return Date{}
+		return dateRange.mark.Add(1) // because mark is at the end
 	}
 	return dateRange.mark.Add(dateRange.days)
 }
@@ -128,6 +136,7 @@ func (dateRange DateRange) ExtendBy(days PeriodOfDays) DateRange {
 	return DateRange{dateRange.mark, dateRange.days + days}
 }
 
+// String describes the date range in human-readable form.
 func (dateRange DateRange) String() string {
 	switch dateRange.days {
 	case 0:
@@ -136,9 +145,9 @@ func (dateRange DateRange) String() string {
 		return fmt.Sprintf("1 day on %s", dateRange.mark)
 	default:
 		if dateRange.days < 0 {
-			return fmt.Sprintf("%d days from %s to %s", -dateRange.days, dateRange.Start(), dateRange.End())
+			return fmt.Sprintf("%d days from %s to %s", -dateRange.days, dateRange.Start(), dateRange.Last())
 		}
-		return fmt.Sprintf("%d days from %s to %s", dateRange.days, dateRange.Start(), dateRange.End())
+		return fmt.Sprintf("%d days from %s to %s", dateRange.days, dateRange.Start(), dateRange.Last())
 	}
 }
 
@@ -148,7 +157,7 @@ func (dateRange DateRange) Contains(d Date) bool {
 	if dateRange.days == 0 {
 		return false
 	}
-	return !(d.Before(dateRange.Start()) || d.After(dateRange.End()))
+	return !(d.Before(dateRange.Start()) || d.After(dateRange.Last()))
 }
 
 // StartUTC assumes that the start date is a UTC date and gets the start time of that date, as UTC.
@@ -161,7 +170,7 @@ func (dateRange DateRange) StartUTC() time.Time {
 // in a specified location. Along with StartUTC, this gives a 'half-open' range where the start
 // is inclusive and the end is exclusive.
 func (dateRange DateRange) EndUTC() time.Time {
-	return dateRange.Next().UTC()
+	return dateRange.End().UTC()
 }
 
 // ContainsTime tests whether a given local time is within the date range. The time range is
@@ -178,42 +187,31 @@ func (dateRange DateRange) ContainsTime(t time.Time) bool {
 	return !(utc.Before(dateRange.StartUTC()) || dateRange.EndUTC().Add(minusOneNano).Before(utc))
 }
 
-// Merge combines two date 	ranges by calculating a date range that just encompasses them both.
+// Merge combines two date ranges by calculating a date range that just encompasses them both.
 // As a special case, if one range is entirely contained within the other range, the larger of
-// the two is returned. Otherwise, the result is the start of the earlier one to the end of the
-// later one, even if the two ranges don't overlap.
-func (dateRange DateRange) Merge(other DateRange) DateRange {
-	start := dateRange.Start()
-	if start.After(other.Start()) {
-		// swap the ranges to simplify the logic
-		return other.Merge(dateRange)
-
-	} else {
-		oEnd := other.End()
-		if dateRange.End().After(oEnd) {
-			// other is a proper subrange of dateRange
-			return dateRange
-
-		} else {
-			return NewDateRange(start, oEnd)
-		}
-	}
+// the two is returned. Otherwise, the result is from the start of the earlier one to the end of
+// the later one, even if the two ranges don't overlap.
+func (thisRange DateRange) Merge(thatRange DateRange) DateRange {
+	minStart := thisRange.Start().Min(thatRange.Start())
+	maxEnd := thisRange.End().Max(thatRange.End())
+	return NewDateRange(minStart, maxEnd)
 }
 
 // Duration computes the duration (in nanoseconds) from midnight at the start of the date
-// range up to and including the very last nanosecond before midnight the following day after the end.
+// range up to and including the very last nanosecond before midnight on the end day.
 // The calculation is for UTC, which does not have daylight saving and every day has 24 hours.
 //
 // If the range is greater than approximately 290 years, the result will hard-limit to the
 // minimum or maximum possible duration (see time.Sub(t)).
 func (dateRange DateRange) Duration() time.Duration {
-	return dateRange.Next().UTC().Sub(dateRange.Start().UTC())
+	return dateRange.End().UTC().Sub(dateRange.Start().UTC())
 }
 
 // DurationIn computes the duration (in nanoseconds) from midnight at the start of the date
-// range up to and including the very last nanosecond before midnight the following day after the end.
-// The calculation is for the specified location, which may have daylight saving, so not every day has
-// 24 hours. If the date range spans the day the clocks are changed, this is taken into account.
+// range up to and including the very last nanosecond before midnight on the end day.
+// The calculation is for the specified location, which may have daylight saving, so not every day
+// necessarily has 24 hours. If the date range spans the day the clocks are changed, this is
+// taken into account.
 //
 // If the range is greater than approximately 290 years, the result will hard-limit to the
 // minimum or maximum possible duration (see time.Sub(t)).
@@ -230,14 +228,13 @@ func (dateRange DateRange) StartTimeIn(loc *time.Location) time.Time {
 // StartTimeIn, this gives a 'half-open' range where the start is inclusive and the end is
 // exclusive.
 func (dateRange DateRange) EndTimeIn(loc *time.Location) time.Time {
-	return dateRange.Next().In(loc)
+	return dateRange.End().In(loc)
 }
 
 // TimeSpanIn obtains the time span corresponding to the date range in a specified location.
 // The result is normalised.
 func (dateRange DateRange) TimeSpanIn(loc *time.Location) TimeSpan {
-	dr := dateRange.Normalise()
-	s := dr.StartTimeIn(loc)
-	d := dr.DurationIn(loc)
+	s := dateRange.StartTimeIn(loc)
+	d := dateRange.DurationIn(loc)
 	return TimeSpan{s, d}
 }

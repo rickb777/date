@@ -7,17 +7,18 @@ package date
 import (
 	"testing"
 	"time"
+	"runtime/debug"
 )
 
 func same(d Date, t time.Time) bool {
 	yd, wd := d.ISOWeek()
 	yt, wt := t.ISOWeek()
 	return d.Year() == t.Year() &&
-		d.Month() == t.Month() &&
-		d.Day() == t.Day() &&
-		d.Weekday() == t.Weekday() &&
-		d.YearDay() == t.YearDay() &&
-		yd == yt && wd == wt
+	d.Month() == t.Month() &&
+	d.Day() == t.Day() &&
+	d.Weekday() == t.Weekday() &&
+	d.YearDay() == t.YearDay() &&
+	yd == yt && wd == wt
 }
 
 func TestNew(t *testing.T) {
@@ -62,7 +63,7 @@ func TestToday(t *testing.T) {
 	}
 	cases := []int{-10, -5, -3, 0, 1, 4, 8, 12}
 	for _, c := range cases {
-		location := time.FixedZone("zone", c*60*60)
+		location := time.FixedZone("zone", c * 60 * 60)
 		today = TodayIn(location)
 		now = time.Now().In(location)
 		if !same(today, now) {
@@ -104,7 +105,7 @@ func TestTime(t *testing.T) {
 			t.Errorf("TimeLocal(%v) == %v, want %v", d, tLocal.Location(), time.Local)
 		}
 		for _, z := range zones {
-			location := time.FixedZone("zone", z*60*60)
+			location := time.FixedZone("zone", z * 60 * 60)
 			tInLoc := d.In(location)
 			if !same(d, tInLoc) {
 				t.Errorf("TimeIn(%v) == %v, want date part %v", d, tInLoc, d)
@@ -136,31 +137,11 @@ func TestPredicates(t *testing.T) {
 		di := New(ci.year, ci.month, ci.day)
 		for j, cj := range cases {
 			dj := New(cj.year, cj.month, cj.day)
-			p := di.Equal(dj)
-			q := i == j
-			if p != q {
-				t.Errorf("Equal(%v, %v) == %v, want %v", di, dj, p, q)
-			}
-			p = di.Before(dj)
-			q = i < j
-			if p != q {
-				t.Errorf("Before(%v, %v) == %v, want %v", di, dj, p, q)
-			}
-			p = di.After(dj)
-			q = i > j
-			if p != q {
-				t.Errorf("After(%v, %v) == %v, want %v", di, dj, p, q)
-			}
-			p = di == dj
-			q = i == j
-			if p != q {
-				t.Errorf("Equal(%v, %v) == %v, want %v", di, dj, p, q)
-			}
-			p = di != dj
-			q = i != j
-			if p != q {
-				t.Errorf("Equal(%v, %v) == %v, want %v", di, dj, p, q)
-			}
+			testPredicate(t, di, dj, di.Equal(dj), i == j, "Equal")
+			testPredicate(t, di, dj, di.Before(dj), i < j, "Before")
+			testPredicate(t, di, dj, di.After(dj), i > j, "After")
+			testPredicate(t, di, dj, di == dj, i == j, "==")
+			testPredicate(t, di, dj, di != dj, i != j, "!=")
 		}
 	}
 
@@ -172,6 +153,12 @@ func TestPredicates(t *testing.T) {
 	today := Today()
 	if today.IsZero() {
 		t.Errorf("IsZero(%v) == true, want false", today)
+	}
+}
+
+func testPredicate(t *testing.T, di, dj Date, p, q bool, m string) {
+	if p != q {
+		t.Errorf("%s(%v, %v) == %v, want %v\n%v", m, di, dj, p, q, debug.Stack())
 	}
 }
 
@@ -192,17 +179,41 @@ func TestArithmetic(t *testing.T) {
 	}
 	offsets := []PeriodOfDays{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
 	for _, c := range cases {
-		d := New(c.year, c.month, c.day)
+		di := New(c.year, c.month, c.day)
 		for _, days := range offsets {
-			d2 := d.Add(days)
-			days2 := d2.Sub(d)
+			dj := di.Add(days)
+			days2 := dj.Sub(di)
 			if days2 != days {
-				t.Errorf("AddSub(%v,%v) == %v, want %v", d, days, days2, days)
+				t.Errorf("AddSub(%v,%v) == %v, want %v", di, days, days2, days)
 			}
-			d3 := d2.Add(-days)
-			if d3 != d {
-				t.Errorf("AddNeg(%v,%v) == %v, want %v", d, days, d3, d)
+			d3 := dj.Add(-days)
+			if d3 != di {
+				t.Errorf("AddNeg(%v,%v) == %v, want %v", di, days, d3, di)
+			}
+			eMin1 := min(di.day, dj.day)
+			aMin1 := di.Min(dj)
+			if aMin1.day != eMin1 {
+				t.Errorf("%v.Max(%v) is %s", di, dj, aMin1)
+			}
+			eMax1 := max(di.day, dj.day)
+			aMax1 := di.Max(dj)
+			if aMax1.day != eMax1 {
+				t.Errorf("%v.Max(%v) is %s", di, dj, aMax1)
 			}
 		}
 	}
+}
+
+func min(a, b int32) int32 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int32) int32 {
+	if a > b {
+		return a
+	}
+	return b
 }

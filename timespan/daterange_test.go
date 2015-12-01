@@ -20,9 +20,11 @@ var d0327 = New(2015, time.March, 27)
 var d0328 = New(2015, time.March, 28)
 var d0329 = New(2015, time.March, 29) // n.b. clocks go forward (UK)
 var d0330 = New(2015, time.March, 30)
+var d0331 = New(2015, time.March, 31)
 var d0401 = New(2015, time.April, 1)
 var d0402 = New(2015, time.April, 2)
 var d0403 = New(2015, time.April, 3)
+var d0407 = New(2015, time.April, 7)
 var d0408 = New(2015, time.April, 8)
 var d0410 = New(2015, time.April, 10)
 var d0501 = New(2015, time.May, 1)
@@ -42,32 +44,35 @@ func TestNewDateRangeOf(t *testing.T) {
 	dr := NewDateRangeOf(t0327, time.Duration(7*24*60*60*1e9))
 	isEq(t, dr.mark, d0327)
 	isEq(t, dr.Days(), PeriodOfDays(7))
+	isEq(t, dr.IsEmpty(), false)
 	isEq(t, dr.Start(), d0327)
-	isEq(t, dr.End(), d0402)
-	isEq(t, dr.Next(), d0403)
+	isEq(t, dr.Last(), d0402)
+	isEq(t, dr.End(), d0403)
 }
 
 func TestNewDateRangeWithNormalise(t *testing.T) {
-	r1 := NewDateRange(d0327, d0401)
+	r1 := NewDateRange(d0327, d0402)
 	isEq(t, r1.Start(), d0327)
-	isEq(t, r1.End(), d0401)
-	isEq(t, r1.Next(), d0402)
+	isEq(t, r1.Last(), d0401)
+	isEq(t, r1.End(), d0402)
 
-	r2 := NewDateRange(d0401, d0327)
+	r2 := NewDateRange(d0402, d0327)
 	isEq(t, r2.Start(), d0327)
-	isEq(t, r2.End(), d0401)
-	isEq(t, r2.Next(), d0402)
+	isEq(t, r2.Last(), d0401)
+	isEq(t, r2.End(), d0402)
 }
 
 func TestOneDayRange(t *testing.T) {
 	drN0 := DateRange{d0327, -1}
 	isEq(t, drN0.Days(), PeriodOfDays(-1))
+	isEq(t, drN0.IsEmpty(), false)
 	isEq(t, drN0.Start(), d0327)
-	isEq(t, drN0.End(), d0327)
+	isEq(t, drN0.Last(), d0327)
 	isEq(t, drN0.String(), "1 day on 2015-03-27")
 
 	dr0 := DateRange{}
 	isEq(t, dr0.Days(), PeriodOfDays(0))
+	isEq(t, dr0.IsEmpty(), true)
 	isEq(t, dr0.String(), "0 days from 1970-01-01")
 
 	dr1 := OneDayRange(Date{})
@@ -75,8 +80,8 @@ func TestOneDayRange(t *testing.T) {
 
 	dr2 := OneDayRange(d0327)
 	isEq(t, dr2.Start(), d0327)
-	isEq(t, dr2.End(), d0327)
-	isEq(t, dr2.Next(), d0328)
+	isEq(t, dr2.Last(), d0327)
+	isEq(t, dr2.End(), d0328)
 	isEq(t, dr2.Days(), PeriodOfDays(1))
 	isEq(t, dr2.String(), "1 day on 2015-03-27")
 }
@@ -85,38 +90,38 @@ func TestNewYearOf(t *testing.T) {
 	dr := NewYearOf(2015)
 	isEq(t, dr.Days(), PeriodOfDays(365))
 	isEq(t, dr.Start(), New(2015, time.January, 1))
-	isEq(t, dr.End(), New(2015, time.December, 31))
-	isEq(t, dr.Next(), New(2016, time.January, 1))
+	isEq(t, dr.Last(), New(2015, time.December, 31))
+	isEq(t, dr.End(), New(2016, time.January, 1))
 }
 
 func TestNewMonthOf(t *testing.T) {
 	dr := NewMonthOf(2015, time.February)
 	isEq(t, dr.Days(), PeriodOfDays(28))
 	isEq(t, dr.Start(), New(2015, time.February, 1))
-	isEq(t, dr.End(), New(2015, time.February, 28))
-	isEq(t, dr.Next(), New(2015, time.March, 1))
+	isEq(t, dr.Last(), New(2015, time.February, 28))
+	isEq(t, dr.End(), New(2015, time.March, 1))
 }
 
 func TestShiftByPos(t *testing.T) {
-	dr := NewDateRange(d0327, d0401).ShiftBy(7)
+	dr := NewDateRange(d0327, d0402).ShiftBy(7)
 	isEq(t, dr.Days(), PeriodOfDays(6))
 	isEq(t, dr.Start(), d0403)
-	isEq(t, dr.End(), d0408)
+	isEq(t, dr.Last(), d0408)
 }
 
 func TestShiftByNeg(t *testing.T) {
 	dr := NewDateRange(d0403, d0408).ShiftBy(-7)
-	isEq(t, dr.Days(), PeriodOfDays(6))
+	isEq(t, dr.Days(), PeriodOfDays(5))
 	isEq(t, dr.Start(), d0327)
-	isEq(t, dr.End(), d0401)
+	isEq(t, dr.Last(), d0331)
 }
 
 func TestExtendByPos(t *testing.T) {
 	dr := OneDayRange(d0327).ExtendBy(6)
 	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.Start(), d0327)
-	isEq(t, dr.End(), d0402)
-	isEq(t, dr.Next(), d0403)
+	isEq(t, dr.Last(), d0402)
+	isEq(t, dr.End(), d0403)
 	isEq(t, dr.String(), "7 days from 2015-03-27 to 2015-04-02")
 }
 
@@ -124,11 +129,11 @@ func TestExtendByNeg(t *testing.T) {
 	dr := OneDayRange(d0327).ExtendBy(-9)
 	isEq(t, dr.Days(), PeriodOfDays(-8))
 	isEq(t, dr.Start(), d0320)
-	isEq(t, dr.End(), d0327)
+	isEq(t, dr.Last(), d0327)
 	isEq(t, dr.String(), "8 days from 2015-03-20 to 2015-03-27")
 }
 
-func xTestContains1(t *testing.T) {
+func TestContains1(t *testing.T) {
 	old := time.Local
 	time.Local = time.FixedZone("Test", 7200)
 	dr := OneDayRange(d0326).ExtendBy(1)
@@ -143,7 +148,7 @@ func xTestContains1(t *testing.T) {
 	time.Local = old
 }
 
-func xTestContains2(t *testing.T) {
+func TestContains2(t *testing.T) {
 	old := time.Local
 	time.Local = time.FixedZone("Test", 7200)
 	dr := OneDayRange(d0326)
@@ -153,7 +158,7 @@ func xTestContains2(t *testing.T) {
 	time.Local = old
 }
 
-func xTestContainsTimeUTC(t *testing.T) {
+func TestContainsTimeUTC(t *testing.T) {
 	old := time.Local
 	time.Local = time.FixedZone("Test", 7200)
 	t0328e := time.Date(2015, 3, 28, 23, 59, 59, 999999999, time.UTC)
@@ -169,56 +174,69 @@ func xTestContainsTimeUTC(t *testing.T) {
 	time.Local = old
 }
 
-func xTestMerge1(t *testing.T) {
+func TestMerge1(t *testing.T) {
 	dr1 := OneDayRange(d0327).ExtendBy(1)
 	dr2 := OneDayRange(d0327).ExtendBy(7)
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0327)
-	isEq(t, m1.End(), d0403)
+	isEq(t, m1.Last(), d0403)
 	isEq(t, m1, m2)
 }
 
-func xTestMerge2(t *testing.T) {
+func TestMerge2(t *testing.T) {
 	dr1 := OneDayRange(d0327).ExtendBy(1).ShiftBy(1)
 	dr2 := OneDayRange(d0327).ExtendBy(7)
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0327)
-	isEq(t, m1.End(), d0403)
+	isEq(t, m1.Last(), d0403)
 	isEq(t, m1, m2)
 }
 
-func xTestMergeOverlapping(t *testing.T) {
+func TestMergeOverlapping(t *testing.T) {
 	dr1 := OneDayRange(d0320).ExtendBy(12)
-	dr2 := OneDayRange(d0401).ExtendBy(7)
+	dr2 := OneDayRange(d0401).ExtendBy(6)
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0320)
+	isEq(t, m1.Last(), d0407)
 	isEq(t, m1.End(), d0408)
 	isEq(t, m1, m2)
 }
 
-func xTestMergeNonOverlapping(t *testing.T) {
+func TestMergeNonOverlapping(t *testing.T) {
 	dr1 := OneDayRange(d0320).ExtendBy(2)
-	dr2 := OneDayRange(d0401).ExtendBy(7)
+	dr2 := OneDayRange(d0401).ExtendBy(6)
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0320)
+	isEq(t, m1.Last(), d0407)
 	isEq(t, m1.End(), d0408)
 	isEq(t, m1, m2)
 }
 
-func xTestDurationNormalUTC(t *testing.T) {
+func TestMergeEmpties(t *testing.T) {
+	dr1 := ZeroRange(d0320)
+	dr2 := ZeroRange(d0408) // curiously, this is *not* included because it has no size.
+	m1 := dr1.Merge(dr2)
+	m2 := dr2.Merge(dr1)
+	isEq(t, m1.Start(), d0320)
+	isEq(t, m1.Last(), d0407)
+	isEq(t, m1.End(), d0408)
+	isEq(t, m1, m2)
+}
+
+func TestDurationNormalUTC(t *testing.T) {
 	dr := OneDayRange(d0329)
 	isEq(t, dr.Duration(), time.Hour*24)
 }
 
-func xTestDurationInZoneWithDaylightSaving(t *testing.T) {
+func TestDurationInZoneWithDaylightSaving(t *testing.T) {
 	isEq(t, OneDayRange(d0328).DurationIn(london), time.Hour*24)
 	isEq(t, OneDayRange(d0329).DurationIn(london), time.Hour*23)
 	isEq(t, OneDayRange(d1025).DurationIn(london), time.Hour*25)
-	isEq(t, NewDateRange(d0328, d0330).DurationIn(london), time.Hour*71)
+	isEq(t, NewDateRange(d0328, d0331).DurationIn(london), time.Hour*71)
 }
 
 func isEq(t *testing.T, a, b interface{}, msg ...interface{}) {

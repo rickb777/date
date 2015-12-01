@@ -209,6 +209,22 @@ func (d Date) After(u Date) bool {
 	return d.day > u.day
 }
 
+// Max returns the earlier of two dates.
+func (d Date) Min(u Date) Date {
+	if d.day > u.day {
+		return u
+	}
+	return d
+}
+
+// Max returns the later of two dates.
+func (d Date) Max(u Date) Date {
+	if d.day < u.day {
+		return u
+	}
+	return d
+}
+
 // Add returns the date d plus the given number of days. The parameter may be negative.
 func (d Date) Add(days PeriodOfDays) Date {
 	return Date{d.day + int32(days)}

@@ -27,7 +27,8 @@ func ZeroTimeSpan(start time.Time) TimeSpan {
 }
 
 // NewTimeSpan creates a new time span from two times. The start and end can be in either
-// order; the result will be normalised.
+// order; the result will be normalised. The inputs are half-open: the start is included and
+// the end is excluded.
 func NewTimeSpan(t1, t2 time.Time) TimeSpan {
 	if t2.Before(t1) {
 		return TimeSpan{t2, t1.Sub(t2)}
@@ -44,7 +45,7 @@ func (ts TimeSpan) Start() time.Time {
 }
 
 // End gets the end time of the time span. Strictly, this is one nanosecond after the
-// range of time included in the time span.
+// range of time included in the time span; this implements the half-open model.
 func (ts TimeSpan) End() time.Time {
 	if ts.duration < 0 {
 		return ts.mark
@@ -55,6 +56,11 @@ func (ts TimeSpan) End() time.Time {
 // Duration gets the duration of the time span.
 func (ts TimeSpan) Duration() time.Duration {
 	return ts.duration
+}
+
+// IsEmpty returns true if this is an empty time span (zero duration).
+func (ts TimeSpan) IsEmpty() bool {
+	return ts.duration == 0
 }
 
 // Normalise ensures that the mark time is at the start time and the duration is positive.
@@ -90,6 +96,7 @@ func (ts TimeSpan) ExtendWithoutWrapping(d time.Duration) TimeSpan {
 	return TimeSpan{tsn.mark, tsn.duration + d}
 }
 
+// String produces a human-readable description of a time span.
 func (ts TimeSpan) String() string {
 	return fmt.Sprintf("%s from %s to %s", ts.duration, ts.mark.Format(TimestampFormat), ts.End().Format(TimestampFormat))
 }
