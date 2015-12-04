@@ -12,39 +12,62 @@ import (
 
 const zero time.Duration = 0
 
-// Clock specifies a time of day. It extends the existing time.Duration, applying
+// Clock specifies a time of day. It complements the existing time.Duration, applying
 // that to the time since midnight (on some arbitrary day in some arbitrary timezone).
+// The resolution is to the nearest millisecond, unlike time.Duration (which has nanosecond
+// resolution).
 //
 // It is not intended that Clock be used to represent periods greater than 24 hours nor
 // negative values. However, for such lengths of time, a fixed 24 hours per day
 // is assumed and a modulo operation Mod24 is provided to discard whole multiples of 24 hours.
 //
 // See https://en.wikipedia.org/wiki/ISO_8601#Times
-type Clock time.Duration
+type Clock int32
 
 const (
 // ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
-	ClockDay    Clock = Clock(time.Hour * 24)
-	ClockHour   Clock = Clock(time.Hour)
-	ClockMinute Clock = Clock(time.Minute)
-	ClockSecond Clock = Clock(time.Second)
+	ClockDay    Clock = Clock(time.Hour * 24 / time.Millisecond)
+	ClockHour   Clock = Clock(time.Hour / time.Millisecond)
+	ClockMinute Clock = Clock(time.Minute / time.Millisecond)
+	ClockSecond Clock = Clock(time.Second / time.Millisecond)
 )
 
-// HhMmSs returns a new Clock with specified hour, minute, second.
-func New(hour, minute, second int) Clock {
-	hns := Clock(hour) * ClockHour
-	mns := Clock(minute) * ClockMinute
-	sns := Clock(second) * ClockSecond
-	return Clock(hns + mns + sns)
+// New returns a new Clock with specified hour, minute, second and millisecond.
+func New(hour, minute, second, millisec int) Clock {
+	hx := Clock(hour) * ClockHour
+	mx := Clock(minute) * ClockMinute
+	sx := Clock(second) * ClockSecond
+	return Clock(hx + mx + sx + Clock(millisec))
 }
 
-// Add returns a new Clock offset from this clock specified hour, minute, second. The parameters can be negative.
+// NewAt returns a new Clock with specified hour, minute, second and millisecond.
+func NewAt(t time.Time) Clock {
+	hour, minute, second := t.Clock()
+	hx := Clock(hour) * ClockHour
+	mx := Clock(minute) * ClockMinute
+	sx := Clock(second) * ClockSecond
+	ms := Clock(t.Nanosecond() / int(time.Millisecond))
+	return Clock(hx + mx + sx + ms)
+}
+
+// SinceMidnight returns a new Clock based on a duration since some arbitrary midnight.
+func SinceMidnight(d time.Duration) Clock {
+	return Clock(d / time.Millisecond)
+}
+
+// DurationSinceMidnight convert a clock to a time.Duration since some arbitrary midnight.
+func (c Clock) DurationSinceMidnight() time.Duration {
+	return time.Duration(c) * time.Millisecond
+}
+
+// Add returns a new Clock offset from this clock specified hour, minute, second and millisecond.
+// The parameters can be negative.
 // If required, use Mod() to correct any overflow or underflow.
-func (c Clock) Add(h, m, s int) Clock {
-	hns := Clock(h) * ClockHour
-	mns := Clock(m) * ClockMinute
-	sns := Clock(s) * ClockSecond
-	return c + hns + mns + sns
+func (c Clock) Add(h, m, s, ms int) Clock {
+	hx := Clock(h) * ClockHour
+	mx := Clock(m) * ClockMinute
+	sx := Clock(s) * ClockSecond
+	return c + hx + mx + sx + Clock(ms)
 }
 
 // Parse converts a string representation to a Clock. Acceptable representations
@@ -81,11 +104,11 @@ func Parse(hms string) (clock Clock, err error) {
 	return 0, fmt.Errorf("date.ParseClock: cannot parse %s", hms)
 }
 
-func parseClockParts(hms, hh, mm, ss, nnnns string) (clock Clock, err error) {
+func parseClockParts(hms, hh, mm, ss, mmms string) (clock Clock, err error) {
 	h := 0
 	m := 0
 	s := 0
-	ns := 0
+	ms := 0
 	if hh != "" {
 		h, err = strconv.Atoi(hh)
 		if err != nil {
@@ -104,13 +127,13 @@ func parseClockParts(hms, hh, mm, ss, nnnns string) (clock Clock, err error) {
 			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
 		}
 	}
-	if nnnns != "" {
-		ns, err = strconv.Atoi(nnnns)
+	if mmms != "" {
+		ms, err = strconv.Atoi(mmms)
 		if err != nil {
 			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
 		}
 	}
-	return New(h, m, s) + Clock(ns), nil
+	return New(h, m, s, ms), nil
 }
 
 // IsInOneDay tests whether a clock time is in the range 0 to 24 hours, inclusive. Inside this
@@ -173,10 +196,10 @@ func (c Clock) Seconds() int {
 	return int(clockSeconds(c.Mod24()))
 }
 
-// Nanosec gets the clock-face number of nanoseconds (calculated from the modulo time, see Mod24).
-// For example, for 10:20:30.456111222 this will return 456111222.
-func (c Clock) Nanosec() int64 {
-	return int64(clockNanosec(c.Mod24()))
+// Millisec gets the clock-face number of milliseconds (calculated from the modulo time, see Mod24).
+// For example, for 10:20:30.456 this will return 456.
+func (c Clock) Millisec() int {
+	return int(clockMillisec(c.Mod24()))
 }
 
 func clockHours(cm Clock) Clock {
@@ -184,15 +207,15 @@ func clockHours(cm Clock) Clock {
 }
 
 func clockMinutes(cm Clock) Clock {
-	return (cm - clockHours(cm) * ClockHour) / ClockMinute
+	return (cm % ClockHour) / ClockMinute
 }
 
 func clockSeconds(cm Clock) Clock {
-	return (cm - clockHours(cm) * ClockHour - clockMinutes(cm) * ClockMinute) / ClockSecond
+	return (cm % ClockMinute) / ClockSecond
 }
 
-func clockNanosec(cm Clock) Clock {
-	return cm - clockHours(cm) * ClockHour - clockMinutes(cm) * ClockMinute - clockSeconds(cm) * ClockSecond
+func clockMillisec(cm Clock) Clock {
+	return cm % ClockSecond
 }
 
 // Hh gets the clock-face number of hours as a two-digit string (calculated from the modulo time, see Mod24).
@@ -215,9 +238,9 @@ func (c Clock) HhMmSs() string {
 	return fmt.Sprintf("%02d:%02d:%02d", clockHours(cm), clockMinutes(cm), clockSeconds(cm))
 }
 
-// String gets the clock-face number of hours, minutes, seconds and nanoseconds as an 18-character ISO-8601
-// time string (calculated from the modulo time, see Mod24).
+// String gets the clock-face number of hours, minutes, seconds and milliseconds as a 12-character ISO-8601
+// time string (calculated from the modulo time, see Mod24), specified to the nearest millisecond.
 func (c Clock) String() string {
 	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d:%02d.%09d", clockHours(cm), clockMinutes(cm), clockSeconds(cm), clockNanosec(cm))
+	return fmt.Sprintf("%02d:%02d:%02d.%03d", clockHours(cm), clockMinutes(cm), clockSeconds(cm), clockMillisec(cm))
 }
