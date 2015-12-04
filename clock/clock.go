@@ -47,9 +47,9 @@ func (c Clock) Add(h, m, s int) Clock {
 	return c + hns + mns + sns
 }
 
-// ParseClock converts a string representation to a Clock. Acceptable representations
+// Parse converts a string representation to a Clock. Acceptable representations
 // are as per ISO-8601 - see https://en.wikipedia.org/wiki/ISO_8601#Times
-func ParseClock(hms string) (clock Clock, err error) {
+func Parse(hms string) (clock Clock, err error) {
 	switch len(hms) {
 	case 2: // HH
 		return parseClockParts(hms, hms, "", "", "")

@@ -155,7 +155,7 @@ func TestClockParse(t *testing.T) {
 		{"23:59:59.999999999", New(23, 59, 59) + 999999999},
 	}
 	for _, c := range cases {
-		str, err := ParseClock(c.str)
+		str, err := Parse(c.str)
 		if err != nil {
 			t.Errorf("%s, error %v", c.str, err)
 		}
