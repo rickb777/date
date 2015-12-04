@@ -5,9 +5,9 @@
 package timespan
 
 import (
+	"github.com/rickb777/date"
 	"testing"
 	"time"
-	"github.com/rickb777/date"
 )
 
 const zero time.Duration = 0
@@ -33,13 +33,13 @@ func TestNewTimeSpan(t *testing.T) {
 
 	ts2 := NewTimeSpan(t0327, t0328)
 	isEq(t, ts2.mark, t0327)
-	isEq(t, ts2.Duration(), time.Hour * 24)
+	isEq(t, ts2.Duration(), time.Hour*24)
 	isEq(t, ts2.IsEmpty(), false)
 	isEq(t, ts2.End(), t0328)
 
 	ts3 := NewTimeSpan(t0329, t0327)
 	isEq(t, ts3.mark, t0327)
-	isEq(t, ts3.Duration(), time.Hour * 48)
+	isEq(t, ts3.Duration(), time.Hour*48)
 	isEq(t, ts3.IsEmpty(), false)
 	isEq(t, ts3.End(), t0329)
 }
@@ -58,31 +58,31 @@ func TestTSEnd(t *testing.T) {
 func TestTSShiftBy(t *testing.T) {
 	ts1 := NewTimeSpan(t0327, t0328).ShiftBy(time.Hour * 24)
 	isEq(t, ts1.mark, t0328)
-	isEq(t, ts1.Duration(), time.Hour * 24)
+	isEq(t, ts1.Duration(), time.Hour*24)
 	isEq(t, ts1.End(), t0329)
 
 	ts2 := NewTimeSpan(t0328, t0329).ShiftBy(-time.Hour * 24)
 	isEq(t, ts2.mark, t0327)
-	isEq(t, ts2.Duration(), time.Hour * 24)
+	isEq(t, ts2.Duration(), time.Hour*24)
 	isEq(t, ts2.End(), t0328)
 }
 
 func TestTSExtendBy(t *testing.T) {
 	ts1 := NewTimeSpan(t0327, t0328).ExtendBy(time.Hour * 24)
 	isEq(t, ts1.mark, t0327)
-	isEq(t, ts1.Duration(), time.Hour * 48)
+	isEq(t, ts1.Duration(), time.Hour*48)
 	isEq(t, ts1.End(), t0329)
 
 	ts2 := NewTimeSpan(t0328, t0329).ExtendBy(-time.Hour * 48)
 	isEq(t, ts2.mark, t0327)
-	isEq(t, ts2.Duration(), time.Hour * 24)
+	isEq(t, ts2.Duration(), time.Hour*24)
 	isEq(t, ts2.End(), t0328)
 }
 
 func TestTSExtendWithoutWrapping(t *testing.T) {
 	ts1 := NewTimeSpan(t0327, t0328).ExtendWithoutWrapping(time.Hour * 24)
 	isEq(t, ts1.mark, t0327)
-	isEq(t, ts1.Duration(), time.Hour * 48)
+	isEq(t, ts1.Duration(), time.Hour*48)
 	isEq(t, ts1.End(), t0329)
 
 	ts2 := NewTimeSpan(t0328, t0329).ExtendWithoutWrapping(-time.Hour * 48)
@@ -182,7 +182,7 @@ func TestConversion2(t *testing.T) {
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.End(), d0328)
 	isEq(t, ts1, ts2)
-	isEq(t, ts1.Duration(), time.Hour * 24)
+	isEq(t, ts1.Duration(), time.Hour*24)
 }
 
 func TestConversion3(t *testing.T) {
@@ -194,5 +194,5 @@ func TestConversion3(t *testing.T) {
 	isEq(t, dr1.End(), d0330)
 	isEq(t, dr1, dr2)
 	isEq(t, ts1, ts2)
-	isEq(t, ts1.Duration(), time.Hour * 71)
+	isEq(t, ts1.Duration(), time.Hour*71)
 }

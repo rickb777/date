@@ -5,8 +5,8 @@
 package date
 
 import (
-	"time"
 	"testing"
+	"time"
 )
 
 func TestClockHoursMinutesSeconds(t *testing.T) {
@@ -111,7 +111,7 @@ func TestClockString(t *testing.T) {
 		{-1, -1, -1, -1, "22", "22:58", "22:58:58", "22:58:58.999999999"},
 	}
 	for _, c := range cases {
-		d := Clock(c.h * time.Hour + c.m * time.Minute + c.s * time.Second + c.ns)
+		d := Clock(c.h*time.Hour + c.m*time.Minute + c.s*time.Second + c.ns)
 		if d.Hh() != c.hh {
 			t.Errorf("%d, %d, %d, %d, got %v, want %v", c.h, c.m, c.s, c.ns, d.Hh(), c.hh)
 		}

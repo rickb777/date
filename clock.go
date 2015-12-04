@@ -5,25 +5,25 @@
 package date
 
 import (
-	"time"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 const zero time.Duration = 0
 
 // Clock specifies a time of day. It extends the existing time.Duration, applying
-// that to the time since midnight on some arbitrary day.
+// that to the time since midnight (on some arbitrary day in some arbitrary timezone).
 //
 // It is not intended that Clock be used to represent periods greater than 24 hours nor
 // negative values. However, for such lengths of time, a fixed 24 hours per day
-// is assumed and a modulo operation Mod() is provided to discard whole multiples of 24 hours.
+// is assumed and a modulo operation Mod24 is provided to discard whole multiples of 24 hours.
 //
 // See https://en.wikipedia.org/wiki/ISO_8601#Times
 type Clock time.Duration
 
 const (
-// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
+	// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
 	ClockDay    Clock = Clock(time.Hour * 24)
 	ClockHour   Clock = Clock(time.Hour)
 	ClockMinute Clock = Clock(time.Minute)
@@ -126,7 +126,7 @@ func (c Clock) IsInOneDay() bool {
 // clock range 0s to 23h59m59s, for which IsInOneDay() returns true.
 func (c Clock) Days() int {
 	if c < 0 {
-		return int(c / ClockDay) - 1
+		return int(c/ClockDay) - 1
 	} else {
 		return int(c / ClockDay)
 	}
@@ -140,7 +140,7 @@ func (c Clock) Mod24() Clock {
 		return c
 	}
 	if c < 0 {
-		q := 1 - c / ClockDay
+		q := 1 - c/ClockDay
 		return c + (q * ClockDay)
 	}
 	q := c / ClockDay
@@ -175,15 +175,15 @@ func clockHours(cm Clock) Clock {
 }
 
 func clockMinutes(cm Clock) Clock {
-	return (cm - clockHours(cm) * ClockHour) / ClockMinute
+	return (cm - clockHours(cm)*ClockHour) / ClockMinute
 }
 
 func clockSeconds(cm Clock) Clock {
-	return (cm - clockHours(cm) * ClockHour - clockMinutes(cm) * ClockMinute) / ClockSecond
+	return (cm - clockHours(cm)*ClockHour - clockMinutes(cm)*ClockMinute) / ClockSecond
 }
 
 func clockNanosec(cm Clock) Clock {
-	return cm - clockHours(cm) * ClockHour - clockMinutes(cm) * ClockMinute - clockSeconds(cm) * ClockSecond
+	return cm - clockHours(cm)*ClockHour - clockMinutes(cm)*ClockMinute - clockSeconds(cm)*ClockSecond
 }
 
 // Hh gets the clock-face number of hours as a two-digit string (calculated from the modulo time, see Mod24).
@@ -192,22 +192,22 @@ func (c Clock) Hh() string {
 	return fmt.Sprintf("%02d", clockHours(cm))
 }
 
-// HhMm gets the clock-face number of hours and minutes as a five-digit string (calculated from the
-// modulo time, see Mod24).
+// HhMm gets the clock-face number of hours and minutes as a five-character ISO-8601 time string (calculated
+// from the modulo time, see Mod24).
 func (c Clock) HhMm() string {
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d:%02d", clockHours(cm), clockMinutes(cm))
 }
 
-// HhMmSs gets the clock-face number of hours, minutes, seconds as an eight-digit string
+// HhMmSs gets the clock-face number of hours, minutes, seconds as an eight-character ISO-8601 time string
 // (calculated from the modulo time, see Mod24).
 func (c Clock) HhMmSs() string {
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d:%02d:%02d", clockHours(cm), clockMinutes(cm), clockSeconds(cm))
 }
 
-// String gets the clock-face number of hours, minutes, seconds and nanoseconds as an 18-digit string
-// (calculated from the modulo time, see Mod24).
+// String gets the clock-face number of hours, minutes, seconds and nanoseconds as an 18-character ISO-8601
+// time string (calculated from the modulo time, see Mod24).
 func (c Clock) String() string {
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d:%02d:%02d.%09d", clockHours(cm), clockMinutes(cm), clockSeconds(cm), clockNanosec(cm))
