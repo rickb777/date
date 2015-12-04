@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package date
+package clock
 
 import (
 	"fmt"
@@ -31,10 +31,10 @@ const (
 )
 
 // HhMmSs returns a new Clock with specified hour, minute, second.
-func HhMmSs(h, m, s int) Clock {
-	hns := Clock(h) * ClockHour
-	mns := Clock(m) * ClockMinute
-	sns := Clock(s) * ClockSecond
+func New(hour, minute, second int) Clock {
+	hns := Clock(hour) * ClockHour
+	mns := Clock(minute) * ClockMinute
+	sns := Clock(second) * ClockSecond
 	return Clock(hns + mns + sns)
 }
 
@@ -110,7 +110,7 @@ func parseClockParts(hms, hh, mm, ss, nnnns string) (clock Clock, err error) {
 			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
 		}
 	}
-	return HhMmSs(h, m, s) + Clock(ns), nil
+	return New(h, m, s) + Clock(ns), nil
 }
 
 // IsInOneDay tests whether a clock time is in the range 0 to 24 hours, inclusive. Inside this

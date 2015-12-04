@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package date
+package clock
 
 import (
 	"testing"
@@ -14,10 +14,10 @@ func TestClockHoursMinutesSeconds(t *testing.T) {
 		in      Clock
 		h, m, s int
 	}{
-		{HhMmSs(0, 0, 0), 0, 0, 0},
-		{HhMmSs(1, 2, 3), 1, 2, 3},
-		{HhMmSs(23, 59, 59), 23, 59, 59},
-		{HhMmSs(0, 0, -1), 23, 59, 59},
+		{New(0, 0, 0), 0, 0, 0},
+		{New(1, 2, 3), 1, 2, 3},
+		{New(23, 59, 59), 23, 59, 59},
+		{New(0, 0, -1), 23, 59, 59},
 	}
 	for _, c := range cases {
 		h := c.in.Hours()
@@ -34,15 +34,15 @@ func TestClockAdd(t *testing.T) {
 		h, m, s  int
 		in, want Clock
 	}{
-		{0, 0, 0, 2 * ClockHour, HhMmSs(2, 0, 0)},
-		{0, 0, 1, 2 * ClockHour, HhMmSs(2, 0, 1)},
-		{0, 0, -1, 2 * ClockHour, HhMmSs(1, 59, 59)},
-		{0, 1, 0, 2 * ClockHour, HhMmSs(2, 1, 0)},
-		{0, -1, 0, 2 * ClockHour, HhMmSs(1, 59, 0)},
-		{1, 0, 0, 2 * ClockHour, HhMmSs(3, 0, 0)},
-		{-1, 0, 0, 2 * ClockHour, HhMmSs(1, 0, 0)},
-		{-2, 0, 0, 2 * ClockHour, HhMmSs(0, 0, 0)},
-		{-2, 0, -1, 2 * ClockHour, HhMmSs(0, 0, -1)},
+		{0, 0, 0, 2 * ClockHour, New(2, 0, 0)},
+		{0, 0, 1, 2 * ClockHour, New(2, 0, 1)},
+		{0, 0, -1, 2 * ClockHour, New(1, 59, 59)},
+		{0, 1, 0, 2 * ClockHour, New(2, 1, 0)},
+		{0, -1, 0, 2 * ClockHour, New(1, 59, 0)},
+		{1, 0, 0, 2 * ClockHour, New(3, 0, 0)},
+		{-1, 0, 0, 2 * ClockHour, New(1, 0, 0)},
+		{-2, 0, 0, 2 * ClockHour, New(0, 0, 0)},
+		{-2, 0, -1, 2 * ClockHour, New(0, 0, -1)},
 	}
 	for _, c := range cases {
 		got := c.in.Add(c.h, c.m, c.s)
@@ -132,27 +132,27 @@ func TestClockParse(t *testing.T) {
 		str  string
 		want Clock
 	}{
-		{"00", HhMmSs(0, 0, 0)},
-		{"01", HhMmSs(1, 0, 0)},
-		{"23", HhMmSs(23, 0, 0)},
-		{"00:00", HhMmSs(0, 0, 0)},
-		{"00:01", HhMmSs(0, 1, 0)},
-		{"01:00", HhMmSs(1, 0, 0)},
-		{"01:02", HhMmSs(1, 2, 0)},
-		{"23:59", HhMmSs(23, 59, 0)},
-		{"00:00:00", HhMmSs(0, 0, 0)},
-		{"00:00:01", HhMmSs(0, 0, 1)},
-		{"00:01:00", HhMmSs(0, 1, 0)},
-		{"01:00:00", HhMmSs(1, 0, 0)},
-		{"01:02:03", HhMmSs(1, 2, 3)},
-		{"23:59:59", HhMmSs(23, 59, 59)},
-		{"00:00:00.000000000", HhMmSs(0, 0, 0)},
-		{"00:00:00.000000001", HhMmSs(0, 0, 0) + 1},
-		{"00:00:01.000000000", HhMmSs(0, 0, 1)},
-		{"00:01:00.000000000", HhMmSs(0, 1, 0)},
-		{"01:00:00.000000000", HhMmSs(1, 0, 0)},
-		{"01:02:03.000000004", HhMmSs(1, 2, 3) + 4},
-		{"23:59:59.999999999", HhMmSs(23, 59, 59) + 999999999},
+		{"00", New(0, 0, 0)},
+		{"01", New(1, 0, 0)},
+		{"23", New(23, 0, 0)},
+		{"00:00", New(0, 0, 0)},
+		{"00:01", New(0, 1, 0)},
+		{"01:00", New(1, 0, 0)},
+		{"01:02", New(1, 2, 0)},
+		{"23:59", New(23, 59, 0)},
+		{"00:00:00", New(0, 0, 0)},
+		{"00:00:01", New(0, 0, 1)},
+		{"00:01:00", New(0, 1, 0)},
+		{"01:00:00", New(1, 0, 0)},
+		{"01:02:03", New(1, 2, 3)},
+		{"23:59:59", New(23, 59, 59)},
+		{"00:00:00.000000000", New(0, 0, 0)},
+		{"00:00:00.000000001", New(0, 0, 0) + 1},
+		{"00:00:01.000000000", New(0, 0, 1)},
+		{"00:01:00.000000000", New(0, 1, 0)},
+		{"01:00:00.000000000", New(1, 0, 0)},
+		{"01:02:03.000000004", New(1, 2, 3) + 4},
+		{"23:59:59.999999999", New(23, 59, 59) + 999999999},
 	}
 	for _, c := range cases {
 		str, err := ParseClock(c.str)
