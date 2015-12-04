@@ -29,6 +29,28 @@ func TestClockHoursMinutesSeconds(t *testing.T) {
 	}
 }
 
+func TestClockIsInOneDay(t *testing.T) {
+	cases := []struct {
+		in   Clock
+		want bool
+	}{
+		{New(0, 0, 0), true},
+		{New(24, 0, 0), true},
+		{New(-24, 0, 0), false},
+		{New(48, 0, 0), false},
+		{New(0, 0, 1), true},
+		{New(2, 0, 1), true},
+		{New(-1, 0, 0), false},
+		{New(0, 0, -1), false},
+	}
+	for _, c := range cases {
+		got := c.in.IsInOneDay()
+		if got != c.want {
+			t.Errorf("%v got %v, want %v", c.in, c.in.IsInOneDay(), c.want)
+		}
+	}
+}
+
 func TestClockAdd(t *testing.T) {
 	cases := []struct {
 		h, m, s  int
@@ -52,24 +74,54 @@ func TestClockAdd(t *testing.T) {
 	}
 }
 
+func TestClockIsMidnight(t *testing.T) {
+	cases := []struct {
+		in   Clock
+		want bool
+	}{
+		{New(0, 0, 0), true},
+		{ClockDay, true},
+		{24 * ClockHour, true},
+		{New(24, 0, 0), true},
+		{New(-24, 0, 0), true},
+		{New(-48, 0, 0), true},
+		{New(48, 0, 0), true},
+		{New(0, 0, 1), false},
+		{New(2, 0, 1), false},
+		{New(-1, 0, 0), false},
+		{New(0, 0, -1), false},
+	}
+	for i, c := range cases {
+		got := c.in.IsMidnight()
+		if got != c.want {
+			t.Errorf("%d: %v got %v, want %v, %d", i, c.in, c.in.IsMidnight(), c.want, c.in.Mod24())
+		}
+	}
+}
+
 func TestClockMod(t *testing.T) {
 	cases := []struct {
-		h, mod Clock
+		h, want Clock
 	}{
 		{0, 0},
-		{1, 1 * ClockHour},
-		{2, 2 * ClockHour},
-		{23, 23 * ClockHour},
-		{24, 0},
-		{25, ClockHour},
-		{49, ClockHour},
-		{-1, 23 * ClockHour},
-		{-23, ClockHour},
+		{1 * ClockHour, 1 * ClockHour},
+		{2 * ClockHour, 2 * ClockHour},
+		{23 * ClockHour, 23 * ClockHour},
+		{24 * ClockHour, 0},
+		{-24 * ClockHour, 0},
+		{-48 * ClockHour, 0},
+		{25 * ClockHour, ClockHour},
+		{49 * ClockHour, ClockHour},
+		{-1 * ClockHour, 23 * ClockHour},
+		{-23 * ClockHour, ClockHour},
+		{New(0, 0, 1), ClockSecond},
+		{New(0, 0, -1), New(23, 59, 59)},
 	}
-	for _, c := range cases {
-		clock := c.h * ClockHour
-		if clock.Mod24() != c.mod {
-			t.Errorf("%dh: got %v, want %v", c.h, clock.Mod24(), c.mod)
+	for i, c := range cases {
+		clock := c.h
+		got := clock.Mod24()
+		if got != c.want {
+			t.Errorf("%d: %dh: got %#v, want %#v", i, c.h, got, c.want)
 		}
 	}
 }
@@ -89,10 +141,10 @@ func TestClockDays(t *testing.T) {
 		{-23, -1},
 		{-24, -2},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		clock := Clock(c.h) * ClockHour
 		if clock.Days() != c.days {
-			t.Errorf("%dh: got %v, want %v", c.h, clock.Days(), c.days)
+			t.Errorf("%d: %dh: got %v, want %v", i, c.h, clock.Days(), c.days)
 		}
 	}
 }
@@ -111,7 +163,7 @@ func TestClockString(t *testing.T) {
 		{-1, -1, -1, -1, "22", "22:58", "22:58:58", "22:58:58.999999999"},
 	}
 	for _, c := range cases {
-		d := Clock(c.h*time.Hour + c.m*time.Minute + c.s*time.Second + c.ns)
+		d := Clock(c.h * time.Hour + c.m * time.Minute + c.s * time.Second + c.ns)
 		if d.Hh() != c.hh {
 			t.Errorf("%d, %d, %d, %d, got %v, want %v", c.h, c.m, c.s, c.ns, d.Hh(), c.hh)
 		}

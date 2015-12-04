@@ -23,7 +23,7 @@ const zero time.Duration = 0
 type Clock time.Duration
 
 const (
-	// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
+// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
 	ClockDay    Clock = Clock(time.Hour * 24)
 	ClockHour   Clock = Clock(time.Hour)
 	ClockMinute Clock = Clock(time.Minute)
@@ -120,16 +120,9 @@ func (c Clock) IsInOneDay() bool {
 	return 0 <= c && c <= ClockDay
 }
 
-// Days gets the number of whole days represented by the Clock, assuming that each day is a fixed
-// 24 hour period. Negative values are treated so that the range -23h59m59s to -1s is fully
-// enclosed in a day numbered -1, and so on. This means that the result is zero only for the
-// clock range 0s to 23h59m59s, for which IsInOneDay() returns true.
-func (c Clock) Days() int {
-	if c < 0 {
-		return int(c/ClockDay) - 1
-	} else {
-		return int(c / ClockDay)
-	}
+// IsMidnight tests whether a clock time is midnight. This is shorthand for c.Mod24() == 0.
+func (c Clock) IsMidnight() bool {
+	return c.Mod24() == 0
 }
 
 // Mod24 calculates the remainder vs 24 hours using Euclidean division, in which the result
@@ -140,11 +133,27 @@ func (c Clock) Mod24() Clock {
 		return c
 	}
 	if c < 0 {
-		q := 1 - c/ClockDay
-		return c + (q * ClockDay)
+		q := 1 - c / ClockDay
+		m := c + (q * ClockDay)
+		if m == ClockDay {
+			m = 0
+		}
+		return m
 	}
 	q := c / ClockDay
 	return c - (q * ClockDay)
+}
+
+// Days gets the number of whole days represented by the Clock, assuming that each day is a fixed
+// 24 hour period. Negative values are treated so that the range -23h59m59s to -1s is fully
+// enclosed in a day numbered -1, and so on. This means that the result is zero only for the
+// clock range 0s to 23h59m59s, for which IsInOneDay() returns true.
+func (c Clock) Days() int {
+	if c < 0 {
+		return int(c / ClockDay) - 1
+	} else {
+		return int(c / ClockDay)
+	}
 }
 
 // Hours gets the clock-face number of hours (calculated from the modulo time, see Mod24).
@@ -175,15 +184,15 @@ func clockHours(cm Clock) Clock {
 }
 
 func clockMinutes(cm Clock) Clock {
-	return (cm - clockHours(cm)*ClockHour) / ClockMinute
+	return (cm - clockHours(cm) * ClockHour) / ClockMinute
 }
 
 func clockSeconds(cm Clock) Clock {
-	return (cm - clockHours(cm)*ClockHour - clockMinutes(cm)*ClockMinute) / ClockSecond
+	return (cm - clockHours(cm) * ClockHour - clockMinutes(cm) * ClockMinute) / ClockSecond
 }
 
 func clockNanosec(cm Clock) Clock {
-	return cm - clockHours(cm)*ClockHour - clockMinutes(cm)*ClockMinute - clockSeconds(cm)*ClockSecond
+	return cm - clockHours(cm) * ClockHour - clockMinutes(cm) * ClockMinute - clockSeconds(cm) * ClockSecond
 }
 
 // Hh gets the clock-face number of hours as a two-digit string (calculated from the modulo time, see Mod24).
