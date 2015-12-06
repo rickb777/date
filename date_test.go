@@ -14,11 +14,11 @@ func same(d Date, t time.Time) bool {
 	yd, wd := d.ISOWeek()
 	yt, wt := t.ISOWeek()
 	return d.Year() == t.Year() &&
-		d.Month() == t.Month() &&
-		d.Day() == t.Day() &&
-		d.Weekday() == t.Weekday() &&
-		d.YearDay() == t.YearDay() &&
-		yd == yt && wd == wt
+	d.Month() == t.Month() &&
+	d.Day() == t.Day() &&
+	d.Weekday() == t.Weekday() &&
+	d.YearDay() == t.YearDay() &&
+	yd == yt && wd == wt
 }
 
 func TestNew(t *testing.T) {
@@ -63,7 +63,7 @@ func TestToday(t *testing.T) {
 	}
 	cases := []int{-10, -5, -3, 0, 1, 4, 8, 12}
 	for _, c := range cases {
-		location := time.FixedZone("zone", c*60*60)
+		location := time.FixedZone("zone", c * 60 * 60)
 		today = TodayIn(location)
 		now = time.Now().In(location)
 		if !same(today, now) {
@@ -105,7 +105,7 @@ func TestTime(t *testing.T) {
 			t.Errorf("TimeLocal(%v) == %v, want %v", d, tLocal.Location(), time.Local)
 		}
 		for _, z := range zones {
-			location := time.FixedZone("zone", z*60*60)
+			location := time.FixedZone("zone", z * 60 * 60)
 			tInLoc := d.In(location)
 			if !same(d, tInLoc) {
 				t.Errorf("TimeIn(%v) == %v, want date part %v", d, tInLoc, d)
@@ -216,4 +216,50 @@ func max(a, b int32) int32 {
 		return a
 	}
 	return b
+}
+
+func TestIsLeap(t *testing.T) {
+	cases := []struct {
+		year     int
+		expected bool
+	}{
+		{2000, true},
+		{2400, true},
+		{2001, false},
+		{2002, false},
+		{2003, false},
+		{2003, false},
+		{2004, true},
+		{2005, false},
+		{1800, false},
+		{1900, false},
+		{2200, false},
+		{2300, false},
+		{2500, false},
+	}
+	for _, c := range cases {
+		got := IsLeap(c.year)
+		if got != c.expected {
+			t.Errorf("TestIsLeap(%d) == %v, want %v", c.year, got, c.expected)
+		}
+	}
+}
+
+func TestDaysIn(t *testing.T) {
+	cases := []struct {
+		year     int
+		month    time.Month
+		expected int
+	}{
+		{2000, time.January, 31},
+		{2000, time.February, 29},
+		{2001, time.February, 28},
+		{2001, time.April, 30},
+	}
+	for _, c := range cases {
+		got := DaysIn(c.year, c.month)
+		if got != c.expected {
+			t.Errorf("TestIsLeap(%d) == %v, want %v", c.year, got, c.expected)
+		}
+	}
 }
