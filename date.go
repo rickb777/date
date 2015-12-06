@@ -147,6 +147,13 @@ func (d Date) Date() (year int, month time.Month, day int) {
 	return t.Date()
 }
 
+// LastDayOfMonth returns the last day of the month specified by d.
+// The first day of the month is 1.
+func (d Date) LastDayOfMonth() int {
+	y, m, _ := d.Date()
+	return DaysIn(y, m)
+}
+
 // Day returns the day of the month specified by d.
 // The first day of the month is 1.
 func (d Date) Day() int {

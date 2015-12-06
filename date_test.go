@@ -257,9 +257,14 @@ func TestDaysIn(t *testing.T) {
 		{2001, time.April, 30},
 	}
 	for _, c := range cases {
-		got := DaysIn(c.year, c.month)
-		if got != c.expected {
-			t.Errorf("TestIsLeap(%d) == %v, want %v", c.year, got, c.expected)
+		got1 := DaysIn(c.year, c.month)
+		if got1 != c.expected {
+			t.Errorf("DaysIn(%d) == %v, want %v", c.year, got1, c.expected)
+		}
+		d := New(c.year, c.month, 1)
+		got2 := d.LastDayOfMonth()
+		if got2 != c.expected {
+			t.Errorf("DaysIn(%d) == %v, want %v", c.year, got2, c.expected)
 		}
 	}
 }
