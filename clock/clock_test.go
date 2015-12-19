@@ -229,10 +229,7 @@ func TestClockParse(t *testing.T) {
 		{"23:59:59.999", New(23, 59, 59, 999)},
 	}
 	for _, x := range cases {
-		str, err := Parse(x.str)
-		if err != nil {
-			t.Errorf("%s, error %v", x.str, err)
-		}
+		str := MustParse(x.str)
 		if str != x.want {
 			t.Errorf("%s, got %v, want %v", x.str, str, x.want)
 		}

@@ -45,10 +45,7 @@ func TestParseISO(t *testing.T) {
 		{"-00191012", -19, time.October, 12},
 	}
 	for _, c := range cases {
-		d, err := ParseISO(c.value)
-		if err != nil {
-			t.Errorf("ParseISO(%v) == %v", c.value, err)
-		}
+		d := MustParseISO(c.value)
 		year, month, day := d.Date()
 		if year != c.year || month != c.month || day != c.day {
 			t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
@@ -126,10 +123,7 @@ func TestParse(t *testing.T) {
 		{RFC3339, "2345-06-07", 2345, time.June, 7},
 	}
 	for _, c := range cases {
-		d, err := Parse(c.layout, c.value)
-		if err != nil {
-			t.Errorf("Parse(%v) == %v", c.value, err)
-		}
+		d := MustParse(c.layout, c.value)
 		year, month, day := d.Date()
 		if year != c.year || month != c.month || day != c.day {
 			t.Errorf("Parse(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
@@ -190,11 +184,7 @@ func TestString(t *testing.T) {
 		{"+10000-01-01"},
 	}
 	for _, c := range cases {
-		d, err := ParseISO(c.value)
-		if err != nil {
-			t.Errorf("ParseISO(%v) cannot parse input: %v", c.value, err)
-			continue
-		}
+		d := MustParseISO(c.value)
 		value := d.String()
 		if value != c.value {
 			t.Errorf("String() == %v, want %v", value, c.value)
@@ -219,11 +209,7 @@ func TestFormatISO(t *testing.T) {
 		{"+999999-12-31", 6},
 	}
 	for _, c := range cases {
-		d, err := ParseISO(c.value)
-		if err != nil {
-			t.Errorf("ParseISO(%v) cannot parse input: %v", c.value, err)
-			continue
-		}
+		d := MustParseISO(c.value)
 		value := d.FormatISO(c.n)
 		if value != c.value {
 			t.Errorf("FormatISO(%v) == %v, want %v", c, value, c.value)
@@ -253,11 +239,7 @@ func TestFormat(t *testing.T) {
 		{"2016-11-01", "2nd 2nd 2nd", "1st 1st 1st"},
 	}
 	for _, c := range cases {
-		d, err := ParseISO(c.value)
-		if err != nil {
-			t.Errorf("ParseISO(%v) cannot parse input: %v", c.value, err)
-			continue
-		}
+		d := MustParseISO(c.value)
 		actual := d.Format(c.format)
 		if actual != c.expected {
 			t.Errorf("Format(%v) == %v, want %v", c, actual, c.expected)

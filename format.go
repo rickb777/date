@@ -31,6 +31,15 @@ const (
 	RFC3339  = "2006-01-02"
 )
 
+// MustParseISO is as per ParseISO except that it panics if the string cannot be parsed.
+func MustParseISO(value string) Date {
+	d, err := ParseISO(value)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
 // ParseISO parses an ISO 8601 formatted string and returns the date value it represents.
 // In addition to the common formats (e.g. 2006-01-02 and 20060102), this function
 // accepts date strings using the expanded year representation
@@ -111,6 +120,15 @@ func parseField(value, field, name string, minLength, requiredLength int) (int, 
 		return 0, fmt.Errorf("Date.ParseISO: cannot parse %s: invalid %s", value, name)
 	}
 	return number, nil
+}
+
+// MustParse is as per Parse except that it panics if the string cannot be parsed.
+func MustParse(layout, value string) Date {
+	d, err := Parse(layout, value)
+	if err != nil {
+		panic(err)
+	}
+	return d
 }
 
 // Parse parses a formatted string and returns the Date value it represents.

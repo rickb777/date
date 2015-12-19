@@ -70,6 +70,15 @@ func (c Clock) Add(h, m, s, ms int) Clock {
 	return c + hx + mx + sx + Clock(ms)
 }
 
+// MustParse is as per Parse except that it panics if the string cannot be parsed.
+func MustParse(hms string) Clock {
+	t, err := Parse(hms)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
 // Parse converts a string representation to a Clock. Acceptable representations
 // are as per ISO-8601 - see https://en.wikipedia.org/wiki/ISO_8601#Times
 func Parse(hms string) (clock Clock, err error) {
