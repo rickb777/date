@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // These are predefined layouts for use in Date.Format and Date.Parse.
@@ -21,14 +22,14 @@ import (
 // so that the Parse function and Format method can apply the same
 // transformation to a general date value.
 const (
-	ISO8601  = "2006-01-02" // ISO 8601 extended format
+	ISO8601 = "2006-01-02" // ISO 8601 extended format
 	ISO8601B = "20060102"   // ISO 8601 basic format
-	RFC822   = "02-Jan-06"
-	RFC822W  = "Mon, 02-Jan-06" // RFC822 with day of the week
-	RFC850   = "Monday, 02-Jan-06"
-	RFC1123  = "02 Jan 2006"
+	RFC822 = "02-Jan-06"
+	RFC822W = "Mon, 02-Jan-06" // RFC822 with day of the week
+	RFC850 = "Monday, 02-Jan-06"
+	RFC1123 = "02 Jan 2006"
 	RFC1123W = "Mon, 02 Jan 2006" // RFC1123 with day of the week
-	RFC3339  = "2006-01-02"
+	RFC3339 = "2006-01-02"
 )
 
 // MustParseISO is as per ParseISO except that it panics if the string cannot be parsed.
@@ -38,6 +39,50 @@ func MustParseISO(value string) Date {
 		panic(err)
 	}
 	return d
+}
+
+// AutoParse is like ParseISO, except that it automatically adapts to a variety of date formats
+// provided that they can be detected unambiguously. The supported formats are:
+//
+// all formats supported by ParseISO
+//
+// yyyy/mm/dd | yyyy.mm.dd (or any similar pattern)
+//
+// dd/mm/yyyy | dd.mm.yyyy (or any similar pattern)
+//
+func AutoParse(value string) (Date, error) {
+	abs := strings.TrimSpace(value)
+	lead := ""
+	if value[0] == '+' || value[0] == '-' {
+		abs = value[1:]
+		lead = value[:1]
+	}
+
+	if len(abs) >= 10 {
+		i1 := -1
+		i2 := -1
+		for i, r := range abs {
+			if unicode.IsPunct(r) {
+				if i1 < 0 {
+					i1 = i
+				} else {
+					i2 = i
+				}
+			}
+		}
+		if i1 >= 4 && i2 > i1 && abs[i1] == abs[i2] {
+			yyyy := abs[:i1]
+			mm := abs[i1 + 1:i2]
+			dd := abs[i2 + 1:]
+			abs = fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
+		} else if i1 >= 2 && i2 > i1 && abs[i1] == abs[i2] {
+			dd := abs[0:i1]
+			mm := abs[i1 + 1:i2]
+			yyyy := abs[i2 + 1:]
+			abs = fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
+		}
+	}
+	return ParseISO(lead + abs)
 }
 
 // ParseISO parses an ISO 8601 formatted string and returns the date value it represents.
@@ -50,7 +95,7 @@ func MustParseISO(value string) Date {
 // be happy to parse dates with a year longer in length than the four-digit minimum even
 // if they are missing the + sign prefix.
 //
-// Function Date.Parse can be used to parse date strings in other formats, but it
+// Function date.Parse can be used to parse date strings in other formats, but it
 // is currently not able to parse ISO 8601 formatted strings that use the
 // expanded year format.
 //
@@ -131,7 +176,7 @@ func MustParse(layout, value string) Date {
 	return d
 }
 
-// Parse parses a formatted string and returns the Date value it represents.
+// Parse parses a formatted string of a known layout and returns the Date value it represents.
 // The layout defines the format by showing how the reference date, defined
 // to be
 //     Monday, Jan 2, 2006
@@ -219,10 +264,10 @@ func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
 		return t.Format(layout)
 
 	default:
-		a := make([]string, 0, 2*len(parts)-1)
+		a := make([]string, 0, 2 * len(parts) - 1)
 		for i, p := range parts {
 			if i > 0 {
-				a = append(a, suffixes[d.Day()-1])
+				a = append(a, suffixes[d.Day() - 1])
 			}
 			a = append(a, t.Format(p))
 		}

@@ -75,6 +75,9 @@ type Date struct {
 // indicate days earlier than some mark.
 type PeriodOfDays int32
 
+// ZeroDays is the named zero value for PeriodOfDays.
+const ZeroDays PeriodOfDays = 0
+
 // New returns the Date value corresponding to the given year, month, and day.
 //
 // The month and day may be outside their usual ranges and will be normalized

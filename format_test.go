@@ -9,6 +9,78 @@ import (
 	"time"
 )
 
+func TestAutoParse(t *testing.T) {
+	cases := []struct {
+		value string
+		year  int
+		month time.Month
+		day   int
+	}{
+		{"31/12/1969", 1969, time.December, 31},
+		{"1969/12/31", 1969, time.December, 31},
+		{"1969.12.31", 1969, time.December, 31},
+		{"1969-12-31", 1969, time.December, 31},
+		{"+1970-01-01", 1970, time.January, 1},
+		{"+01970-01-02", 1970, time.January, 2},
+		{"2000-02-28", 2000, time.February, 28},
+		{"+2000-02-29", 2000, time.February, 29},
+		{"+02000-03-01", 2000, time.March, 1},
+		{"+002004-02-28", 2004, time.February, 28},
+		{"2004-02-29", 2004, time.February, 29},
+		{"2004-03-01", 2004, time.March, 1},
+		{"0000-01-01", 0, time.January, 1},
+		{"+0001-02-03", 1, time.February, 3},
+		{"+00019-03-04", 19, time.March, 4},
+		{"0100-04-05", 100, time.April, 5},
+		{"2000-05-06", 2000, time.May, 6},
+		{"+5000000-08-09", 5000000, time.August, 9},
+		{"-0001-09-11", -1, time.September, 11},
+		{"-0019-10-12", -19, time.October, 12},
+		{"-00100-11-13", -100, time.November, 13},
+		{"-02000-12-14", -2000, time.December, 14},
+		{"-30000-02-15", -30000, time.February, 15},
+		{"-0400000-05-16", -400000, time.May, 16},
+		{"-5000000-09-17", -5000000, time.September, 17},
+		{"12340506", 1234, time.May, 6},
+		{"+12340506", 1234, time.May, 6},
+		{"-00191012", -19, time.October, 12},
+	}
+	for _, c := range cases {
+		d, err := AutoParse(c.value)
+		if err != nil {
+			t.Errorf("FlexibleParse(%v) == %v", c.value, err)
+		}
+		year, month, day := d.Date()
+		if year != c.year || month != c.month || day != c.day {
+			t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
+		}
+	}
+
+	badCases := []string{
+		"1234-05",
+		"1234-5-6",
+		"1234-05-6",
+		"1234-5-06",
+		"1234-0A-06",
+		"1234-05-0B",
+		"1234-05-06trailing",
+		"padding1234-05-06",
+		"1-02-03",
+		"10-11-12",
+		"100-02-03",
+		"+1-02-03",
+		"+10-11-12",
+		"+100-02-03",
+		"-123-05-06",
+	}
+	for _, c := range badCases {
+		d, err := AutoParse(c)
+		if err == nil {
+			t.Errorf("ParseISO(%v) == %v", c, d)
+		}
+	}
+}
+
 func TestParseISO(t *testing.T) {
 	cases := []struct {
 		value string
