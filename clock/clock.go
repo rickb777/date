@@ -71,6 +71,7 @@ func (c Clock) Add(h, m, s, ms int) Clock {
 }
 
 // MustParse is as per Parse except that it panics if the string cannot be parsed.
+// This is intended for setup code; don't use it for user inputs.
 func MustParse(hms string) Clock {
 	t, err := Parse(hms)
 	if err != nil {

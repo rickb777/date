@@ -32,9 +32,10 @@ const (
 	RFC3339 = "2006-01-02"
 )
 
-// MustParseISO is as per ParseISO except that it panics if the string cannot be parsed.
-func MustParseISO(value string) Date {
-	d, err := ParseISO(value)
+// MustAutoParse is as per AutoParse except that it panics if the string cannot be parsed.
+// This is intended for setup code; don't use it for user inputs.
+func MustAutoParse(value string) Date {
+	d, err := AutoParse(value)
 	if err != nil {
 		panic(err)
 	}
@@ -42,20 +43,22 @@ func MustParseISO(value string) Date {
 }
 
 // AutoParse is like ParseISO, except that it automatically adapts to a variety of date formats
-// provided that they can be detected unambiguously. The supported formats are:
+// provided that they can be detected unambiguously. Specifically, this includes the "European"
+// and "British" date formats but not the common US format. Surrounding whitespace is ignored.
+// The supported formats are:
 //
-// all formats supported by ParseISO
+// * all formats supported by ParseISO
 //
-// yyyy/mm/dd | yyyy.mm.dd (or any similar pattern)
+// * yyyy/mm/dd | yyyy.mm.dd (or any similar pattern)
 //
-// dd/mm/yyyy | dd.mm.yyyy (or any similar pattern)
+// * dd/mm/yyyy | dd.mm.yyyy (or any similar pattern)
 //
 func AutoParse(value string) (Date, error) {
 	abs := strings.TrimSpace(value)
-	lead := ""
+	sign := ""
 	if value[0] == '+' || value[0] == '-' {
 		abs = value[1:]
-		lead = value[:1]
+		sign = value[:1]
 	}
 
 	if len(abs) >= 10 {
@@ -71,18 +74,30 @@ func AutoParse(value string) (Date, error) {
 			}
 		}
 		if i1 >= 4 && i2 > i1 && abs[i1] == abs[i2] {
-			yyyy := abs[:i1]
-			mm := abs[i1 + 1:i2]
-			dd := abs[i2 + 1:]
-			abs = fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
+			// just normalise the punctuation
+			a := []byte(abs)
+			a[i1] = '-'
+			a[i2] = '-'
+			abs = string(a)
 		} else if i1 >= 2 && i2 > i1 && abs[i1] == abs[i2] {
+			// harder case - need to swap the field order
 			dd := abs[0:i1]
 			mm := abs[i1 + 1:i2]
 			yyyy := abs[i2 + 1:]
 			abs = fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
 		}
 	}
-	return ParseISO(lead + abs)
+	return ParseISO(sign + abs)
+}
+
+// MustParseISO is as per ParseISO except that it panics if the string cannot be parsed.
+// This is intended for setup code; don't use it for user inputs.
+func MustParseISO(value string) Date {
+	d, err := ParseISO(value)
+	if err != nil {
+		panic(err)
+	}
+	return d
 }
 
 // ParseISO parses an ISO 8601 formatted string and returns the date value it represents.
@@ -168,6 +183,7 @@ func parseField(value, field, name string, minLength, requiredLength int) (int, 
 }
 
 // MustParse is as per Parse except that it panics if the string cannot be parsed.
+// This is intended for setup code; don't use it for user inputs.
 func MustParse(layout, value string) Date {
 	d, err := Parse(layout, value)
 	if err != nil {
@@ -188,7 +204,7 @@ func MustParse(layout, value string) Date {
 // parsed Time value.
 //
 // This function cannot currently parse ISO 8601 strings that use the expanded
-// year format; you should use Date.ParseISO to parse those strings correctly.
+// year format; you should use date.ParseISO to parse those strings correctly.
 func Parse(layout, value string) (Date, error) {
 	t, err := time.Parse(layout, value)
 	if err != nil {

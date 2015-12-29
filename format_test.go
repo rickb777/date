@@ -46,10 +46,7 @@ func TestAutoParse(t *testing.T) {
 		{"-00191012", -19, time.October, 12},
 	}
 	for _, c := range cases {
-		d, err := AutoParse(c.value)
-		if err != nil {
-			t.Errorf("FlexibleParse(%v) == %v", c.value, err)
-		}
+		d := MustAutoParse(c.value)
 		year, month, day := d.Date()
 		if year != c.year || month != c.month || day != c.day {
 			t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
