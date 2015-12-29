@@ -63,7 +63,7 @@ import (
 // them.
 // The Add method adds a Date and a number of days, producing a Date.
 //
-// The zero value of type Date is Thursday, January 1, 1970.
+// The zero value of type Date is Thursday, January 1, 1970 (called 'the epoch').
 // As this date is unlikely to come up in practice, the IsZero method gives
 // a simple way of detecting a date that has not been initialized explicitly.
 //
@@ -92,6 +92,12 @@ func New(year int, month time.Month, day int) Date {
 // the given Time value.
 func NewAt(t time.Time) Date {
 	return Date{encode(t)}
+}
+
+// NewOfDays returns the Date value corresponding to the given period since the
+// epoch (1st January 1970), which may be negative.
+func NewOfDays(p PeriodOfDays) Date {
+	return Date{int32(p)}
 }
 
 // Today returns today's date according to the current local time.
@@ -252,6 +258,11 @@ func (d Date) AddDate(years, months, days int) Date {
 // Sub returns d-u as the number of days between the two dates.
 func (d Date) Sub(u Date) (days PeriodOfDays) {
 	return PeriodOfDays(d.day - u.day)
+}
+
+// DaysSinceEpoch returns the number of days since the epoch (1st January 1970), which may be negative.
+func (d Date) DaysSinceEpoch() (days PeriodOfDays) {
+	return PeriodOfDays(d.day)
 }
 
 // IsLeap simply tests whether a given year is a leap year, using the Gregorian calendar algorithm.

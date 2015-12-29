@@ -50,6 +50,19 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestDaysSinceEpoch(t *testing.T) {
+	zero := Date{}.DaysSinceEpoch()
+	if zero != 0 {
+		t.Errorf("Non zero %v", zero)
+	}
+	today := Today()
+	days := today.DaysSinceEpoch()
+	copy := NewOfDays(days)
+	if today != copy || days == 0 {
+		t.Errorf("Today == %v, want date of %v", today, copy)
+	}
+}
+
 func TestToday(t *testing.T) {
 	today := Today()
 	now := time.Now()
