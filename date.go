@@ -151,6 +151,7 @@ func (d Date) In(loc *time.Location) time.Time {
 }
 
 // Date returns the year, month, and day of d.
+// The first day of the month is 1.
 func (d Date) Date() (year int, month time.Month, day int) {
 	t := decode(d.day)
 	return t.Date()
