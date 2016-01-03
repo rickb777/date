@@ -5,7 +5,6 @@
 package clock
 
 import (
-	"fmt"
 	"math"
 	"time"
 )
@@ -146,47 +145,4 @@ func (c Clock) Seconds() int {
 // For example, for 10:20:30.456 this will return 456.
 func (c Clock) Millisec() int {
 	return int(clockMillisec(c.Mod24()))
-}
-
-func clockHours(cm Clock) Clock {
-	return (cm / ClockHour)
-}
-
-func clockMinutes(cm Clock) Clock {
-	return (cm % ClockHour) / ClockMinute
-}
-
-func clockSeconds(cm Clock) Clock {
-	return (cm % ClockMinute) / ClockSecond
-}
-
-func clockMillisec(cm Clock) Clock {
-	return cm % ClockSecond
-}
-
-// Hh gets the clock-face number of hours as a two-digit string (calculated from the modulo time, see Mod24).
-func (c Clock) Hh() string {
-	cm := c.Mod24()
-	return fmt.Sprintf("%02d", clockHours(cm))
-}
-
-// HhMm gets the clock-face number of hours and minutes as a five-character ISO-8601 time string (calculated
-// from the modulo time, see Mod24).
-func (c Clock) HhMm() string {
-	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d", clockHours(cm), clockMinutes(cm))
-}
-
-// HhMmSs gets the clock-face number of hours, minutes, seconds as an eight-character ISO-8601 time string
-// (calculated from the modulo time, see Mod24).
-func (c Clock) HhMmSs() string {
-	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d:%02d", clockHours(cm), clockMinutes(cm), clockSeconds(cm))
-}
-
-// String gets the clock-face number of hours, minutes, seconds and milliseconds as a 12-character ISO-8601
-// time string (calculated from the modulo time, see Mod24), specified to the nearest millisecond.
-func (c Clock) String() string {
-	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d:%02d.%03d", clockHours(cm), clockMinutes(cm), clockSeconds(cm), clockMillisec(cm))
 }
