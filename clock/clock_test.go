@@ -201,7 +201,7 @@ func TestClockString(t *testing.T) {
 	}
 }
 
-func TestClockParse(t *testing.T) {
+func TestClockParseGoods(t *testing.T) {
 	cases := []struct {
 		str  string
 		want Clock
@@ -226,12 +226,73 @@ func TestClockParse(t *testing.T) {
 		{"00:01:00.000", New(0, 1, 0, 0)},
 		{"01:00:00.000", New(1, 0, 0, 0)},
 		{"01:02:03.004", New(1, 2, 3, 4)},
+		{"01:02:03.04", New(1, 2, 3, 40)},
+		{"01:02:03.4", New(1, 2, 3, 400)},
 		{"23:59:59.999", New(23, 59, 59, 999)},
+		{"12am", New(0, 0, 0, 0)},
+		{"12pm", New(12, 0, 0, 0)},
+		{"12:01am", New(0, 1, 0, 0)},
+		{"12:01pm", New(12, 1, 0, 0)},
+		{"12:01:02am", New(0, 1, 2, 0)},
+		{"12:01:02pm", New(12, 1, 2, 0)},
+		{"1am", New(1, 0, 0, 0)},
+		{"1pm", New(13, 0, 0, 0)},
+		{"1:00am", New(1, 0, 0, 0)},
+		{"1:00pm", New(13, 0, 0, 0)},
+		{"1:00:00am", New(1, 0, 0, 0)},
+		{"1:02:03pm", New(13, 2, 3, 0)},
+		{"1:02:03.004pm", New(13, 2, 3, 4)},
+		{"1:20:30.04pm", New(13, 20, 30, 40)},
+		{"1:20:30.4pm", New(13, 20, 30, 400)},
+		{"1:20:30.pm", New(13, 20, 30, 0)},
 	}
 	for _, x := range cases {
 		str := MustParse(x.str)
 		if str != x.want {
 			t.Errorf("%s, got %v, want %v", x.str, str, x.want)
+		}
+	}
+}
+
+func TestClockParseBads(t *testing.T) {
+	cases := []struct {
+		str string
+	}{
+		{"0"},
+		{"0:01"},
+		{"0:00:01"},
+		{"hh"},
+		{"00-00"},
+		{"00:00-00"},
+		{"00:00:00-"},
+		{"00:00:00-0"},
+		{"00:00:00-00"},
+		{"00:00:00-000"},
+		{"00:mm"},
+		{"00:00:ss"},
+		{"00:00:00.xxx"},
+		{"01-02:03.004"},
+		{"01:02-03.04"},
+		{"01:02:03-4"},
+		{"12xm"},
+		{"12-01am"},
+		{"12:01-02am"},
+		{"ham"},
+		{"hham"},
+		{"1xm"},
+		{"1-00am"},
+		{"1:00-00am"},
+		{"1:02:03-4pm"},
+		{"1:02:03-04pm"},
+		{"1:02:03-004pm"},
+		{"1:02:03.0045pm"},
+	}
+	for _, x := range cases {
+		c, err := Parse(x.str)
+		if err == nil {
+			t.Errorf("%s, got %#v, want err", x.str, c)
+		} else {
+			println(err.Error())
 		}
 	}
 }

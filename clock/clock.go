@@ -7,7 +7,6 @@ package clock
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"time"
 )
 
@@ -23,6 +22,7 @@ import (
 // See https://en.wikipedia.org/wiki/ISO_8601#Times
 type Clock int32
 
+// Common durations.
 const (
 	// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
 	ClockDay Clock = Clock(time.Hour * 24 / time.Millisecond)
@@ -35,11 +35,11 @@ const (
 
 	// ClockSecond is one second; it has a similar meaning to time.Second.
 	ClockSecond Clock = Clock(time.Second / time.Millisecond)
-
-	// Undefined is provided because the zero value of a Clock is defined (i.e. midnight).
-	// A special value is chosen, which is math.MinInt32.
-	Undefined Clock = Clock(math.MinInt32)
 )
+
+// Undefined is provided because the zero value of a Clock *is* defined (i.e. midnight).
+// A special value is chosen, which is math.MinInt32.
+const Undefined Clock = Clock(math.MinInt32)
 
 // New returns a new Clock with specified hour, minute, second and millisecond.
 func New(hour, minute, second, millisec int) Clock {
@@ -77,82 +77,6 @@ func (c Clock) Add(h, m, s, ms int) Clock {
 	mx := Clock(m) * ClockMinute
 	sx := Clock(s) * ClockSecond
 	return c + hx + mx + sx + Clock(ms)
-}
-
-// MustParse is as per Parse except that it panics if the string cannot be parsed.
-// This is intended for setup code; don't use it for user inputs.
-func MustParse(hms string) Clock {
-	t, err := Parse(hms)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
-// Parse converts a string representation to a Clock. Acceptable representations
-// are as per ISO-8601 - see https://en.wikipedia.org/wiki/ISO_8601#Times
-func Parse(hms string) (clock Clock, err error) {
-	switch len(hms) {
-	case 2: // HH
-		return parseClockParts(hms, hms, "", "", "")
-
-	case 4: // HHMM
-		return parseClockParts(hms, hms[:2], hms[2:], "", "")
-
-	case 5: // HH:MM
-		if hms[2] != ':' {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s", hms)
-		}
-		return parseClockParts(hms, hms[:2], hms[3:], "", "")
-
-	case 6: // HHMMSS
-		return parseClockParts(hms, hms[:2], hms[2:4], hms[4:], "")
-
-	case 8: // HH:MM:SS
-		if hms[2] != ':' || hms[5] != ':' {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s", hms)
-		}
-		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:], "")
-
-	default:
-		if hms[2] != ':' || hms[5] != ':' || hms[8] != '.' {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s", hms)
-		}
-		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:8], hms[9:])
-	}
-	return 0, fmt.Errorf("date.ParseClock: cannot parse %s", hms)
-}
-
-func parseClockParts(hms, hh, mm, ss, mmms string) (clock Clock, err error) {
-	h := 0
-	m := 0
-	s := 0
-	ms := 0
-	if hh != "" {
-		h, err = strconv.Atoi(hh)
-		if err != nil {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
-		}
-	}
-	if mm != "" {
-		m, err = strconv.Atoi(mm)
-		if err != nil {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
-		}
-	}
-	if ss != "" {
-		s, err = strconv.Atoi(ss)
-		if err != nil {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
-		}
-	}
-	if mmms != "" {
-		ms, err = strconv.Atoi(mmms)
-		if err != nil {
-			return 0, fmt.Errorf("date.ParseClock: cannot parse %s: %v", hms, err)
-		}
-	}
-	return New(h, m, s, ms), nil
 }
 
 // IsInOneDay tests whether a clock time is in the range 0 to 24 hours, inclusive. Inside this
