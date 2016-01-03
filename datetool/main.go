@@ -1,6 +1,10 @@
+// Copyright 2015 Rick Beton. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // This tool prints equivalences between the string representation and the internal numerical
 // representation for dates and clocks.
-
+//
 package main
 
 import (

@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Clock specifies a time of day with resolution to the nearest millisecond.
+//
 package clock
 
 import (
@@ -70,7 +72,7 @@ func (c Clock) DurationSinceMidnight() time.Duration {
 
 // Add returns a new Clock offset from this clock specified hour, minute, second and millisecond.
 // The parameters can be negative.
-// If required, use Mod() to correct any overflow or underflow.
+// If required, use Mod24() to correct any overflow or underflow.
 func (c Clock) Add(h, m, s, ms int) Clock {
 	hx := Clock(h) * ClockHour
 	mx := Clock(m) * ClockMinute
