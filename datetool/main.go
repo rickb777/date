@@ -4,12 +4,12 @@
 package main
 
 import (
-	"os"
-	"strings"
+	"fmt"
 	. "github.com/rickb777/date"
 	"github.com/rickb777/date/clock"
-	"fmt"
+	"os"
 	"strconv"
+	"strings"
 )
 
 func printPair(a string, b interface{}) {

@@ -36,8 +36,8 @@ func TestClockSinceMidnight(t *testing.T) {
 		in Clock
 		d  time.Duration
 	}{
-		{New(1, 2, 3, 4), time.Hour + 2 * time.Minute + 3 * time.Second + 4},
-		{New(23, 59, 59, 999), 23 * time.Hour + 59 * time.Minute + 59 * time.Second + 999},
+		{New(1, 2, 3, 4), time.Hour + 2*time.Minute + 3*time.Second + 4},
+		{New(23, 59, 59, 999), 23*time.Hour + 59*time.Minute + 59*time.Second + 999},
 	}
 	for i, x := range cases {
 		d := x.in.DurationSinceMidnight()
@@ -185,7 +185,7 @@ func TestClockString(t *testing.T) {
 		{-1, -1, -1, -1, "22", "22:58", "22:58:58", "22:58:58.999"},
 	}
 	for _, x := range cases {
-		d := Clock(x.h * ClockHour + x.m * ClockMinute + x.s * ClockSecond + x.ms)
+		d := Clock(x.h*ClockHour + x.m*ClockMinute + x.s*ClockSecond + x.ms)
 		if d.Hh() != x.hh {
 			t.Errorf("%d, %d, %d, %d, got %v, want %v (%d)", x.h, x.m, x.s, x.ms, d.Hh(), x.hh, d)
 		}

@@ -6,11 +6,10 @@ package clock
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 )
-
-const zero time.Duration = 0
 
 // Clock specifies a time of day. It complements the existing time.Duration, applying
 // that to the time since midnight (on some arbitrary day in some arbitrary timezone).
@@ -25,11 +24,21 @@ const zero time.Duration = 0
 type Clock int32
 
 const (
-// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
-	ClockDay    Clock = Clock(time.Hour * 24 / time.Millisecond)
-	ClockHour   Clock = Clock(time.Hour / time.Millisecond)
+	// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings, so is not fully general.
+	ClockDay Clock = Clock(time.Hour * 24 / time.Millisecond)
+
+	// ClockHour is one hour; it has a similar meaning to time.Hour.
+	ClockHour Clock = Clock(time.Hour / time.Millisecond)
+
+	// ClockMinute is one minute; it has a similar meaning to time.Minute.
 	ClockMinute Clock = Clock(time.Minute / time.Millisecond)
+
+	// ClockSecond is one second; it has a similar meaning to time.Second.
 	ClockSecond Clock = Clock(time.Second / time.Millisecond)
+
+	// Undefined is provided because the zero value of a Clock is defined (i.e. midnight).
+	// A special value is chosen, which is math.MinInt32.
+	Undefined Clock = Clock(math.MinInt32)
 )
 
 // New returns a new Clock with specified hour, minute, second and millisecond.
@@ -154,19 +163,22 @@ func (c Clock) IsInOneDay() bool {
 }
 
 // IsMidnight tests whether a clock time is midnight. This is shorthand for c.Mod24() == 0.
+// For large values, this assumes that every day has 24 hours.
 func (c Clock) IsMidnight() bool {
 	return c.Mod24() == 0
 }
 
 // Mod24 calculates the remainder vs 24 hours using Euclidean division, in which the result
-// will be less than 24 hours and is never negative.
+// will be less than 24 hours and is never negative. Note that this imposes the assumption that
+// every day has 24 hours (not correct when daylight saving changes in any timezone).
+//
 // https://en.wikipedia.org/wiki/Modulo_operation
 func (c Clock) Mod24() Clock {
 	if 0 <= c && c < ClockDay {
 		return c
 	}
 	if c < 0 {
-		q := 1 - c / ClockDay
+		q := 1 - c/ClockDay
 		m := c + (q * ClockDay)
 		if m == ClockDay {
 			m = 0
@@ -183,7 +195,7 @@ func (c Clock) Mod24() Clock {
 // clock range 0s to 23h59m59s, for which IsInOneDay() returns true.
 func (c Clock) Days() int {
 	if c < 0 {
-		return int(c / ClockDay) - 1
+		return int(c/ClockDay) - 1
 	} else {
 		return int(c / ClockDay)
 	}

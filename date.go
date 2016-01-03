@@ -38,9 +38,9 @@
 package date
 
 import (
+	"fmt"
 	"math"
 	"time"
-	"fmt"
 )
 
 // A Date represents a date under the (proleptic) Gregorian calendar as
