@@ -7,7 +7,7 @@ package clock
 import "fmt"
 
 func clockHours(cm Clock) Clock {
-	return (cm / ClockHour)
+	return (cm / Hour)
 }
 
 func clockHours12(cm Clock) (Clock, string) {
@@ -23,15 +23,15 @@ func clockHours12(cm Clock) (Clock, string) {
 }
 
 func clockMinutes(cm Clock) Clock {
-	return (cm % ClockHour) / ClockMinute
+	return (cm % Hour) / Minute
 }
 
 func clockSeconds(cm Clock) Clock {
-	return (cm % ClockMinute) / ClockSecond
+	return (cm % Minute) / Second
 }
 
 func clockMillisec(cm Clock) Clock {
-	return cm % ClockSecond
+	return cm % Second
 }
 
 // Hh gets the clock-face number of hours as a two-digit string.

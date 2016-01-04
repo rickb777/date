@@ -25,25 +25,30 @@ type Clock int32
 
 // Common durations - second, minute, hour and day.
 const (
-	// ClockSecond is one second; it has a similar meaning to time.Second.
-	ClockSecond Clock = Clock(time.Second / time.Millisecond)
+	// Second is one second; it has a similar meaning to time.Second.
+	Second Clock = Clock(time.Second / time.Millisecond)
+	//	ClockSecond Clock = Clock(time.Second / time.Millisecond)
 
-	// ClockMinute is one minute; it has a similar meaning to time.Minute.
-	ClockMinute Clock = Clock(time.Minute / time.Millisecond)
+	// Minute is one minute; it has a similar meaning to time.Minute.
+	Minute Clock = Clock(time.Minute / time.Millisecond)
+	//	ClockMinute Clock = Clock(time.Minute / time.Millisecond)
 
-	// ClockHour is one hour; it has a similar meaning to time.Hour.
-	ClockHour Clock = Clock(time.Hour / time.Millisecond)
+	// Hour is one hour; it has a similar meaning to time.Hour.
+	Hour Clock = Clock(time.Hour / time.Millisecond)
+	//	ClockHour Clock = Clock(time.Hour / time.Millisecond)
 
-	// ClockDay is a fixed period of 24 hours. This does not take account of daylight savings,
+	// Day is a fixed period of 24 hours. This does not take account of daylight savings,
 	// so is not fully general.
-	ClockDay Clock = Clock(time.Hour * 24 / time.Millisecond)
+	Day Clock = Clock(time.Hour * 24 / time.Millisecond)
+
+//	ClockDay Clock = Clock(time.Hour * 24 / time.Millisecond)
 )
 
 // Midnight is the zero value of a Clock.
 const Midnight Clock = 0
 
 // Noon is at 12pm.
-const Noon Clock = ClockHour * 12
+const Noon Clock = Hour * 12
 
 // Undefined is provided because the zero value of a Clock *is* defined (i.e. Midnight).
 // So a special value is chosen, which is math.MinInt32.
@@ -51,18 +56,18 @@ const Undefined Clock = Clock(math.MinInt32)
 
 // New returns a new Clock with specified hour, minute, second and millisecond.
 func New(hour, minute, second, millisec int) Clock {
-	hx := Clock(hour) * ClockHour
-	mx := Clock(minute) * ClockMinute
-	sx := Clock(second) * ClockSecond
+	hx := Clock(hour) * Hour
+	mx := Clock(minute) * Minute
+	sx := Clock(second) * Second
 	return Clock(hx + mx + sx + Clock(millisec))
 }
 
 // NewAt returns a new Clock with specified hour, minute, second and millisecond.
 func NewAt(t time.Time) Clock {
 	hour, minute, second := t.Clock()
-	hx := Clock(hour) * ClockHour
-	mx := Clock(minute) * ClockMinute
-	sx := Clock(second) * ClockSecond
+	hx := Clock(hour) * Hour
+	mx := Clock(minute) * Minute
+	sx := Clock(second) * Second
 	ms := Clock(t.Nanosecond() / int(time.Millisecond))
 	return Clock(hx + mx + sx + ms)
 }
@@ -81,9 +86,9 @@ func (c Clock) DurationSinceMidnight() time.Duration {
 // The parameters can be negative.
 // If required, use Mod24() to correct any overflow or underflow.
 func (c Clock) Add(h, m, s, ms int) Clock {
-	hx := Clock(h) * ClockHour
-	mx := Clock(m) * ClockMinute
-	sx := Clock(s) * ClockSecond
+	hx := Clock(h) * Hour
+	mx := Clock(m) * Minute
+	sx := Clock(s) * Second
 	return c + hx + mx + sx + Clock(ms)
 }
 
@@ -91,7 +96,7 @@ func (c Clock) Add(h, m, s, ms int) Clock {
 // range, a Clock is generally well-behaved. But outside it, there may be errors due to daylight
 // savings. Note that 24:00:00 is included as a special case as per ISO-8601 definition of midnight.
 func (c Clock) IsInOneDay() bool {
-	return Midnight <= c && c <= ClockDay
+	return Midnight <= c && c <= Day
 }
 
 // IsMidnight tests whether a clock time is midnight. This is shorthand for c.Mod24() == 0.
@@ -106,19 +111,19 @@ func (c Clock) IsMidnight() bool {
 //
 // https://en.wikipedia.org/wiki/Modulo_operation
 func (c Clock) Mod24() Clock {
-	if Midnight <= c && c < ClockDay {
+	if Midnight <= c && c < Day {
 		return c
 	}
 	if c < Midnight {
-		q := 1 - c/ClockDay
-		m := c + (q * ClockDay)
-		if m == ClockDay {
+		q := 1 - c/Day
+		m := c + (q * Day)
+		if m == Day {
 			m = Midnight
 		}
 		return m
 	}
-	q := c / ClockDay
-	return c - (q * ClockDay)
+	q := c / Day
+	return c - (q * Day)
 }
 
 // Days gets the number of whole days represented by the Clock, assuming that each day is a fixed
@@ -127,9 +132,9 @@ func (c Clock) Mod24() Clock {
 // clock range 0s to 23h59m59s, for which IsInOneDay() returns true.
 func (c Clock) Days() int {
 	if c < Midnight {
-		return int(c/ClockDay) - 1
+		return int(c/Day) - 1
 	} else {
-		return int(c / ClockDay)
+		return int(c / Day)
 	}
 }
 

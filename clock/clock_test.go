@@ -75,17 +75,17 @@ func TestClockAdd(t *testing.T) {
 		h, m, s, ms int
 		in, want    Clock
 	}{
-		{0, 0, 0, 0, 2 * ClockHour, New(2, 0, 0, 0)},
-		{0, 0, 0, 1, 2 * ClockHour, New(2, 0, 0, 1)},
-		{0, 0, 0, -1, 2 * ClockHour, New(1, 59, 59, 999)},
-		{0, 0, 1, 0, 2 * ClockHour, New(2, 0, 1, 0)},
-		{0, 0, -1, 0, 2 * ClockHour, New(1, 59, 59, 0)},
-		{0, 1, 0, 0, 2 * ClockHour, New(2, 1, 0, 0)},
-		{0, -1, 0, 0, 2 * ClockHour, New(1, 59, 0, 0)},
-		{1, 0, 0, 0, 2 * ClockHour, New(3, 0, 0, 0)},
-		{-1, 0, 0, 0, 2 * ClockHour, New(1, 0, 0, 0)},
-		{-2, 0, 0, 0, 2 * ClockHour, New(0, 0, 0, 0)},
-		{-2, 0, -1, -1, 2 * ClockHour, New(0, 0, -1, -1)},
+		{0, 0, 0, 0, 2 * Hour, New(2, 0, 0, 0)},
+		{0, 0, 0, 1, 2 * Hour, New(2, 0, 0, 1)},
+		{0, 0, 0, -1, 2 * Hour, New(1, 59, 59, 999)},
+		{0, 0, 1, 0, 2 * Hour, New(2, 0, 1, 0)},
+		{0, 0, -1, 0, 2 * Hour, New(1, 59, 59, 0)},
+		{0, 1, 0, 0, 2 * Hour, New(2, 1, 0, 0)},
+		{0, -1, 0, 0, 2 * Hour, New(1, 59, 0, 0)},
+		{1, 0, 0, 0, 2 * Hour, New(3, 0, 0, 0)},
+		{-1, 0, 0, 0, 2 * Hour, New(1, 0, 0, 0)},
+		{-2, 0, 0, 0, 2 * Hour, New(0, 0, 0, 0)},
+		{-2, 0, -1, -1, 2 * Hour, New(0, 0, -1, -1)},
 	}
 	for i, x := range cases {
 		got := x.in.Add(x.h, x.m, x.s, x.ms)
@@ -101,8 +101,8 @@ func TestClockIsMidnight(t *testing.T) {
 		want bool
 	}{
 		{New(0, 0, 0, 0), true},
-		{ClockDay, true},
-		{24 * ClockHour, true},
+		{Day, true},
+		{24 * Hour, true},
 		{New(24, 0, 0, 0), true},
 		{New(-24, 0, 0, 0), true},
 		{New(-48, 0, 0, 0), true},
@@ -125,18 +125,18 @@ func TestClockMod(t *testing.T) {
 		h, want Clock
 	}{
 		{0, 0},
-		{1 * ClockHour, 1 * ClockHour},
-		{2 * ClockHour, 2 * ClockHour},
-		{23 * ClockHour, 23 * ClockHour},
-		{24 * ClockHour, 0},
-		{-24 * ClockHour, 0},
-		{-48 * ClockHour, 0},
-		{25 * ClockHour, ClockHour},
-		{49 * ClockHour, ClockHour},
-		{-1 * ClockHour, 23 * ClockHour},
-		{-23 * ClockHour, ClockHour},
+		{1 * Hour, 1 * Hour},
+		{2 * Hour, 2 * Hour},
+		{23 * Hour, 23 * Hour},
+		{24 * Hour, 0},
+		{-24 * Hour, 0},
+		{-48 * Hour, 0},
+		{25 * Hour, Hour},
+		{49 * Hour, Hour},
+		{-1 * Hour, 23 * Hour},
+		{-23 * Hour, Hour},
 		{New(0, 0, 0, 1), 1},
-		{New(0, 0, 1, 0), ClockSecond},
+		{New(0, 0, 1, 0), Second},
 		{New(0, 0, 0, -1), New(23, 59, 59, 999)},
 	}
 	for i, x := range cases {
@@ -164,7 +164,7 @@ func TestClockDays(t *testing.T) {
 		{-24, -2},
 	}
 	for i, x := range cases {
-		clock := Clock(x.h) * ClockHour
+		clock := Clock(x.h) * Hour
 		if clock.Days() != x.days {
 			t.Errorf("%d: %dh: got %v, want %v", i, x.h, clock.Days(), x.days)
 		}
@@ -189,7 +189,7 @@ func TestClockString(t *testing.T) {
 		{-1, -1, -1, -1, "22", "22:58", "22:58:58", "22:58:58.999", "10pm", "10:58pm", "10:58:58pm"},
 	}
 	for _, x := range cases {
-		d := Clock(x.h*ClockHour + x.m*ClockMinute + x.s*ClockSecond + x.ms)
+		d := Clock(x.h*Hour + x.m*Minute + x.s*Second + x.ms)
 		if d.Hh() != x.hh {
 			t.Errorf("%d, %d, %d, %d, got %v, want %v (%d)", x.h, x.m, x.s, x.ms, d.Hh(), x.hh, d)
 		}
