@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+// PeriodOfDays describes a period of time measured in whole days. Negative values
+// indicate days earlier than some mark.
+type PeriodOfDays int32
+
+// ZeroDays is the named zero value for PeriodOfDays.
+const ZeroDays PeriodOfDays = 0
+
 // A Date represents a date under the (proleptic) Gregorian calendar as
 // used by ISO 8601. This calendar uses astronomical year numbering,
 // so it includes a year 0 and represents earlier years as negative numbers
@@ -35,15 +42,8 @@ import (
 // a simple way of detecting a date that has not been initialized explicitly.
 //
 type Date struct {
-	day int32 // day gives the number of days elapsed since date zero.
+	day PeriodOfDays // day gives the number of days elapsed since date zero.
 }
-
-// PeriodOfDays describes a period of time measured in whole days. Negative values
-// indicate days earlier than some mark.
-type PeriodOfDays int32
-
-// ZeroDays is the named zero value for PeriodOfDays.
-const ZeroDays PeriodOfDays = 0
 
 // New returns the Date value corresponding to the given year, month, and day.
 //
@@ -64,7 +64,7 @@ func NewAt(t time.Time) Date {
 // NewOfDays returns the Date value corresponding to the given period since the
 // epoch (1st January 1970), which may be negative.
 func NewOfDays(p PeriodOfDays) Date {
-	return Date{int32(p)}
+	return Date{p}
 }
 
 // Today returns today's date according to the current local time.
@@ -88,12 +88,12 @@ func TodayIn(loc *time.Location) Date {
 
 // Min returns the smallest representable date.
 func Min() Date {
-	return Date{day: math.MinInt32}
+	return Date{day: PeriodOfDays(math.MinInt32)}
 }
 
 // Max returns the largest representable date.
 func Max() Date {
-	return Date{day: math.MaxInt32}
+	return Date{day: PeriodOfDays(math.MaxInt32)}
 }
 
 // UTC returns a Time value corresponding to midnight on the given date,
@@ -162,7 +162,7 @@ func (d Date) Weekday() time.Weekday {
 	// Date zero, January 1, 1970, fell on a Thursday
 	wdayZero := time.Thursday
 	// Taking into account potential for overflow and negative offset
-	return time.Weekday((int32(wdayZero) + d.day%7 + 7) % 7)
+	return time.Weekday((int32(wdayZero) + int32(d.day)%7 + 7) % 7)
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which d occurs.
@@ -212,7 +212,7 @@ func (d Date) Max(u Date) Date {
 
 // Add returns the date d plus the given number of days. The parameter may be negative.
 func (d Date) Add(days PeriodOfDays) Date {
-	return Date{d.day + int32(days)}
+	return Date{d.day + days}
 }
 
 // AddDate returns the date corresponding to adding the given number of years,
@@ -225,12 +225,12 @@ func (d Date) AddDate(years, months, days int) Date {
 
 // Sub returns d-u as the number of days between the two dates.
 func (d Date) Sub(u Date) (days PeriodOfDays) {
-	return PeriodOfDays(d.day - u.day)
+	return d.day - u.day
 }
 
 // DaysSinceEpoch returns the number of days since the epoch (1st January 1970), which may be negative.
 func (d Date) DaysSinceEpoch() (days PeriodOfDays) {
-	return PeriodOfDays(d.day)
+	return d.day
 }
 
 // IsLeap simply tests whether a given year is a leap year, using the Gregorian calendar algorithm.

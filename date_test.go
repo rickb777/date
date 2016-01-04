@@ -217,14 +217,14 @@ func TestArithmetic(t *testing.T) {
 	}
 }
 
-func min(a, b int32) int32 {
+func min(a, b PeriodOfDays) PeriodOfDays {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func max(a, b int32) int32 {
+func max(a, b PeriodOfDays) PeriodOfDays {
 	if a > b {
 		return a
 	}

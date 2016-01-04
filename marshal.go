@@ -29,7 +29,7 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 		return errors.New("Date.UnmarshalBinary: invalid length")
 	}
 
-	d.day = int32(data[3]) | int32(data[2])<<8 | int32(data[1])<<16 | int32(data[0])<<24
+	d.day = PeriodOfDays(data[3]) | PeriodOfDays(data[2])<<8 | PeriodOfDays(data[1])<<16 | PeriodOfDays(data[0])<<24
 	//	d.decoded = time.Time{}
 
 	return nil
