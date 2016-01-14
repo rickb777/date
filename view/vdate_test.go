@@ -8,16 +8,17 @@ import (
 func TestBasicFormatting(t *testing.T) {
 	d := NewVDate(date.New(2016, 2, 7))
 	is(t, d.String(), "2016-02-07")
-	is(t, d.Web(), "07/02/2016")
+	is(t, d.Format(), "07/02/2016")
+	is(t, d.WithFormat(MDYFormat).Format(), "02/07/2016")
 	is(t, d.Mon(), "Sun")
 	is(t, d.Monday(), "Sunday")
 	is(t, d.Day2(), "7")
 	is(t, d.Day02(), "07")
-	is(t, d.Day02nd(), "7th")
+	is(t, d.Day2nd(), "7th")
 	is(t, d.Month1(), "2")
 	is(t, d.Month01(), "02")
-	is(t, d.MonthJan(), "Feb")
-	is(t, d.MonthJanuary(), "February")
+	is(t, d.Jan(), "Feb")
+	is(t, d.January(), "February")
 	is(t, d.Year(), "2016")
 }
 

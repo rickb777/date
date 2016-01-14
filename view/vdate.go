@@ -1,98 +1,132 @@
-// This package provides a fluent API for formatting dates as strings. This is useful in view-models
-// especially when using Go temapltes.
+// Package view provides a simple API for formatting dates as strings in a manner that is easy to use in view-models,
+// especially when using Go templates.
 package view
 
 import (
 	"github.com/rickb777/date"
-	"r3/roster3/util/r3date"
 )
 
-const WebDateFormat = "02/01/2006"
-const SqlDateFormat = "2006-01-02"
+const (
+	// DMYFormat is a typical British representation.
+	DMYFormat = "02/01/2006"
+	// MDYFormat is a typical American representation.
+	MDYFormat = "01/02/2006"
+	// DefaultFormat is used by Format() unless a different format is set.
+	DefaultFormat = DMYFormat
+)
 
+// A VDate holds a Date and provides easy ways to render it, e.g. in Go templates.
 type VDate struct {
 	d date.Date
+	f string
 }
 
+// NewVDate wraps a Date.
 func NewVDate(d date.Date) VDate {
-	return VDate{d}
+	return VDate{d, DefaultFormat}
 }
 
-func (d VDate) Next() VDateDelta {
-	return VDateDelta{d.d, 1}
-}
-
-func (d VDate) Previous() VDateDelta {
-	return VDateDelta{d.d, -1}
-}
-
+// String formats the date in basic ISO8601 format YYYY-MM-DD.
 func (d VDate) String() string {
-	return d.d.Format(r3date.SqlDateFormat)
+	return d.d.String()
 }
 
-func (d VDate) Web() string {
-	return d.d.Format(r3date.WebDateFormat)
+// WithFormat creates a new instance containing the specified format string.
+func (d VDate) WithFormat(f string) VDate {
+	return VDate{d.d, f}
 }
 
+// Format formats the date using the specified format string, or "02/01/2006" by default.
+// Use WithFormat to set this up.
+func (d VDate) Format() string {
+	return d.d.Format(d.f)
+}
+
+// Mon returns the day name as three letters.
 func (d VDate) Mon() string {
 	return d.d.Format("Mon")
 }
 
+// Monday returns the full day name.
 func (d VDate) Monday() string {
 	return d.d.Format("Monday")
 }
 
+// Day2 returns the day number without a leading zero.
 func (d VDate) Day2() string {
 	return d.d.Format("2")
 }
 
+// Day02 returns the day number with a leading zero if necessary.
 func (d VDate) Day02() string {
 	return d.d.Format("02")
 }
 
-func (d VDate) Day02nd() string {
+// Day2nd returns the day number without a leading zero but with the appropriate
+// "st", "nd", "rd", "th" suffix.
+func (d VDate) Day2nd() string {
 	return d.d.Format("2nd")
 }
 
+// Month1 returns the month number without a leading zero.
 func (d VDate) Month1() string {
 	return d.d.Format("1")
 }
 
+// Month01 returns the month number with a leading zero if necessary.
 func (d VDate) Month01() string {
 	return d.d.Format("01")
 }
 
-func (d VDate) MonthJan() string {
+// Jan returns the month name abbreviated to three letters.
+func (d VDate) Jan() string {
 	return d.d.Format("Jan")
 }
 
-func (d VDate) MonthJanuary() string {
+// January returns the full month name.
+func (d VDate) January() string {
 	return d.d.Format("January")
 }
 
+// Year returns the four-digit year.
 func (d VDate) Year() string {
 	return d.d.Format("2006")
+}
+
+// Next returns a fluent generator for later dates.
+func (d VDate) Next() VDateDelta {
+	return VDateDelta{d.d, d.f, 1}
+}
+
+// Previous returns a fluent generator for earlier dates.
+func (d VDate) Previous() VDateDelta {
+	return VDateDelta{d.d, d.f, -1}
 }
 
 //-------------------------------------------------------------------------------------------------
 
 type VDateDelta struct {
 	d    date.Date
+	f    string
 	sign date.PeriodOfDays
 }
 
+// Day adds or subtracts one day.
 func (dd VDateDelta) Day() VDate {
-	return VDate{dd.d.Add(dd.sign)}
+	return VDate{dd.d.Add(dd.sign), dd.f}
 }
 
+// Week adds or subtracts one week.
 func (dd VDateDelta) Week() VDate {
-	return VDate{dd.d.Add(dd.sign * 7)}
+	return VDate{dd.d.Add(dd.sign * 7), dd.f}
 }
 
+// Month adds or subtracts one month.
 func (dd VDateDelta) Month() VDate {
-	return VDate{dd.d.AddDate(0, int(dd.sign), 0)}
+	return VDate{dd.d.AddDate(0, int(dd.sign), 0), dd.f}
 }
 
+// Year adds or subtracts one year.
 func (dd VDateDelta) Year() VDate {
-	return VDate{dd.d.AddDate(int(dd.sign), 0, 0)}
+	return VDate{dd.d.AddDate(int(dd.sign), 0, 0), dd.f}
 }
