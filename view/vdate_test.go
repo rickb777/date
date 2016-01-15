@@ -1,8 +1,10 @@
 package view
 
 import (
+	"encoding/json"
 	"github.com/rickb777/date"
 	"testing"
+	"time"
 )
 
 func TestBasicFormatting(t *testing.T) {
@@ -41,5 +43,59 @@ func TestPrevious(t *testing.T) {
 func is(t *testing.T, s1, s2 string) {
 	if s1 != s2 {
 		t.Error("%s != %s", s1, s2)
+	}
+}
+
+func TestJSONMarshalling(t *testing.T) {
+	cases := []struct {
+		value VDate
+		want  string
+	}{
+		{NewVDate(date.New(-1, time.December, 31)), `"-0001-12-31"`},
+		{NewVDate(date.New(2012, time.June, 25)), `"2012-06-25"`},
+		{NewVDate(date.New(12345, time.June, 7)), `"+12345-06-07"`},
+	}
+	for _, c := range cases {
+		var d VDate
+		bytes, err := json.Marshal(c.value)
+		if err != nil {
+			t.Errorf("JSON(%v) marshal error %v", c, err)
+		} else if string(bytes) != c.want {
+			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bytes), c.want)
+		} else {
+			err = json.Unmarshal(bytes, &d)
+			if err != nil {
+				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
+			} else if d != c.value {
+				t.Errorf("JSON(%#v) unmarshal got %#v", c.value, d)
+			}
+		}
+	}
+}
+
+func TestTextMarshalling(t *testing.T) {
+	cases := []struct {
+		value VDate
+		want  string
+	}{
+		{NewVDate(date.New(-1, time.December, 31)), "-0001-12-31"},
+		{NewVDate(date.New(2012, time.June, 25)), "2012-06-25"},
+		{NewVDate(date.New(12345, time.June, 7)), "+12345-06-07"},
+	}
+	for _, c := range cases {
+		var d VDate
+		bytes, err := c.value.MarshalText()
+		if err != nil {
+			t.Errorf("Text(%v) marshal error %v", c, err)
+		} else if string(bytes) != c.want {
+			t.Errorf("Text(%v) == %v, want %v", c.value, string(bytes), c.want)
+		} else {
+			err = d.UnmarshalText(bytes)
+			if err != nil {
+				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
+			} else if d != c.value {
+				t.Errorf("Text(%#v) unmarshal got %#v", c.value, d)
+			}
+		}
 	}
 }

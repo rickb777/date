@@ -34,6 +34,8 @@ func TestGobEncoding(t *testing.T) {
 			err = decoder.Decode(&d)
 			if err != nil {
 				t.Errorf("Gob(%v) decode error %v", c, err)
+			} else if d != c {
+				t.Errorf("Gob(%v) decode got %v", c, d)
 			}
 		}
 	}
@@ -61,7 +63,6 @@ func TestInvalidGob(t *testing.T) {
 }
 
 func TestJSONMarshalling(t *testing.T) {
-	var d Date
 	cases := []struct {
 		value Date
 		want  string
@@ -75,6 +76,7 @@ func TestJSONMarshalling(t *testing.T) {
 		{New(12345, time.June, 7), `"+12345-06-07"`},
 	}
 	for _, c := range cases {
+		var d Date
 		bytes, err := json.Marshal(c.value)
 		if err != nil {
 			t.Errorf("JSON(%v) marshal error %v", c, err)
@@ -84,6 +86,8 @@ func TestJSONMarshalling(t *testing.T) {
 			err = json.Unmarshal(bytes, &d)
 			if err != nil {
 				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
+			} else if d != c.value {
+				t.Errorf("JSON(%v) unmarshal got %v", c.value, d)
 			}
 		}
 	}
@@ -109,7 +113,6 @@ func TestInvalidJSON(t *testing.T) {
 }
 
 func TestTextMarshalling(t *testing.T) {
-	var d Date
 	cases := []struct {
 		value Date
 		want  string
@@ -123,6 +126,7 @@ func TestTextMarshalling(t *testing.T) {
 		{New(12345, time.June, 7), "+12345-06-07"},
 	}
 	for _, c := range cases {
+		var d Date
 		bytes, err := c.value.MarshalText()
 		if err != nil {
 			t.Errorf("Text(%v) marshal error %v", c, err)
@@ -132,6 +136,8 @@ func TestTextMarshalling(t *testing.T) {
 			err = d.UnmarshalText(bytes)
 			if err != nil {
 				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
+			} else if d != c.value {
+				t.Errorf("Text(%v) unmarshal got %v", c.value, d)
 			}
 		}
 	}

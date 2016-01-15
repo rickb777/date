@@ -30,7 +30,6 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 	}
 
 	d.day = PeriodOfDays(data[3]) | PeriodOfDays(data[2])<<8 | PeriodOfDays(data[1])<<16 | PeriodOfDays(data[0])<<24
-	//	d.decoded = time.Time{}
 
 	return nil
 }
@@ -60,19 +59,12 @@ func (d Date) MarshalJSON() ([]byte, error) {
 // (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
 // the year must use at least 4 digits and if outside the [0,9999] range
 // must be prefixed with a + or - sign.
-func (d *Date) UnmarshalJSON(data []byte) (err error) {
-	value := string(data)
-	n := len(value)
-	if n < 2 || value[0] != '"' || value[n-1] != '"' {
-		return fmt.Errorf("Date.UnmarshalJSON: missing double quotes (%s)", value)
+func (d *Date) UnmarshalJSON(data []byte) error {
+	n := len(data)
+	if n < 2 || data[0] != '"' || data[n-1] != '"' {
+		return fmt.Errorf("Date.UnmarshalJSON: missing double quotes (%s)", string(data))
 	}
-	u, err := ParseISO(value[1 : n-1])
-	if err != nil {
-		return err
-	}
-	d.day = u.day
-	//	d.decoded = time.Time{}
-	return nil
+	return d.UnmarshalText(data[1 : n-1])
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
@@ -92,10 +84,8 @@ func (d Date) MarshalText() ([]byte, error) {
 // must be prefixed with a + or - sign.
 func (d *Date) UnmarshalText(data []byte) (err error) {
 	u, err := ParseISO(string(data))
-	if err != nil {
-		return err
+	if err == nil {
+		d.day = u.day
 	}
-	d.day = u.day
-	//	d.decoded = time.Time{}
-	return nil
+	return err
 }

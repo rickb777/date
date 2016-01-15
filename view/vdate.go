@@ -104,6 +104,44 @@ func (d VDate) Previous() VDateDelta {
 }
 
 //-------------------------------------------------------------------------------------------------
+// Only lossy transcoding is supported here because the intention is that data exchange should be
+// via the main Date type; VDate is only intended for output through view layers.
+
+// MarshalJSON implements the json.Marshaler interface.
+func (v VDate) MarshalJSON() ([]byte, error) {
+	return v.d.MarshalJSON()
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// Note that the format value gets lost.
+func (v *VDate) UnmarshalJSON(data []byte) (err error) {
+	u := &date.Date{}
+	err = u.UnmarshalJSON(data)
+	if err == nil {
+		v.d = *u
+		v.f = DefaultFormat
+	}
+	return err
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+func (v VDate) MarshalText() ([]byte, error) {
+	return v.d.MarshalText()
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+// Note that the format value gets lost.
+func (v *VDate) UnmarshalText(data []byte) (err error) {
+	u := &date.Date{}
+	err = u.UnmarshalText(data)
+	if err == nil {
+		v.d = *u
+		v.f = DefaultFormat
+	}
+	return err
+}
+
+//-------------------------------------------------------------------------------------------------
 
 type VDateDelta struct {
 	d    date.Date
