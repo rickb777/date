@@ -62,9 +62,10 @@ func TestNewDateRangeWithNormalise(t *testing.T) {
 	isEq(t, r2.End(), d0402)
 }
 
-func TestOneDayRange(t *testing.T) {
+func TestEmptyRange(t *testing.T) {
 	drN0 := DateRange{d0327, -1}
 	isEq(t, drN0.Days(), PeriodOfDays(-1))
+	isEq(t, drN0.IsZero(), false)
 	isEq(t, drN0.IsEmpty(), false)
 	isEq(t, drN0.Start(), d0327)
 	isEq(t, drN0.Last(), d0327)
@@ -72,10 +73,29 @@ func TestOneDayRange(t *testing.T) {
 
 	dr0 := DateRange{}
 	isEq(t, dr0.Days(), PeriodOfDays(0))
+	isEq(t, dr0.IsZero(), true)
 	isEq(t, dr0.IsEmpty(), true)
 	isEq(t, dr0.String(), "0 days from 1970-01-01")
 
+	dr1 := EmptyRange(Date{})
+	isEq(t, dr1.IsZero(), true)
+	isEq(t, dr1.IsEmpty(), true)
+	isEq(t, dr1.Days(), PeriodOfDays(0))
+
+	dr2 := EmptyRange(d0327)
+	isEq(t, dr2.IsZero(), false)
+	isEq(t, dr2.IsEmpty(), true)
+	isEq(t, dr2.Start(), d0327)
+	isEq(t, dr2.Last().IsZero(), true)
+	isEq(t, dr2.End(), d0327)
+	isEq(t, dr2.Days(), PeriodOfDays(0))
+	isEq(t, dr2.String(), "0 days from 2015-03-27")
+}
+
+func TestOneDayRange(t *testing.T) {
 	dr1 := OneDayRange(Date{})
+	isEq(t, dr1.IsZero(), false)
+	isEq(t, dr1.IsEmpty(), false)
 	isEq(t, dr1.Days(), PeriodOfDays(1))
 
 	dr2 := OneDayRange(d0327)
@@ -217,8 +237,8 @@ func TestMergeNonOverlapping(t *testing.T) {
 }
 
 func TestMergeEmpties(t *testing.T) {
-	dr1 := ZeroRange(d0320)
-	dr2 := ZeroRange(d0408) // curiously, this is *not* included because it has no size.
+	dr1 := EmptyRange(d0320)
+	dr2 := EmptyRange(d0408) // curiously, this is *not* included because it has no size.
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0320)

@@ -50,8 +50,13 @@ func NewMonthOf(year int, month time.Month) DateRange {
 	return DateRange{start, PeriodOfDays(end.Sub(start))}
 }
 
-// ZeroRange constructs an empty range. This is often a useful basis for
+// EmptyRange constructs an empty range. This is often a useful basis for
 // further operations but note that the end date is undefined.
+func EmptyRange(day Date) DateRange {
+	return DateRange{day, 0}
+}
+
+// Deprecated - ZeroRange constructs an empty range. Use EmptyRange instead.
 func ZeroRange(day Date) DateRange {
 	return DateRange{day, 0}
 }
@@ -67,7 +72,13 @@ func (dateRange DateRange) Days() PeriodOfDays {
 	return dateRange.days
 }
 
-// IsEmpty returns true if this is an empty range (zero days).
+// IsZero returns true if this has a zero start date and the the range is empty.
+// Usually this is because the range was created via the zero value.
+func (dateRange DateRange) IsZero() bool {
+	return dateRange.days == 0 && dateRange.mark.IsZero()
+}
+
+// IsEmpty returns true if this has a starting date but the range is empty (zero days).
 func (dateRange DateRange) IsEmpty() bool {
 	return dateRange.days == 0
 }
