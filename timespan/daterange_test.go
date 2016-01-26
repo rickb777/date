@@ -24,6 +24,7 @@ var d0331 = New(2015, time.March, 31)
 var d0401 = New(2015, time.April, 1)
 var d0402 = New(2015, time.April, 2)
 var d0403 = New(2015, time.April, 3)
+var d0404 = New(2015, time.April, 4)
 var d0407 = New(2015, time.April, 7)
 var d0408 = New(2015, time.April, 8)
 var d0410 = New(2015, time.April, 10)
@@ -200,7 +201,7 @@ func TestMerge1(t *testing.T) {
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0327)
-	isEq(t, m1.Last(), d0403)
+	isEq(t, m1.End(), d0404)
 	isEq(t, m1, m2)
 }
 
@@ -210,7 +211,7 @@ func TestMerge2(t *testing.T) {
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0327)
-	isEq(t, m1.Last(), d0403)
+	isEq(t, m1.End(), d0404)
 	isEq(t, m1, m2)
 }
 
@@ -220,7 +221,6 @@ func TestMergeOverlapping(t *testing.T) {
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0320)
-	isEq(t, m1.Last(), d0407)
 	isEq(t, m1.End(), d0408)
 	isEq(t, m1, m2)
 }
@@ -231,7 +231,6 @@ func TestMergeNonOverlapping(t *testing.T) {
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0320)
-	isEq(t, m1.Last(), d0407)
 	isEq(t, m1.End(), d0408)
 	isEq(t, m1, m2)
 }
@@ -242,9 +241,21 @@ func TestMergeEmpties(t *testing.T) {
 	m1 := dr1.Merge(dr2)
 	m2 := dr2.Merge(dr1)
 	isEq(t, m1.Start(), d0320)
-	isEq(t, m1.Last(), d0407)
 	isEq(t, m1.End(), d0408)
 	isEq(t, m1, m2)
+}
+
+func TestMergeZeroes(t *testing.T) {
+	dr0 := DateRange{}
+	dr1 := OneDayRange(d0401).ExtendBy(6)
+	m1 := dr1.Merge(dr0)
+	m2 := dr0.Merge(dr1)
+	m3 := dr0.Merge(dr0)
+	isEq(t, m1.Start(), d0401)
+	isEq(t, m1.End(), d0408)
+	isEq(t, m1, m2)
+	isEq(t, m3.IsZero(), true)
+	isEq(t, m3, dr0)
 }
 
 func TestDurationNormalUTC(t *testing.T) {

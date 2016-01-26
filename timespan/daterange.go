@@ -199,10 +199,21 @@ func (dateRange DateRange) ContainsTime(t time.Time) bool {
 }
 
 // Merge combines two date ranges by calculating a date range that just encompasses them both.
-// As a special case, if one range is entirely contained within the other range, the larger of
-// the two is returned. Otherwise, the result is from the start of the earlier one to the end of
-// the later one, even if the two ranges don't overlap.
+// There are two special cases.
+//
+// Firstly, if one range is entirely contained within the other range, the larger of the two is
+// returned. Otherwise, the result is from the start of the earlier one to the end of the later
+// one, even if the two ranges don't overlap.
+//
+// Secondly, if either range is the zero value (see IsZero), it is excluded from the merge and
+// the other range is returned unchanged.
 func (thisRange DateRange) Merge(thatRange DateRange) DateRange {
+	if thatRange.IsZero() {
+		return thisRange
+	}
+	if thisRange.IsZero() {
+		return thatRange
+	}
 	minStart := thisRange.Start().Min(thatRange.Start())
 	maxEnd := thisRange.End().Max(thatRange.End())
 	return NewDateRange(minStart, maxEnd)
