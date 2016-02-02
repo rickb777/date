@@ -67,6 +67,20 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	return d.UnmarshalText(data[1 : n-1])
 }
 
+// MarshalJSON implements the json.Marshaler interface for Period.
+func (period Period) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + period.String() + `"`), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface for Period.
+func (period *Period) UnmarshalJSON(data []byte) error {
+	n := len(data)
+	if n < 2 || data[0] != '"' || data[n-1] != '"' {
+		return fmt.Errorf("Period.UnmarshalJSON: missing double quotes (%s)", string(data))
+	}
+	return period.UnmarshalText(data[1 : n-1])
+}
+
 // MarshalText implements the encoding.TextMarshaler interface.
 // The date is given in ISO 8601 extended format (e.g. "2006-01-02").
 // If the year of the date falls outside the [0,9999] range, this format
