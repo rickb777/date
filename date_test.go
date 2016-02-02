@@ -87,22 +87,20 @@ func TestToday(t *testing.T) {
 
 func TestTime(t *testing.T) {
 	cases := []struct {
-		year  int
-		month time.Month
-		day   int
+		d Date
 	}{
-		{-1234, time.February, 5},
-		{0, time.April, 12},
-		{1, time.January, 1},
-		{1946, time.February, 4},
-		{1970, time.January, 1},
-		{1976, time.April, 1},
-		{1999, time.December, 1},
-		{1111111, time.June, 21},
+		{New(-1234, time.February, 5)},
+		{New(0, time.April, 12)},
+		{New(1, time.January, 1)},
+		{New(1946, time.February, 4)},
+		{New(1970, time.January, 1)},
+		{New(1976, time.April, 1)},
+		{New(1999, time.December, 1)},
+		{New(1111111, time.June, 21)},
 	}
 	zones := []int{-12, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 12}
 	for _, c := range cases {
-		d := New(c.year, c.month, c.day)
+		d := c.d
 		tUTC := d.UTC()
 		if !same(d, tUTC) {
 			t.Errorf("TimeUTC(%v) == %v, want date part %v", d, tUTC, d)
@@ -133,23 +131,21 @@ func TestTime(t *testing.T) {
 func TestPredicates(t *testing.T) {
 	// The list of case dates must be sorted in ascending order
 	cases := []struct {
-		year  int
-		month time.Month
-		day   int
+		d Date
 	}{
-		{-1234, time.February, 5},
-		{0, time.April, 12},
-		{1, time.January, 1},
-		{1946, time.February, 4},
-		{1970, time.January, 1},
-		{1976, time.April, 1},
-		{1999, time.December, 1},
-		{1111111, time.June, 21},
+		{New(-1234, time.February, 5)},
+		{New(0, time.April, 12)},
+		{New(1, time.January, 1)},
+		{New(1946, time.February, 4)},
+		{New(1970, time.January, 1)},
+		{New(1976, time.April, 1)},
+		{New(1999, time.December, 1)},
+		{New(1111111, time.June, 21)},
 	}
 	for i, ci := range cases {
-		di := New(ci.year, ci.month, ci.day)
+		di := ci.d
 		for j, cj := range cases {
-			dj := New(cj.year, cj.month, cj.day)
+			dj := cj.d
 			testPredicate(t, di, dj, di.Equal(dj), i == j, "Equal")
 			testPredicate(t, di, dj, di.Before(dj), i < j, "Before")
 			testPredicate(t, di, dj, di.After(dj), i > j, "After")
@@ -177,22 +173,20 @@ func testPredicate(t *testing.T, di, dj Date, p, q bool, m string) {
 
 func TestArithmetic(t *testing.T) {
 	cases := []struct {
-		year  int
-		month time.Month
-		day   int
+		d Date
 	}{
-		{-1234, time.February, 5},
-		{0, time.April, 12},
-		{1, time.January, 1},
-		{1946, time.February, 4},
-		{1970, time.January, 1},
-		{1976, time.April, 1},
-		{1999, time.December, 1},
-		{1111111, time.June, 21},
+		{New(-1234, time.February, 5)},
+		{New(0, time.April, 12)},
+		{New(1, time.January, 1)},
+		{New(1946, time.February, 4)},
+		{New(1970, time.January, 1)},
+		{New(1976, time.April, 1)},
+		{New(1999, time.December, 1)},
+		{New(1111111, time.June, 21)},
 	}
 	offsets := []PeriodOfDays{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
 	for _, c := range cases {
-		di := New(c.year, c.month, c.day)
+		di := c.d
 		for _, days := range offsets {
 			dj := di.Add(days)
 			days2 := dj.Sub(di)
@@ -212,6 +206,62 @@ func TestArithmetic(t *testing.T) {
 			aMax1 := di.Max(dj)
 			if aMax1.day != eMax1 {
 				t.Errorf("%v.Max(%v) is %s", di, dj, aMax1)
+			}
+		}
+	}
+}
+
+func TestAddDate(t *testing.T) {
+	cases := []struct {
+		d                   Date
+		years, months, days int
+		expected            Date
+	}{
+		{New(1970, time.January, 1), 1, 2, 3, New(1971, time.March, 4)},
+		{New(1999, time.September, 28), 6, 4, 2, New(2006, time.January, 30)},
+		{New(1999, time.September, 28), 0, 0, 3, New(1999, time.October, 1)},
+		{New(1999, time.September, 28), 0, 1, 3, New(1999, time.October, 31)},
+	}
+	for _, c := range cases {
+		di := c.d
+		dj := di.AddDate(c.years, c.months, c.days)
+		if dj != c.expected {
+			t.Errorf("%v AddDate(%v,%v,%v) == %v, want %v", di, c.years, c.months, c.days, dj, c.expected)
+		}
+		dk := dj.AddDate(-c.years, -c.months, -c.days)
+		if dk != di {
+			t.Errorf("%v AddDate(%v,%v,%v) == %v, want %v", dj, -c.years, -c.months, -c.days, dk, di)
+		}
+	}
+}
+
+func xTestAddDuration(t *testing.T) {
+	cases := []struct {
+		year  int
+		month time.Month
+		day   int
+	}{
+		{-1234, time.February, 5},
+		{0, time.April, 12},
+		{1, time.January, 1},
+		{1946, time.February, 4},
+		{1970, time.January, 1},
+		{1976, time.April, 1},
+		{1999, time.December, 1},
+		{1111111, time.June, 21},
+	}
+	offsets := []PeriodOfDays{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
+	for _, c := range cases {
+		di := New(c.year, c.month, c.day)
+		for _, days := range offsets {
+			dj := di.AddPeriod(NewPeriod(0, 0, int(days)))
+			days2 := dj.Sub(di)
+			if days2 != days {
+				t.Errorf("AddSub(%v,%v) == %v, want %v", di, days, days2, days)
+			}
+			dk := dj.AddPeriod(NewPeriod(0, 0, -int(days)))
+			if dk != di {
+				t.Errorf("AddNeg(%v,%v) == %v, want %v", di, days, dk, di)
 			}
 		}
 	}

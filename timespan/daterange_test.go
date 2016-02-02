@@ -65,18 +65,18 @@ func TestNewDateRangeWithNormalise(t *testing.T) {
 
 func TestEmptyRange(t *testing.T) {
 	drN0 := DateRange{d0327, -1}
-	isEq(t, drN0.Days(), PeriodOfDays(-1))
+	isEq(t, drN0.Days(), PeriodOfDays(1))
 	isEq(t, drN0.IsZero(), false)
 	isEq(t, drN0.IsEmpty(), false)
 	isEq(t, drN0.Start(), d0327)
 	isEq(t, drN0.Last(), d0327)
-	isEq(t, drN0.String(), "1 day on 2015-03-27")
+	isEq(t, drN0.String(), "1 day on 2015-03-26")
 
 	dr0 := DateRange{}
 	isEq(t, dr0.Days(), PeriodOfDays(0))
 	isEq(t, dr0.IsZero(), true)
 	isEq(t, dr0.IsEmpty(), true)
-	isEq(t, dr0.String(), "0 days from 1970-01-01")
+	isEq(t, dr0.String(), "0 days at 1970-01-01")
 
 	dr1 := EmptyRange(Date{})
 	isEq(t, dr1.IsZero(), true)
@@ -90,7 +90,7 @@ func TestEmptyRange(t *testing.T) {
 	isEq(t, dr2.Last().IsZero(), true)
 	isEq(t, dr2.End(), d0327)
 	isEq(t, dr2.Days(), PeriodOfDays(0))
-	isEq(t, dr2.String(), "0 days from 2015-03-27")
+	isEq(t, dr2.String(), "0 days at 2015-03-27")
 }
 
 func TestOneDayRange(t *testing.T) {
@@ -147,11 +147,43 @@ func TestExtendByPos(t *testing.T) {
 }
 
 func TestExtendByNeg(t *testing.T) {
-	dr := OneDayRange(d0327).ExtendBy(-9)
-	isEq(t, dr.Days(), PeriodOfDays(-8))
+	dr := OneDayRange(d0327).ExtendBy(-8)
+	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.Start(), d0320)
-	isEq(t, dr.Last(), d0327)
-	isEq(t, dr.String(), "8 days from 2015-03-20 to 2015-03-27")
+	isEq(t, dr.Last(), d0326)
+	isEq(t, dr.String(), "7 days from 2015-03-20 to 2015-03-26")
+}
+
+func TestShiftByPosPeriod(t *testing.T) {
+	dr := NewDateRange(d0327, d0402).ShiftByPeriod(NewPeriod(0, 0, 7))
+	isEq(t, dr.Days(), PeriodOfDays(6))
+	isEq(t, dr.Start(), d0403)
+	isEq(t, dr.Last(), d0408)
+}
+
+func TestShiftByNegPeriod(t *testing.T) {
+	dr := NewDateRange(d0403, d0408).ShiftByPeriod(NewPeriod(0, 0, -7))
+	isEq(t, dr.Days(), PeriodOfDays(5))
+	isEq(t, dr.Start(), d0327)
+	isEq(t, dr.Last(), d0331)
+}
+
+func TestExtendByPosPeriod(t *testing.T) {
+	dr := OneDayRange(d0327).ExtendByPeriod(NewPeriod(0, 0, 6))
+	isEq(t, dr.Days(), PeriodOfDays(7))
+	isEq(t, dr.Start(), d0327)
+	isEq(t, dr.Last(), d0402)
+	isEq(t, dr.End(), d0403)
+	isEq(t, dr.String(), "7 days from 2015-03-27 to 2015-04-02")
+}
+
+func TestExtendByNegPeriod(t *testing.T) {
+	dr := OneDayRange(d0327).ExtendByPeriod(NewPeriod(0, 0, -8))
+	fmt.Printf("\ndr=%#v\n", dr)
+	isEq(t, dr.Days(), PeriodOfDays(7))
+	isEq(t, dr.Start(), d0320)
+	isEq(t, dr.Last(), d0326)
+	isEq(t, dr.String(), "7 days from 2015-03-20 to 2015-03-26")
 }
 
 func TestContains1(t *testing.T) {

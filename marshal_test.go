@@ -112,7 +112,7 @@ func TestInvalidJSON(t *testing.T) {
 	}
 }
 
-func TestTextMarshalling(t *testing.T) {
+func TestDateTextMarshalling(t *testing.T) {
 	cases := []struct {
 		value Date
 		want  string
@@ -143,7 +143,7 @@ func TestTextMarshalling(t *testing.T) {
 	}
 }
 
-func TestInvalidText(t *testing.T) {
+func TestInvalidDateText(t *testing.T) {
 	cases := []struct {
 		value string
 		want  string
@@ -154,6 +154,54 @@ func TestInvalidText(t *testing.T) {
 	for _, c := range cases {
 		var d Date
 		err := d.UnmarshalText([]byte(c.value))
+		if err == nil || err.Error() != c.want {
+			t.Errorf("InvalidText(%v) == %v, want %v", c.value, err, c.want)
+		}
+	}
+}
+
+func TestPeriodTextMarshalling(t *testing.T) {
+	cases := []struct {
+		value Period
+		want  string
+	}{
+		{NewPeriod(-11111, -123, -3), "-P11111Y123M3D"},
+		{NewPeriod(-1, -12, -31), "-P1Y12M31D"},
+		{NewPeriod(0, 0, 0), "P0D"},
+		{NewPeriod(0, 0, 1), "P1D"},
+		{NewPeriod(0, 1, 0), "P1M"},
+		{NewPeriod(1, 0, 0), "P1Y"},
+	}
+	for _, c := range cases {
+		var p Period
+		bytes, err := c.value.MarshalText()
+		if err != nil {
+			t.Errorf("Text(%v) marshal error %v", c, err)
+		} else if string(bytes) != c.want {
+			t.Errorf("Text(%v) == %v, want %v", c.value, string(bytes), c.want)
+		} else {
+			err = p.UnmarshalText(bytes)
+			if err != nil {
+				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
+			} else if p != c.value {
+				t.Errorf("Text(%v) unmarshal got %v", c.value, p)
+			}
+		}
+	}
+}
+
+func TestInvalidPeriodText(t *testing.T) {
+	cases := []struct {
+		value string
+		want  string
+	}{
+		{``, `Cannot parse a blank string as a period.`},
+		{`not-a-period`, `Expected 'P' period mark at the start: not-a-period`},
+		{`P000`, `Expected 'Y', 'M', 'W' or 'D' marker: P000`},
+	}
+	for _, c := range cases {
+		var p Period
+		err := p.UnmarshalText([]byte(c.value))
 		if err == nil || err.Error() != c.want {
 			t.Errorf("InvalidText(%v) == %v, want %v", c.value, err, c.want)
 		}

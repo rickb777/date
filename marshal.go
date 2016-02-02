@@ -89,3 +89,17 @@ func (d *Date) UnmarshalText(data []byte) (err error) {
 	}
 	return err
 }
+
+// MarshalText implements the encoding.TextMarshaler interface for Periods.
+func (period Period) MarshalText() ([]byte, error) {
+	return []byte(period.String()), nil
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface for Periods.
+func (period *Period) UnmarshalText(data []byte) (err error) {
+	u, err := ParsePeriod(string(data))
+	if err == nil {
+		*period = u
+	}
+	return err
+}

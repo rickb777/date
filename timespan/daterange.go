@@ -67,8 +67,11 @@ func OneDayRange(day Date) DateRange {
 	return DateRange{day, 1}
 }
 
-// Days returns the period represented by this range.
+// Days returns the period represented by this range. This will never be negative.
 func (dateRange DateRange) Days() PeriodOfDays {
+	if dateRange.days < 0 {
+		return -dateRange.days
+	}
 	return dateRange.days
 }
 
@@ -144,21 +147,42 @@ func (dateRange DateRange) ExtendBy(days PeriodOfDays) DateRange {
 	if days == 0 {
 		return dateRange
 	}
-	return DateRange{dateRange.mark, dateRange.days + days}
+	return DateRange{dateRange.mark, dateRange.days + days}.Normalise()
+}
+
+// ShiftByPeriod moves the date range by moving both the start and end dates similarly.
+// A negative parameter is allowed.
+func (dateRange DateRange) ShiftByPeriod(period Period) DateRange {
+	if period.IsZero() {
+		return dateRange
+	}
+	newMark := dateRange.mark.AddPeriod(period)
+	//fmt.Printf("mark + %v : %v -> %v", period, dateRange.mark, newMark)
+	return DateRange{newMark, dateRange.days}
+}
+
+// ExtendByPeriod extends (or reduces) the date range by moving the end date.
+// A negative parameter is allowed and this may cause the range to become inverted
+// (i.e. the mark date becomes the end date instead of the start date).
+func (dateRange DateRange) ExtendByPeriod(period Period) DateRange {
+	if period.IsZero() {
+		return dateRange
+	}
+	newEnd := dateRange.End().AddPeriod(period)
+	//fmt.Printf("%v, end + %v : %v -> %v", dateRange.mark, period, dateRange.End(), newEnd)
+	return NewDateRange(dateRange.Start(), newEnd)
 }
 
 // String describes the date range in human-readable form.
 func (dateRange DateRange) String() string {
-	switch dateRange.days {
+	norm := dateRange.Normalise()
+	switch norm.days {
 	case 0:
-		return fmt.Sprintf("0 days from %s", dateRange.mark)
-	case 1, -1:
-		return fmt.Sprintf("1 day on %s", dateRange.mark)
+		return fmt.Sprintf("0 days at %s", norm.mark)
+	case 1:
+		return fmt.Sprintf("1 day on %s", norm.mark)
 	default:
-		if dateRange.days < 0 {
-			return fmt.Sprintf("%d days from %s to %s", -dateRange.days, dateRange.Start(), dateRange.Last())
-		}
-		return fmt.Sprintf("%d days from %s to %s", dateRange.days, dateRange.Start(), dateRange.Last())
+		return fmt.Sprintf("%d days from %s to %s", norm.days, norm.Start(), norm.Last())
 	}
 }
 

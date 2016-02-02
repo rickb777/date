@@ -218,9 +218,25 @@ func (d Date) Add(days PeriodOfDays) Date {
 // AddDate returns the date corresponding to adding the given number of years,
 // months, and days to d. For example, AddData(-1, 2, 3) applied to
 // January 1, 2011 returns March 4, 2010.
+//
+// AddDate normalizes its result in the same way that Date does,
+// so, for example, adding one month to October 31 yields
+// December 1, the normalized form for November 31.
+//
+// The addition of all fields is performed before normalisation of any; this can affect
+// the result. For example, adding 0y 1m 3d to September 28 gives October 31 (not
+// November 1).
 func (d Date) AddDate(years, months, days int) Date {
 	t := decode(d.day).AddDate(years, months, days)
 	return Date{encode(t)}
+}
+
+// AddPeriod returns the date corresponding to adding the given period. If the
+// period's fields are be negative, this results in an earlier date.
+//
+// See the description for AddDate.
+func (d Date) AddPeriod(period Period) Date {
+	return d.AddDate(period.Years(), period.Months(), period.Days())
 }
 
 // Sub returns d-u as the number of days between the two dates.
