@@ -12,11 +12,6 @@ import (
 // year lengths, month lengths and even day lengths depends on context. So a period is
 // not necessarily a fixed duration of time in terms of seconds.
 //
-// See https://en.wikipedia.org/wiki/ISO_8601#Periods
-//
-// Example representations: "P4D" is four days; "P3Y6M4W1D" is three years, 6 months,
-// 4 weeks and one day.
-//
 // In the ISO representation, decimal fractions are supported, although only the last non-zero
 // component is allowed to have a fraction according to the Standard. For example "P2.5Y"
 // is 2.5 years.
