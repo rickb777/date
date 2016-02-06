@@ -260,3 +260,56 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 		}
 	}
 }
+
+func TestPeriodAdd(t *testing.T) {
+	cases := []struct {
+		one, two string
+		expect   string
+	}{
+		{"P0D", "P0D", "P0D"},
+		{"P1D", "P1D", "P2D"},
+		{"P1M", "P1M", "P2M"},
+		{"P1Y", "P1Y", "P2Y"},
+		{"PT1H", "PT1H", "PT2H"},
+		{"PT1M", "PT1M", "PT2M"},
+		{"PT1S", "PT1S", "PT2S"},
+		{"P1Y2M3DT4H5M6S", "P6Y5M4DT3H2M1S", "P7Y7M7DT7H7M7S"},
+		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
+	}
+	for _, c := range cases {
+		s := MustParse(c.one).Add(MustParse(c.two))
+		if s != MustParse(c.expect) {
+			t.Errorf("%s.Add(%s) == %v, want %s", c.one, c.two, s, c.expect)
+		}
+	}
+}
+
+func TestPeriodScale(t *testing.T) {
+	cases := []struct {
+		one    string
+		m      float32
+		expect string
+	}{
+		{"P0D", 2, "P0D"},
+		{"P1D", 2, "P2D"},
+		{"P1M", 2, "P2M"},
+		{"P1Y", 2, "P2Y"},
+		{"PT1H", 2, "PT2H"},
+		{"PT1M", 2, "PT2M"},
+		{"PT1S", 2, "PT2S"},
+		{"P1D", 0.5, "P0.5D"},
+		{"P1M", 0.5, "P0.5M"},
+		{"P1Y", 0.5, "P0.5Y"},
+		{"PT1H", 0.5, "PT0.5H"},
+		{"PT1M", 0.5, "PT0.5M"},
+		{"PT1S", 0.5, "PT0.5S"},
+		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
+		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
+	}
+	for _, c := range cases {
+		s := MustParse(c.one).Scale(c.m)
+		if s != MustParse(c.expect) {
+			t.Errorf("%s.Scale(%g) == %v, want %s", c.one, c.m, s, c.expect)
+		}
+	}
+}

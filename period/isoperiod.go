@@ -353,6 +353,33 @@ func (period Period) Negate() Period {
 	return Period{-period.years, -period.months, -period.days, -period.hours, -period.minutes, -period.seconds}
 }
 
+// Add adds two periods together.
+func (this Period) Add(that Period) Period {
+	return Period{
+		this.years + that.years,
+		this.months + that.months,
+		this.days + that.days,
+		this.hours + that.hours,
+		this.minutes + that.minutes,
+		this.seconds + that.seconds,
+	}
+}
+
+// Scale a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
+// and change the sign if negative.
+// Bear in mind that the internal representation is limited by fixed-point arithmetic with one
+// decimal place; each field only is int16.
+func (this Period) Scale(factor float32) Period {
+	return Period{
+		int16(float32(this.years) * factor),
+		int16(float32(this.months) * factor),
+		int16(float32(this.days) * factor),
+		int16(float32(this.hours) * factor),
+		int16(float32(this.minutes) * factor),
+		int16(float32(this.seconds) * factor),
+	}
+}
+
 // Sign returns +1 for positive periods and -1 for negative periods.
 func (period Period) Sign() int {
 	if period.years < 0 || period.months < 0 || period.days < 0 || period.hours < 0 || period.minutes < 0 || period.seconds < 0 {
