@@ -26,21 +26,17 @@ type Clock int32
 // Common durations - second, minute, hour and day.
 const (
 	// Second is one second; it has a similar meaning to time.Second.
-	Second      Clock = Clock(time.Second / time.Millisecond)
-	ClockSecond Clock = Clock(time.Second / time.Millisecond)
+	Second Clock = Clock(time.Second / time.Millisecond)
 
 	// Minute is one minute; it has a similar meaning to time.Minute.
-	Minute      Clock = Clock(time.Minute / time.Millisecond)
-	ClockMinute Clock = Clock(time.Minute / time.Millisecond)
+	Minute Clock = Clock(time.Minute / time.Millisecond)
 
 	// Hour is one hour; it has a similar meaning to time.Hour.
-	Hour      Clock = Clock(time.Hour / time.Millisecond)
-	ClockHour Clock = Clock(time.Hour / time.Millisecond)
+	Hour Clock = Clock(time.Hour / time.Millisecond)
 
 	// Day is a fixed period of 24 hours. This does not take account of daylight savings,
 	// so is not fully general.
-	Day      Clock = Clock(time.Hour * 24 / time.Millisecond)
-	ClockDay Clock = Clock(time.Hour * 24 / time.Millisecond)
+	Day Clock = Clock(time.Hour * 24 / time.Millisecond)
 )
 
 // Midnight is the zero value of a Clock.
@@ -89,6 +85,13 @@ func (c Clock) Add(h, m, s, ms int) Clock {
 	mx := Clock(m) * Minute
 	sx := Clock(s) * Second
 	return c + hx + mx + sx + Clock(ms)
+}
+
+// AddDuration returns a new Clock offset from this clock by a duration.
+// The parameters can be negative.
+// If required, use Mod24() to correct any overflow or underflow.
+func (c Clock) AddDuration(d time.Duration) Clock {
+	return c + Clock(d/time.Millisecond)
 }
 
 // IsInOneDay tests whether a clock time is in the range 0 to 24 hours, inclusive. Inside this

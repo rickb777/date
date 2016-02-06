@@ -14,6 +14,8 @@ It also provides
 
  * `TimeSpan` which expresses a duration of time between two instants, and
  * `DateRange` which expresses a period between two dats.
+ * `Period` which expresses a period corresponding to the ISO-8601 form.
+ * `Clock` which expresses a wall-clock style hours-minutes-seconds.
 
 See [package documentation](https://godoc.org/github.com/rickb777/date) for
 full documentation and examples.

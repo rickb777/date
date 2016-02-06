@@ -95,6 +95,25 @@ func TestClockAdd(t *testing.T) {
 	}
 }
 
+func TestClockAddDuration(t *testing.T) {
+	cases := []struct {
+		d        time.Duration
+		in, want Clock
+	}{
+		{0, 2 * Hour, New(2, 0, 0, 0)},
+		{1, 2 * Hour, New(2, 0, 0, 0)},
+		{time.Millisecond, 2 * Hour, New(2, 0, 0, 1)},
+		{-time.Second, 2 * Hour, New(1, 59, 59, 0)},
+		{7 * time.Minute, 2 * Hour, New(2, 7, 0, 0)},
+	}
+	for i, x := range cases {
+		got := x.in.AddDuration(x.d)
+		if got != x.want {
+			t.Errorf("%d: %d: got %v, want %v", i, x.d, got, x.want)
+		}
+	}
+}
+
 func TestClockIsMidnight(t *testing.T) {
 	cases := []struct {
 		in   Clock

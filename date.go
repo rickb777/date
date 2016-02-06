@@ -233,7 +233,8 @@ func (d Date) AddDate(years, months, days int) Date {
 }
 
 // AddPeriod returns the date corresponding to adding the given period. If the
-// period's fields are be negative, this results in an earlier date.
+// period's fields are be negative, this results in an earlier date. Any time
+// component is ignored.
 //
 // See the description for AddDate.
 func (d Date) AddPeriod(period period.Period) Date {

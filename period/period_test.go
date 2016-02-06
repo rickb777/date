@@ -266,6 +266,38 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 	}
 }
 
+func TestPeriodOnlyYMD(t *testing.T) {
+	cases := []struct {
+		one    string
+		expect string
+	}{
+		{"P1Y2M3DT4H5M6S", "P1Y2M3D"},
+		{"-P6Y5M4DT3H2M1S", "-P6Y5M4D"},
+	}
+	for _, c := range cases {
+		s := MustParse(c.one).OnlyYMD()
+		if s != MustParse(c.expect) {
+			t.Errorf("%s.OnlyYMD() == %v, want %s", c.one, s, c.expect)
+		}
+	}
+}
+
+func TestPeriodOnlyHMS(t *testing.T) {
+	cases := []struct {
+		one    string
+		expect string
+	}{
+		{"P1Y2M3DT4H5M6S", "PT4H5M6S"},
+		{"-P6Y5M4DT3H2M1S", "-PT3H2M1S"},
+	}
+	for _, c := range cases {
+		s := MustParse(c.one).OnlyHMS()
+		if s != MustParse(c.expect) {
+			t.Errorf("%s.OnlyHMS() == %v, want %s", c.one, s, c.expect)
+		}
+	}
+}
+
 func TestPeriodAdd(t *testing.T) {
 	cases := []struct {
 		one, two string

@@ -62,6 +62,18 @@ func (period Period) IsNegative() bool {
 	return period.years < 0 || period.months < 0 || period.days < 0
 }
 
+// OnlyYMD returns a new Period with only the year, month and day fields. The hour,
+// minute and second fields are zeroed.
+func (period Period) OnlyYMD() Period {
+	return Period{period.years, period.months, period.days, 0, 0, 0}
+}
+
+// OnlyHMS returns a new Period with only the hour, minute and second fields. The year,
+// month and day fields are zeroed.
+func (period Period) OnlyHMS() Period {
+	return Period{0, 0, 0, period.hours, period.minutes, period.seconds}
+}
+
 // Abs converts a negative period to a positive one.
 func (period Period) Abs() Period {
 	return Period{absInt16(period.years), absInt16(period.months), absInt16(period.days),
