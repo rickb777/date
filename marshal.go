@@ -6,7 +6,6 @@ package date
 
 import (
 	"errors"
-	"fmt"
 )
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
@@ -32,39 +31,6 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 	d.day = PeriodOfDays(data[3]) | PeriodOfDays(data[2])<<8 | PeriodOfDays(data[1])<<16 | PeriodOfDays(data[0])<<24
 
 	return nil
-}
-
-// GobEncode implements the gob.GobEncoder interface.
-func (d Date) GobEncode() ([]byte, error) {
-	return d.MarshalBinary()
-}
-
-// GobDecode implements the gob.GobDecoder interface.
-func (d *Date) GobDecode(data []byte) error {
-	return d.UnmarshalBinary(data)
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-// The date is a quoted string in ISO 8601 extended format (e.g. "2006-01-02").
-// If the year of the date falls outside the [0,9999] range, this format
-// produces an expanded year representation with possibly extra year digits
-// beyond the prescribed four-digit minimum and with a + or - sign prefix
-// (e.g. , "+12345-06-07", "-0987-06-05").
-func (d Date) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + d.String() + `"`), nil
-}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// The date is expected to be a quoted string in ISO 8601 extended format
-// (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
-// the year must use at least 4 digits and if outside the [0,9999] range
-// must be prefixed with a + or - sign.
-func (d *Date) UnmarshalJSON(data []byte) error {
-	n := len(data)
-	if n < 2 || data[0] != '"' || data[n-1] != '"' {
-		return fmt.Errorf("Date.UnmarshalJSON: missing double quotes (%s)", string(data))
-	}
-	return d.UnmarshalText(data[1 : n-1])
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.

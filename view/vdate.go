@@ -108,21 +108,21 @@ func (d VDate) Previous() VDateDelta {
 // via the main Date type; VDate is only intended for output through view layers.
 
 // MarshalJSON implements the json.Marshaler interface.
-func (v VDate) MarshalJSON() ([]byte, error) {
-	return v.d.MarshalJSON()
-}
+//func (v VDate) MarshalJSON() ([]byte, error) {
+//	return v.d.MarshalJSON()
+//}
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // Note that the format value gets lost.
-func (v *VDate) UnmarshalJSON(data []byte) (err error) {
-	u := &date.Date{}
-	err = u.UnmarshalJSON(data)
-	if err == nil {
-		v.d = *u
-		v.f = DefaultFormat
-	}
-	return err
-}
+//func (v *VDate) UnmarshalJSON(data []byte) (err error) {
+//	u := &date.Date{}
+//	err = u.UnmarshalJSON(data)
+//	if err == nil {
+//		v.d = *u
+//		v.f = DefaultFormat
+//	}
+//	return err
+//}
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (v VDate) MarshalText() ([]byte, error) {

@@ -5,9 +5,41 @@
 package period
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"testing"
 )
+
+func TestGobEncoding(t *testing.T) {
+	var b bytes.Buffer
+	encoder := gob.NewEncoder(&b)
+	decoder := gob.NewDecoder(&b)
+	cases := []string{
+		"P0D",
+		"P1D",
+		"P1W",
+		"P1M",
+		"P1Y",
+		"P2Y3M4W5D",
+		"-P2Y3M4W5D",
+	}
+	for _, c := range cases {
+		period := MustParsePeriod(c)
+		var p Period
+		err := encoder.Encode(&period)
+		if err != nil {
+			t.Errorf("Gob(%v) encode error %v", c, err)
+		} else {
+			err = decoder.Decode(&p)
+			if err != nil {
+				t.Errorf("Gob(%v) decode error %v", c, err)
+			} else if p != period {
+				t.Errorf("Gob(%v) decode got %v", c, p)
+			}
+		}
+	}
+}
 
 func TestPeriodJSONMarshalling(t *testing.T) {
 	cases := []struct {
@@ -35,24 +67,6 @@ func TestPeriodJSONMarshalling(t *testing.T) {
 			} else if p != c.value {
 				t.Errorf("JSON(%v) unmarshal got %v", c.value, p)
 			}
-		}
-	}
-}
-
-func TestInvalidPeriodJSON(t *testing.T) {
-	cases := []struct {
-		value string
-		want  string
-	}{
-		{`""`, `Cannot parse a blank string as a period.`},
-		{`"not-a-period"`, `Expected 'P' period mark at the start: not-a-period`},
-		{`"P000"`, `Expected 'Y', 'M', 'W' or 'D' marker: P000`},
-	}
-	for _, c := range cases {
-		var p Period
-		err := p.UnmarshalJSON([]byte(c.value))
-		if err == nil || err.Error() != c.want {
-			t.Errorf("InvalidJSON(%v) == %v, want %v", c.value, err, c.want)
 		}
 	}
 }
