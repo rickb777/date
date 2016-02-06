@@ -1,6 +1,7 @@
-package date
+package period
 
 import (
+	"github.com/rickb777/plural"
 	"testing"
 )
 
@@ -103,6 +104,74 @@ func TestNewPeriod(t *testing.T) {
 		}
 		if p.Days() != c.days {
 			t.Errorf("%#v, got %d want %d", p, p.Days(), c.days)
+		}
+	}
+}
+
+func TestPeriodFormat(t *testing.T) {
+	cases := []struct {
+		period string
+		expect string
+	}{
+		{"P0D", "0 days"},
+		{"P1Y", "1 year"},
+		{"P3Y", "3 years"},
+		{"-P3Y", "3 years"},
+		{"P1M", "1 month"},
+		{"P6M", "6 months"},
+		{"-P6M", "6 months"},
+		{"P7D", "1 week"},
+		{"P35D", "5 weeks"},
+		{"-P35D", "5 weeks"},
+		{"P1D", "1 day"},
+		{"P4D", "4 days"},
+		{"-P4D", "4 days"},
+		{"P1Y1M8D", "1 year, 1 month, 1 week, 1 day"},
+		{"P3Y6M39D", "3 years, 6 months, 5 weeks, 4 days"},
+		{"-P3Y6M39D", "3 years, 6 months, 5 weeks, 4 days"},
+		{"P1.1Y", "1.1 years"},
+		{"P2.5Y", "2.5 years"},
+		{"P2.15Y", "2.15 years"},
+		{"P2.125Y", "2.125 years"},
+	}
+	for _, c := range cases {
+		s := MustParsePeriod(c.period).Format()
+		if s != c.expect {
+			t.Errorf("Format() == %s, want %s for %+v", s, c.expect, c.period)
+		}
+	}
+}
+
+func TestPeriodFormatWithoutWeeks(t *testing.T) {
+	cases := []struct {
+		period string
+		expect string
+	}{
+		{"P0D", "0 days"},
+		{"P1Y", "1 year"},
+		{"P3Y", "3 years"},
+		{"-P3Y", "3 years"},
+		{"P1M", "1 month"},
+		{"P6M", "6 months"},
+		{"-P6M", "6 months"},
+		{"P7D", "7 days"},
+		{"P35D", "35 days"},
+		{"-P35D", "35 days"},
+		{"P1D", "1 day"},
+		{"P4D", "4 days"},
+		{"-P4D", "4 days"},
+		{"P1Y1M1D", "1 year, 1 month, 1 day"},
+		{"P3Y6M39D", "3 years, 6 months, 39 days"},
+		{"-P3Y6M39D", "3 years, 6 months, 39 days"},
+		{"P1.1Y", "1.1 years"},
+		{"P2.5Y", "2.5 years"},
+		{"P2.15Y", "2.15 years"},
+		{"P2.125Y", "2.125 years"},
+	}
+	for _, c := range cases {
+		s := MustParsePeriod(c.period).FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames)
+		if s != c.expect {
+			t.Errorf("Format() == %s, want %s for %+v", s, c.expect, c.period)
 		}
 	}
 }

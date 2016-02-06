@@ -7,6 +7,7 @@ package timespan
 import (
 	"fmt"
 	. "github.com/rickb777/date"
+	"github.com/rickb777/date/period"
 	"time"
 )
 
@@ -152,7 +153,7 @@ func (dateRange DateRange) ExtendBy(days PeriodOfDays) DateRange {
 
 // ShiftByPeriod moves the date range by moving both the start and end dates similarly.
 // A negative parameter is allowed.
-func (dateRange DateRange) ShiftByPeriod(period Period) DateRange {
+func (dateRange DateRange) ShiftByPeriod(period period.Period) DateRange {
 	if period.IsZero() {
 		return dateRange
 	}
@@ -164,7 +165,7 @@ func (dateRange DateRange) ShiftByPeriod(period Period) DateRange {
 // ExtendByPeriod extends (or reduces) the date range by moving the end date.
 // A negative parameter is allowed and this may cause the range to become inverted
 // (i.e. the mark date becomes the end date instead of the start date).
-func (dateRange DateRange) ExtendByPeriod(period Period) DateRange {
+func (dateRange DateRange) ExtendByPeriod(period period.Period) DateRange {
 	if period.IsZero() {
 		return dateRange
 	}

@@ -6,6 +6,7 @@ package date
 
 import (
 	"fmt"
+	"github.com/rickb777/date/period"
 	"math"
 	"time"
 )
@@ -235,7 +236,7 @@ func (d Date) AddDate(years, months, days int) Date {
 // period's fields are be negative, this results in an earlier date.
 //
 // See the description for AddDate.
-func (d Date) AddPeriod(period Period) Date {
+func (d Date) AddPeriod(period period.Period) Date {
 	return d.AddDate(period.Years(), period.Months(), period.Days())
 }
 

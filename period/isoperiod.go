@@ -1,7 +1,8 @@
-package date
+package period
 
 import (
 	"fmt"
+	. "github.com/rickb777/plural"
 	"strconv"
 	"strings"
 )
@@ -198,6 +199,59 @@ func (period Period) IsNegative() bool {
 //	return d.years == 0 && d.months == 0
 //}
 
+// Format converts the period to human-readable form using the default localisation.
+func (period Period) Format() string {
+	return period.FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, PeriodWeekNames, PeriodDayNames)
+}
+
+// FormatWithPeriodNames converts the period to human-readable form in a localisable way.
+func (period Period) FormatWithPeriodNames(yearNames Plurals, monthNames Plurals, weekNames Plurals, dayNames Plurals) string {
+	period = period.Abs()
+
+	parts := make([]string, 0)
+	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat1000(period.years)))
+	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat1000(period.months)))
+
+	if (period.years == 0 && period.months == 0) || period.days > 0 {
+		if len(weekNames) > 0 {
+			weeks := period.days / 7000
+			mdays := period.days % 7000
+			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, mdays)
+			if weeks > 0 {
+				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
+			}
+			if mdays > 0 || weeks == 0 {
+				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat1000(mdays)))
+			}
+		} else {
+			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat1000(period.days)))
+		}
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+func appendNonBlank(parts []string, s string) []string {
+	if s == "" {
+		return parts
+	}
+	return append(parts, s)
+}
+
+// PeriodDayNames provides the English default format names for the days part of the period.
+// This is a sequence of plurals where the first match is used, otherwise the last one is used.
+// The last one must include a "%g" placeholder for the number.
+var PeriodDayNames = Plurals{Case{0, "%v days"}, Case{1, "%v day"}, Case{2, "%v days"}}
+
+// PeriodWeekNames is as for PeriodDayNames but for weeks.
+var PeriodWeekNames = Plurals{Case{0, ""}, Case{1, "%v week"}, Case{2, "%v weeks"}}
+
+// PeriodMonthNames is as for PeriodDayNames but for months.
+var PeriodMonthNames = Plurals{Case{0, ""}, Case{1, "%g month"}, Case{2, "%g months"}}
+
+// PeriodYearNames is as for PeriodDayNames but for years.
+var PeriodYearNames = Plurals{Case{0, ""}, Case{1, "%g year"}, Case{2, "%g years"}}
+
 // String converts the period to -8601 form.
 func (period Period) String() string {
 	if period.IsZero() {
@@ -286,7 +340,7 @@ func (period Period) MonthsFloat() float32 {
 }
 
 // Days gets the whole number of days in the period. This includes the implied
-// number of weeks.
+// number of weeks but excludes the specified years and months.
 func (period Period) Days() int {
 	return int(period.DaysFloat())
 }
@@ -314,5 +368,4 @@ func (period Period) ModuloDays() int {
 	return f
 }
 
-//TODO marshalling support
 //TODO gobencode
