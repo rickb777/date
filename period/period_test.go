@@ -12,7 +12,12 @@ func TestParsePeriod(t *testing.T) {
 		period Period
 	}{
 		{"P0", Period{}},
+		{"P0Y", Period{}},
+		{"P0M", Period{}},
 		{"P0D", Period{}},
+		{"PT0H", Period{}},
+		{"PT0M", Period{}},
+		{"PT0S", Period{}},
 		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
 		{"P6M", Period{0, 60, 0, 0, 0, 0}},
 		{"P5W", Period{0, 0, 350, 0, 0, 0}},

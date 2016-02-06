@@ -2,9 +2,6 @@ package period
 
 import (
 	"fmt"
-	. "github.com/rickb777/plural"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -54,147 +51,6 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 		years, months, days, hours, minutes, seconds))
 }
 
-// MustParse is as per Parse except that it panics if the string cannot be parsed.
-// This is intended for setup code; don't use it for user inputs.
-func MustParse(value string) Period {
-	d, err := Parse(value)
-	if err != nil {
-		panic(err)
-	}
-	return d
-}
-
-// Parse parses strings that specify periods using ISO-8601 rules.
-//
-// In addition, a plus or minus sign can precede the period, e.g. "-P10D"
-//
-// The zero value can be represented in several ways: all of the following
-// are equivalent: "P0Y", "P0M", "P0W", "P0D", and "P0".
-func Parse(period string) (Period, error) {
-	if period == "" {
-		return Period{}, fmt.Errorf("Cannot parse a blank string as a period.")
-	}
-
-	if period == "P0" {
-		return Period{}, nil
-	}
-
-	pcopy := period
-	negate := false
-	if pcopy[0] == '-' {
-		negate = true
-		pcopy = pcopy[1:]
-	} else if pcopy[0] == '+' {
-		pcopy = pcopy[1:]
-	}
-
-	if pcopy[0] != 'P' {
-		return Period{}, fmt.Errorf("Expected 'P' period mark at the start: %s", period)
-	}
-	pcopy = pcopy[1:]
-
-	result := Period{}
-
-	st := parseState{period, pcopy, false, nil}
-	t := strings.IndexByte(pcopy, 'T')
-	if t >= 0 {
-		st.pcopy = pcopy[t+1:]
-
-		result.hours, st = parseField(st, 'H')
-		if st.err != nil {
-			return Period{}, st.err
-		}
-
-		result.minutes, st = parseField(st, 'M')
-		if st.err != nil {
-			return Period{}, st.err
-		}
-
-		result.seconds, st = parseField(st, 'S')
-		if st.err != nil {
-			return Period{}, st.err
-		}
-
-		st.pcopy = pcopy[:t]
-	}
-
-	result.years, st = parseField(st, 'Y')
-	if st.err != nil {
-		return Period{}, st.err
-	}
-
-	result.months, st = parseField(st, 'M')
-	if st.err != nil {
-		return Period{}, st.err
-	}
-
-	weeks, st := parseField(st, 'W')
-	if st.err != nil {
-		return Period{}, st.err
-	}
-
-	days, st := parseField(st, 'D')
-	if st.err != nil {
-		return Period{}, st.err
-	}
-
-	result.days = weeks*7 + days
-	//fmt.Printf("%#v\n", st)
-
-	if !st.ok {
-		return Period{}, fmt.Errorf("Expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
-	}
-	if negate {
-		return result.Negate(), nil
-	}
-	return result, nil
-}
-
-type parseState struct {
-	period, pcopy string
-	ok            bool
-	err           error
-}
-
-func parseField(st parseState, mark byte) (int16, parseState) {
-	//fmt.Printf("%c %#v\n", mark, st)
-	r := int16(0)
-	m := strings.IndexByte(st.pcopy, mark)
-	if m > 0 {
-		r, st.err = parseDecimalFixedPoint(st.pcopy[:m], st.period)
-		if st.err != nil {
-			return 0, st
-		}
-		st.pcopy = st.pcopy[m+1:]
-		st.ok = true
-	}
-	return r, st
-}
-
-// Fixed-point three decimal places
-func parseDecimalFixedPoint(s, original string) (int16, error) {
-	//was := s
-	dec := strings.IndexByte(s, '.')
-	if dec < 0 {
-		dec = strings.IndexByte(s, ',')
-	}
-
-	if dec >= 0 {
-		dp := len(s) - dec
-		if dp > 1 {
-			s = s[:dec] + s[dec+1:dec+2]
-		} else {
-			s = s[:dec] + s[dec+1:] + "0"
-		}
-	} else {
-		s = s + "0"
-	}
-
-	n, e := strconv.ParseInt(s, 10, 16)
-	//fmt.Printf("ParseInt(%s) = %d -- from %s in %s %d\n", s, n, was, original, dec)
-	return int16(n), e
-}
-
 // IsZero returns true if applied to a zero-length period.
 func (period Period) IsZero() bool {
 	return period == Period{}
@@ -204,135 +60,6 @@ func (period Period) IsZero() bool {
 // all the fields are negative.
 func (period Period) IsNegative() bool {
 	return period.years < 0 || period.months < 0 || period.days < 0
-}
-
-// IsPrecise returns true for all values with no year or month component. This holds
-// true even if the week or days component is large.
-//
-// For values where this method returns false, the imprecision arises because the
-// number of days per month varies in the Gregorian calendar and the number of
-// days per year is different for leap years.
-//func (d Period) IsPrecise() bool {
-//	return d.years == 0 && d.months == 0
-//}
-
-// Format converts the period to human-readable form using the default localisation.
-func (period Period) Format() string {
-	return period.FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, PeriodWeekNames, PeriodDayNames, PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
-}
-
-// FormatWithPeriodNames converts the period to human-readable form in a localisable way.
-func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, dayNames, hourNames, minNames, secNames Plurals) string {
-	period = period.Abs()
-
-	parts := make([]string, 0)
-	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat10(period.years)))
-	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat10(period.months)))
-
-	if period.days > 0 || (period.IsZero()) {
-		if len(weekNames) > 0 {
-			weeks := period.days / 70
-			mdays := period.days % 70
-			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, mdays)
-			if weeks > 0 {
-				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
-			}
-			if mdays > 0 || weeks == 0 {
-				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat10(mdays)))
-			}
-		} else {
-			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat10(period.days)))
-		}
-	}
-	parts = appendNonBlank(parts, hourNames.FormatFloat(absFloat10(period.hours)))
-	parts = appendNonBlank(parts, minNames.FormatFloat(absFloat10(period.minutes)))
-	parts = appendNonBlank(parts, secNames.FormatFloat(absFloat10(period.seconds)))
-
-	return strings.Join(parts, ", ")
-}
-
-func appendNonBlank(parts []string, s string) []string {
-	if s == "" {
-		return parts
-	}
-	return append(parts, s)
-}
-
-// PeriodDayNames provides the English default format names for the days part of the period.
-// This is a sequence of plurals where the first match is used, otherwise the last one is used.
-// The last one must include a "%g" placeholder for the number.
-var PeriodDayNames = Plurals{Case{0, "%v days"}, Case{1, "%v day"}, Case{2, "%v days"}}
-
-// PeriodWeekNames is as for PeriodDayNames but for weeks.
-var PeriodWeekNames = Plurals{Case{0, ""}, Case{1, "%v week"}, Case{2, "%v weeks"}}
-
-// PeriodMonthNames is as for PeriodDayNames but for months.
-var PeriodMonthNames = Plurals{Case{0, ""}, Case{1, "%g month"}, Case{2, "%g months"}}
-
-// PeriodYearNames is as for PeriodDayNames but for years.
-var PeriodYearNames = Plurals{Case{0, ""}, Case{1, "%g year"}, Case{2, "%g years"}}
-
-// PeriodHourNames is as for PeriodDayNames but for hours.
-var PeriodHourNames = Plurals{Case{0, ""}, Case{1, "%v hour"}, Case{2, "%v hours"}}
-
-// PeriodMinuteNames is as for PeriodDayNames but for minutes.
-var PeriodMinuteNames = Plurals{Case{0, ""}, Case{1, "%g minute"}, Case{2, "%g minutes"}}
-
-// PeriodSecondNames is as for PeriodDayNames but for seconds.
-var PeriodSecondNames = Plurals{Case{0, ""}, Case{1, "%g second"}, Case{2, "%g seconds"}}
-
-// String converts the period to -8601 form.
-func (period Period) String() string {
-	if period.IsZero() {
-		return "P0D"
-	}
-
-	s := ""
-	if period.Sign() < 0 {
-		s = "-"
-	}
-
-	y, m, w, d, t, hh, mm, ss := "", "", "", "", "", "", "", ""
-
-	if period.years != 0 {
-		y = fmt.Sprintf("%gY", absFloat10(period.years))
-	}
-	if period.months != 0 {
-		m = fmt.Sprintf("%gM", absFloat10(period.months))
-	}
-	if period.days != 0 {
-		//days := absInt32(period.days)
-		//weeks := days / 7
-		//if (weeks >= 10) {
-		//	w = fmt.Sprintf("%gW", absFloat(weeks))
-		//}
-		//mdays := days % 7
-		if period.days != 0 {
-			d = fmt.Sprintf("%gD", absFloat10(period.days))
-		}
-	}
-	if period.hours != 0 || period.minutes != 0 || period.seconds != 0 {
-		t = "T"
-	}
-	if period.hours != 0 {
-		hh = fmt.Sprintf("%gH", absFloat10(period.hours))
-	}
-	if period.minutes != 0 {
-		mm = fmt.Sprintf("%gM", absFloat10(period.minutes))
-	}
-	if period.seconds != 0 {
-		ss = fmt.Sprintf("%gS", absFloat10(period.seconds))
-	}
-
-	return fmt.Sprintf("%sP%s%s%s%s%s%s%s%s", s, y, m, w, d, t, hh, mm, ss)
-}
-
-func absFloat10(v int16) float32 {
-	f := float32(v) / 10
-	if v < 0 {
-		return -f
-	}
-	return f
 }
 
 // Abs converts a negative period to a positive one.
@@ -368,7 +95,7 @@ func (this Period) Add(that Period) Period {
 // Scale a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
 // and change the sign if negative.
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
-// decimal place; each field only is int16.
+// decimal place; each field is only int16.
 func (this Period) Scale(factor float32) Period {
 	return Period{
 		int16(float32(this.years) * factor),
@@ -480,8 +207,8 @@ func (period Period) SecondsFloat() float32 {
 // Duration converts a period to the equivalent duration in nanoseconds.
 // A flag is also returned that is true when the conversion was precise and false otherwise.
 // When the period specifies years, months and days, it is impossible to be precise, so
-// the duration is calculated on the basis of a year being 365.2 days and a month being
-// 1/12 of a year; days are all 24 hours long.
+// the duration is calculated on the basis of a year being 365.25 days and a month being
+// 1/12 of a that; days are all 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
 	ydE6 := time.Duration(period.years) * 36525000 // 365.25 days
