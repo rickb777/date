@@ -12,8 +12,8 @@ and convenient for calendrical calculations and date parsing and formatting
 
 It also provides
 
- * `TimeSpan` which expresses a duration of time between two instants, and
- * `DateRange` which expresses a period between two dats.
+ * `DateRange` which expresses a period between two dates.
+ * `TimeSpan` which expresses a duration of time between two instants.
  * `Period` which expresses a period corresponding to the ISO-8601 form.
  * `Clock` which expresses a wall-clock style hours-minutes-seconds.
 

@@ -2,13 +2,20 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package date provides functionality for working with dates. Subpackages support
-// clock-face time, spans of time, ranges of dates, and periods (as years, months,
-// weeks and days).
-//
-// This package introduces a light-weight Date type that is storage-efficient
-// and covenient for calendrical calculations and date parsing and formatting
+// Package date provides functionality for working with dates.
+// It implements a light-weight Date type that is storage-efficient
+// and convenient for calendrical calculations and date parsing and formatting
 // (including years outside the [0,9999] interval).
+//
+// Subpackages provide:
+//
+// * `DateRange` which expresses a period between two dates.
+//
+// * `TimeSpan` which expresses a duration of time between two instants.
+//
+// * `Period` which expresses a period corresponding to the ISO-8601 form.
+//
+// * `Clock` which expresses a wall-clock style hours-minutes-seconds.
 //
 // Credits
 //
