@@ -223,14 +223,68 @@ func (period Period) SecondsFloat() float32 {
 // 1/12 of a that; days are all 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
-	ydE6 := time.Duration(period.years) * 36525000 // 365.25 days
-	mdE6 := time.Duration(period.months) * 3043750 // 30.437 days
-	ddE6 := time.Duration(period.days) * 100000
-	tdE6 := (ydE6 + mdE6 + ddE6) * 86400
+	tdE6 := time.Duration(totalDaysApproxE6(period)) * 86400
 	hhE3 := time.Duration(period.hours) * 360000
 	mmE3 := time.Duration(period.minutes) * 6000
 	ssE3 := time.Duration(period.seconds) * 100
 	//fmt.Printf("y %d, m %d, d %d, hh %d, mm %d, ss %d\n", ydE6, mdE6, ddE6, hhE3, mmE3, ssE3)
 	stE3 := hhE3 + mmE3 + ssE3
 	return tdE6*time.Microsecond + stE3*time.Millisecond, tdE6 == 0
+}
+
+// TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
+// a year is 365.25 days and a month is 1/12 of that.
+// The result does not include any time field.
+func totalDaysApproxE6(period Period) int64 {
+	// remember that the fields are all fixed-point 1E1
+	ydE6 := int64(period.years) * 36525000 // 365.25 days
+	mdE6 := int64(period.months) * 3043750 // 30.437 days
+	ddE6 := int64(period.days) * 100000
+	return ydE6 + mdE6 + ddE6
+}
+
+// TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
+// a year is 365.25 days and a month is 1/12 of that.
+// The result does not include any time field.
+func (period Period) TotalDaysApprox() int {
+	tdE6 := totalDaysApproxE6(period.Normalise(false))
+	return int(tdE6 / 1000000)
+}
+
+// Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
+//
+// In precise mode:
+// Multiples of 60 seconds become minutes.
+// Multiples of 60 minutes become hours.
+// Multiples of 12 months become years.
+
+// Addtionally, in imprecise mode:
+// Multiples of 24 hours become days.
+// Multiples of 30.4 days become months.
+func (period Period) Normalise(precise bool) Period {
+	// remember that the fields are all fixed-point 1E1
+	s := period.Sign()
+	p := period.Abs()
+
+	p.minutes += (p.seconds / 600) * 10
+	p.seconds = p.seconds % 600
+
+	p.hours += (p.minutes / 600) * 10
+	p.minutes = p.minutes % 600
+
+	if !precise {
+		p.days += (p.hours / 240) * 10
+		p.hours = p.hours % 240
+
+		p.months += (p.days / 304) * 10
+		p.days = p.days % 304
+	}
+
+	p.years += (p.months / 120) * 10
+	p.months = p.months % 120
+
+	if s < 0 {
+		return p.Negate()
+	}
+	return p
 }

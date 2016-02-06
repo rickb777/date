@@ -148,12 +148,35 @@ func TestPeriodToDuration(t *testing.T) {
 		{"-P1Y", -time.Duration(31557600 * time.Second), false},
 	}
 	for _, c := range cases {
-		s, p := MustParse(c.value).Duration()
+		p := MustParse(c.value)
+		s, prec := p.Duration()
 		if s != c.duration {
-			t.Errorf("Duration() == %s %v, want %s for %+v", s, p, c.duration, c.value)
+			t.Errorf("Duration() == %s %v, want %s for %+v", s, prec, c.duration, c.value)
 		}
-		if p != c.precise {
-			t.Errorf("Duration() == %s %v, want %v for %+v", s, p, c.precise, c.value)
+		if prec != c.precise {
+			t.Errorf("Duration() == %s %v, want %v for %+v", s, prec, c.precise, c.value)
+		}
+	}
+}
+
+func TestPeriodApproxDays(t *testing.T) {
+	cases := []struct {
+		value      string
+		approxDays int
+	}{
+		{"P0D", 0},
+		{"PT24H", 1},
+		{"PT49H", 2},
+		{"P1D", 1},
+		{"P1M", 30},
+		{"P1Y", 365},
+		{"-P1Y", -365},
+	}
+	for _, c := range cases {
+		p := MustParse(c.value)
+		td := p.TotalDaysApprox()
+		if td != c.approxDays {
+			t.Errorf("%v.TotalDaysApprox() == %v, want %v", p, td, c.approxDays)
 		}
 	}
 }
@@ -191,6 +214,29 @@ func TestNewPeriod(t *testing.T) {
 		}
 		if p.Days() != c.days {
 			t.Errorf("%#v, got %d want %d", p, p.Days(), c.days)
+		}
+	}
+}
+
+func TestNormalise(t *testing.T) {
+	cases := []struct {
+		source, expected Period
+		precise          bool
+	}{
+		{New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0), true},
+		{New(0, 12, 0, 0, 0, 60), New(1, 0, 0, 0, 1, 0), true},
+		{New(0, 25, 0, 0, 61, 65), New(2, 1, 0, 1, 2, 5), true},
+		{New(0, 0, 31, 0, 0, 0), New(0, 0, 31, 0, 0, 0), true},
+		{New(0, 0, 29, 0, 0, 0), New(0, 0, 29, 0, 0, 0), false},
+		{New(0, 0, 31, 0, 0, 0), Period{0, 10, 6, 0, 0, 0}, false},
+		{New(0, 0, 61, 0, 0, 0), Period{0, 20, 2, 0, 0, 0}, false},
+		{New(0, 11, 30, 23, 59, 60), Period{10, 0, 6, 0, 0, 0}, false},
+		{New(0, 11, 30, 23, 59, 60).Negate(), Period{10, 0, 6, 0, 0, 0}.Negate(), false},
+	}
+	for _, c := range cases {
+		n := c.source.Normalise(c.precise)
+		if n != c.expected {
+			t.Errorf("%v.Normalise(%v) gives %v %#v, want %v", c.source, c.precise, n, n, c.expected)
 		}
 	}
 }
