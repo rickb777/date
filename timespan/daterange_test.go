@@ -156,21 +156,21 @@ func TestExtendByNeg(t *testing.T) {
 }
 
 func TestShiftByPosPeriod(t *testing.T) {
-	dr := NewDateRange(d0327, d0402).ShiftByPeriod(period.NewPeriod(0, 0, 7))
+	dr := NewDateRange(d0327, d0402).ShiftByPeriod(period.New(0, 0, 7, 0, 0, 0))
 	isEq(t, dr.Days(), PeriodOfDays(6))
 	isEq(t, dr.Start(), d0403)
 	isEq(t, dr.Last(), d0408)
 }
 
 func TestShiftByNegPeriod(t *testing.T) {
-	dr := NewDateRange(d0403, d0408).ShiftByPeriod(period.NewPeriod(0, 0, -7))
+	dr := NewDateRange(d0403, d0408).ShiftByPeriod(period.New(0, 0, -7, 0, 0, 0))
 	isEq(t, dr.Days(), PeriodOfDays(5))
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.Last(), d0331)
 }
 
 func TestExtendByPosPeriod(t *testing.T) {
-	dr := OneDayRange(d0327).ExtendByPeriod(period.NewPeriod(0, 0, 6))
+	dr := OneDayRange(d0327).ExtendByPeriod(period.New(0, 0, 6, 0, 0, 0))
 	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.Last(), d0402)
@@ -179,7 +179,7 @@ func TestExtendByPosPeriod(t *testing.T) {
 }
 
 func TestExtendByNegPeriod(t *testing.T) {
-	dr := OneDayRange(d0327).ExtendByPeriod(period.NewPeriod(0, 0, -8))
+	dr := OneDayRange(d0327).ExtendByPeriod(period.New(0, 0, -8, 0, 0, 0))
 	//fmt.Printf("\ndr=%#v\n", dr)
 	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.Start(), d0320)

@@ -16,7 +16,10 @@
 //
 // * "P3Y6M4W1D" is three years, 6 months, 4 weeks and one day.
 //
-// Note that ISO-8601 periods can also express periods of time in terms of hours, minutes and seconds,
-// as well as years/months/weeks/days, but the hour/minute/second parts are not (yet) supported.
+// * "P2DT12H" is 2 days and 12 hours.
+//
+// * "PT30S" is 30 seconds.
+//
+// * "P2.5Y" is 2.5 years.
 //
 package period

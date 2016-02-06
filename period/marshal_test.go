@@ -21,11 +21,16 @@ func TestGobEncoding(t *testing.T) {
 		"P1W",
 		"P1M",
 		"P1Y",
+		"PT1H",
+		"PT1M",
+		"PT1S",
 		"P2Y3M4W5D",
 		"-P2Y3M4W5D",
+		"P2Y3M4W5DT1H7M9S",
+		"-P2Y3M4W5DT1H7M9S",
 	}
 	for _, c := range cases {
-		period := MustParsePeriod(c)
+		period := MustParse(c)
 		var p Period
 		err := encoder.Encode(&period)
 		if err != nil {
@@ -46,12 +51,15 @@ func TestPeriodJSONMarshalling(t *testing.T) {
 		value Period
 		want  string
 	}{
-		{NewPeriod(-11111, -123, -3), `"-P11111Y123M3D"`},
-		{NewPeriod(-1, -12, -31), `"-P1Y12M31D"`},
-		{NewPeriod(0, 0, 0), `"P0D"`},
-		{NewPeriod(0, 0, 1), `"P1D"`},
-		{NewPeriod(0, 1, 0), `"P1M"`},
-		{NewPeriod(1, 0, 0), `"P1Y"`},
+		{New(-1111, -123, -3, -11, -59, -59), `"-P1111Y123M3DT11H59M59S"`},
+		{New(-1, -12, -31, -5, -4, -20), `"-P1Y12M31DT5H4M20S"`},
+		{New(0, 0, 0, 0, 0, 0), `"P0D"`},
+		{New(0, 0, 0, 0, 0, 1), `"PT1S"`},
+		{New(0, 0, 0, 0, 1, 0), `"PT1M"`},
+		{New(0, 0, 0, 1, 0, 0), `"PT1H"`},
+		{New(0, 0, 1, 0, 0, 0), `"P1D"`},
+		{New(0, 1, 0, 0, 0, 0), `"P1M"`},
+		{New(1, 0, 0, 0, 0, 0), `"P1Y"`},
 	}
 	for _, c := range cases {
 		var p Period
@@ -76,12 +84,15 @@ func TestPeriodTextMarshalling(t *testing.T) {
 		value Period
 		want  string
 	}{
-		{NewPeriod(-11111, -123, -3), "-P11111Y123M3D"},
-		{NewPeriod(-1, -12, -31), "-P1Y12M31D"},
-		{NewPeriod(0, 0, 0), "P0D"},
-		{NewPeriod(0, 0, 1), "P1D"},
-		{NewPeriod(0, 1, 0), "P1M"},
-		{NewPeriod(1, 0, 0), "P1Y"},
+		{New(-1111, -123, -3, -11, -59, -59), "-P1111Y123M3DT11H59M59S"},
+		{New(-1, -12, -31, -5, -4, -20), "-P1Y12M31DT5H4M20S"},
+		{New(0, 0, 0, 0, 0, 0), "P0D"},
+		{New(0, 0, 0, 0, 0, 1), "PT1S"},
+		{New(0, 0, 0, 0, 1, 0), "PT1M"},
+		{New(0, 0, 0, 1, 0, 0), "PT1H"},
+		{New(0, 0, 1, 0, 0, 0), "P1D"},
+		{New(0, 1, 0, 0, 0, 0), "P1M"},
+		{New(1, 0, 0, 0, 0, 0), "P1Y"},
 	}
 	for _, c := range cases {
 		var p Period
@@ -108,7 +119,7 @@ func TestInvalidPeriodText(t *testing.T) {
 	}{
 		{``, `Cannot parse a blank string as a period.`},
 		{`not-a-period`, `Expected 'P' period mark at the start: not-a-period`},
-		{`P000`, `Expected 'Y', 'M', 'W' or 'D' marker: P000`},
+		{`P000`, `Expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: P000`},
 	}
 	for _, c := range cases {
 		var p Period

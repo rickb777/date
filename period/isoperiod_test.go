@@ -3,6 +3,7 @@ package period
 import (
 	"github.com/rickb777/plural"
 	"testing"
+	"time"
 )
 
 func TestParsePeriod(t *testing.T) {
@@ -12,23 +13,27 @@ func TestParsePeriod(t *testing.T) {
 	}{
 		{"P0", Period{}},
 		{"P0D", Period{}},
-		{"P3Y", Period{3000, 0, 0}},
-		{"P6M", Period{0, 6000, 0}},
-		{"P5W", Period{0, 0, 35000}},
-		{"P4D", Period{0, 0, 4000}},
-		//{"PT12H", Period{}},
-		//{"PT30M", Period{}},
-		//{"PT5S", Period{}},
-		{"P3Y6M5W4DT12H30M5S", Period{3000, 6000, 39000}},
-		{"+P3Y6M5W4DT12H30M5S", Period{3000, 6000, 39000}},
-		{"-P3Y6M5W4DT12H30M5S", Period{-3000, -6000, -39000}},
-		{"P2.Y", Period{2000, 0, 0}},
-		{"P2.5Y", Period{2500, 0, 0}},
-		{"P2.15Y", Period{2150, 0, 0}},
-		{"P2.125Y", Period{2125, 0, 0}},
+		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
+		{"P6M", Period{0, 60, 0, 0, 0, 0}},
+		{"P5W", Period{0, 0, 350, 0, 0, 0}},
+		{"P4D", Period{0, 0, 40, 0, 0, 0}},
+		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
+		{"PT30M", Period{0, 0, 0, 0, 300, 0}},
+		{"PT25S", Period{0, 0, 0, 0, 0, 250}},
+		{"P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
+		{"+P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
+		{"-P3Y6M5W4DT12H40M5S", Period{-30, -60, -390, -120, -400, -50}},
+		{"P2.Y", Period{20, 0, 0, 0, 0, 0}},
+		{"P2.5Y", Period{25, 0, 0, 0, 0, 0}},
+		{"P2.15Y", Period{21, 0, 0, 0, 0, 0}},
+		{"P2.125Y", Period{21, 0, 0, 0, 0, 0}},
+		{"P1Y2.M", Period{10, 20, 0, 0, 0, 0}},
+		{"P1Y2.5M", Period{10, 25, 0, 0, 0, 0}},
+		{"P1Y2.15M", Period{10, 21, 0, 0, 0, 0}},
+		{"P1Y2.125M", Period{10, 21, 0, 0, 0, 0}},
 	}
 	for _, c := range cases {
-		d := MustParsePeriod(c.value)
+		d := MustParse(c.value)
 		if d != c.period {
 			t.Errorf("MustParsePeriod(%v) == %#v, want (%#v)", c.value, d, c.period)
 		}
@@ -39,7 +44,7 @@ func TestParsePeriod(t *testing.T) {
 		"P",
 	}
 	for _, c := range badCases {
-		d, err := ParsePeriod(c)
+		d, err := Parse(c)
 		if err == nil {
 			t.Errorf("ParsePeriod(%v) == %v", c, d)
 		}
@@ -52,22 +57,20 @@ func TestPeriodString(t *testing.T) {
 		period Period
 	}{
 		{"P0D", Period{}},
-		{"P3Y", Period{3000, 0, 0}},
-		{"-P3Y", Period{-3000, 0, 0}},
-		{"P6M", Period{0, 6000, 0}},
-		{"-P6M", Period{0, -6000, 0}},
-		{"P35D", Period{0, 0, 35000}},
-		{"-P35D", Period{0, 0, -35000}},
-		{"P4D", Period{0, 0, 4000}},
-		{"-P4D", Period{0, 0, -4000}},
-		//{"PT12H", Period{}},
-		//{"PT30M", Period{}},
-		//{"PT5S", Period{}},
-		{"P3Y6M39D", Period{3000, 6000, 39000}},
-		{"-P3Y6M39D", Period{-3000, -6000, -39000}},
-		{"P2.5Y", Period{2500, 0, 0}},
-		{"P2.15Y", Period{2150, 0, 0}},
-		{"P2.125Y", Period{2125, 0, 0}},
+		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
+		{"-P3Y", Period{-30, 0, 0, 0, 0, 0}},
+		{"P6M", Period{0, 60, 0, 0, 0, 0}},
+		{"-P6M", Period{0, -60, 0, 0, 0, 0}},
+		{"P35D", Period{0, 0, 350, 0, 0, 0}},
+		{"-P35D", Period{0, 0, -350, 0, 0, 0}},
+		{"P4D", Period{0, 0, 40, 0, 0, 0}},
+		{"-P4D", Period{0, 0, -40, 0, 0, 0}},
+		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
+		{"PT30M", Period{0, 0, 0, 0, 300, 0}},
+		{"PT5S", Period{0, 0, 0, 0, 0, 50}},
+		{"P3Y6M39DT1H2M4S", Period{30, 60, 390, 10, 20, 40}},
+		{"-P3Y6M39DT1H2M4S", Period{-30, -60, -390, 10, 20, 40}},
+		{"P2.5Y", Period{25, 0, 0, 0, 0, 0}},
 	}
 	for _, c := range cases {
 		s := c.period.String()
@@ -77,22 +80,101 @@ func TestPeriodString(t *testing.T) {
 	}
 }
 
-func TestNewPeriod(t *testing.T) {
+func TestPeriodComponents(t *testing.T) {
 	cases := []struct {
-		years, months, days int
-		period              Period
+		value                      string
+		y, m, w, d, dx, hh, mm, ss int
 	}{
-		{0, 0, 0, Period{0, 0, 0}},
-		{0, 0, 1, Period{0, 0, 1000}},
-		{0, 1, 0, Period{0, 1000, 0}},
-		{1, 0, 0, Period{1000, 0, 0}},
-		{100, 222, 700, Period{100000, 222000, 700000}},
-		{0, 0, -1, Period{0, 0, -1000}},
-		{0, -1, 0, Period{0, -1000, 0}},
-		{-1, 0, 0, Period{-1000, 0, 0}},
+		{"P0D", 0, 0, 0, 0, 0, 0, 0, 0},
+		{"P1Y", 1, 0, 0, 0, 0, 0, 0, 0},
+		{"-P1Y", -1, 0, 0, 0, 0, 0, 0, 0},
+		{"P6M", 0, 6, 0, 0, 0, 0, 0, 0},
+		{"-P6M", 0, -6, 0, 0, 0, 0, 0, 0},
+		{"P39D", 0, 0, 5, 39, 4, 0, 0, 0},
+		{"-P39D", 0, 0, -5, -39, -4, 0, 0, 0},
+		{"P4D", 0, 0, 0, 4, 4, 0, 0, 0},
+		{"-P4D", 0, 0, 0, -4, -4, 0, 0, 0},
+		{"PT12H", 0, 0, 0, 0, 0, 12, 0, 0},
+		{"PT30M", 0, 0, 0, 0, 0, 0, 30, 0},
+		{"PT5S", 0, 0, 0, 0, 0, 0, 0, 5},
 	}
 	for _, c := range cases {
-		p := NewPeriod(c.years, c.months, c.days)
+		p := MustParse(c.value)
+		if p.Years() != c.y {
+			t.Errorf("%s.Years() == %d, want %d", c.value, p.Years(), c.y)
+		}
+		if p.Months() != c.m {
+			t.Errorf("%s.Months() == %d, want %d", c.value, p.Months(), c.m)
+		}
+		if p.Weeks() != c.w {
+			t.Errorf("%s.Weeks() == %d, want %d", c.value, p.Weeks(), c.w)
+		}
+		if p.Days() != c.d {
+			t.Errorf("%s.Days() == %d, want %d", c.value, p.Days(), c.d)
+		}
+		if p.ModuloDays() != c.dx {
+			t.Errorf("%s.ModuloDays() == %d, want %d", c.value, p.ModuloDays(), c.dx)
+		}
+		if p.Hours() != c.hh {
+			t.Errorf("%s.Hours() == %d, want %d", c.value, p.Hours(), c.hh)
+		}
+		if p.Minutes() != c.mm {
+			t.Errorf("%s.Minutes() == %d, want %d", c.value, p.Minutes(), c.mm)
+		}
+		if p.Seconds() != c.ss {
+			t.Errorf("%s.Seconds() == %d, want %d", c.value, p.Seconds(), c.ss)
+		}
+	}
+}
+
+func TestPeriodToDuration(t *testing.T) {
+	cases := []struct {
+		value    string
+		duration time.Duration
+		precise  bool
+	}{
+		{"P0D", time.Duration(0), true},
+		{"PT1S", time.Duration(1 * time.Second), true},
+		{"PT1M", time.Duration(60 * time.Second), true},
+		{"PT1H", time.Duration(3600 * time.Second), true},
+		{"P1D", time.Duration(24 * time.Hour), false},
+		{"P1M", time.Duration(2629800 * time.Second), false},
+		{"P1Y", time.Duration(31557600 * time.Second), false},
+		{"-P1Y", -time.Duration(31557600 * time.Second), false},
+	}
+	for _, c := range cases {
+		s, p := MustParse(c.value).Duration()
+		if s != c.duration {
+			t.Errorf("Duration() == %s %v, want %s for %+v", s, p, c.duration, c.value)
+		}
+		if p != c.precise {
+			t.Errorf("Duration() == %s %v, want %v for %+v", s, p, c.precise, c.value)
+		}
+	}
+}
+
+func TestNewPeriod(t *testing.T) {
+	cases := []struct {
+		years, months, days, hours, minutes, seconds int
+		period                                       Period
+	}{
+		{0, 0, 0, 0, 0, 0, Period{0, 0, 0, 0, 0, 0}},
+		{0, 0, 0, 0, 0, 1, Period{0, 0, 0, 0, 0, 10}},
+		{0, 0, 0, 0, 1, 0, Period{0, 0, 0, 0, 10, 0}},
+		{0, 0, 0, 1, 0, 0, Period{0, 0, 0, 10, 0, 0}},
+		{0, 0, 1, 0, 0, 0, Period{0, 0, 10, 0, 0, 0}},
+		{0, 1, 0, 0, 0, 0, Period{0, 10, 0, 0, 0, 0}},
+		{1, 0, 0, 0, 0, 0, Period{10, 0, 0, 0, 0, 0}},
+		{100, 222, 700, 0, 0, 0, Period{1000, 2220, 7000, 0, 0, 0}},
+		{0, 0, 0, 0, 0, -1, Period{0, 0, 0, 0, 0, -10}},
+		{0, 0, 0, 0, -1, 0, Period{0, 0, 0, 0, -10, 0}},
+		{0, 0, 0, -1, 0, 0, Period{0, 0, 0, -10, 0, 0}},
+		{0, 0, -1, 0, 0, 0, Period{0, 0, -10, 0, 0, 0}},
+		{0, -1, 0, 0, 0, 0, Period{0, -10, 0, 0, 0, 0}},
+		{-1, 0, 0, 0, 0, 0, Period{-10, 0, 0, 0, 0, 0}},
+	}
+	for _, c := range cases {
+		p := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
 		if p != c.period {
 			t.Errorf("%d,%d,%d gives %#v, want %#v", c.years, c.months, c.days, p, c.period)
 		}
@@ -127,15 +209,17 @@ func TestPeriodFormat(t *testing.T) {
 		{"P4D", "4 days"},
 		{"-P4D", "4 days"},
 		{"P1Y1M8D", "1 year, 1 month, 1 week, 1 day"},
-		{"P3Y6M39D", "3 years, 6 months, 5 weeks, 4 days"},
-		{"-P3Y6M39D", "3 years, 6 months, 5 weeks, 4 days"},
+		{"PT1H1M1S", "1 hour, 1 minute, 1 second"},
+		{"P1Y1M8DT1H1M1S", "1 year, 1 month, 1 week, 1 day, 1 hour, 1 minute, 1 second"},
+		{"P3Y6M39DT2H7M9S", "3 years, 6 months, 5 weeks, 4 days, 2 hours, 7 minutes, 9 seconds"},
+		{"-P3Y6M39DT2H7M9S", "3 years, 6 months, 5 weeks, 4 days, 2 hours, 7 minutes, 9 seconds"},
 		{"P1.1Y", "1.1 years"},
 		{"P2.5Y", "2.5 years"},
-		{"P2.15Y", "2.15 years"},
-		{"P2.125Y", "2.125 years"},
+		{"P2.15Y", "2.1 years"},
+		{"P2.125Y", "2.1 years"},
 	}
 	for _, c := range cases {
-		s := MustParsePeriod(c.period).Format()
+		s := MustParse(c.period).Format()
 		if s != c.expect {
 			t.Errorf("Format() == %s, want %s for %+v", s, c.expect, c.period)
 		}
@@ -160,16 +244,17 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 		{"P1D", "1 day"},
 		{"P4D", "4 days"},
 		{"-P4D", "4 days"},
-		{"P1Y1M1D", "1 year, 1 month, 1 day"},
-		{"P3Y6M39D", "3 years, 6 months, 39 days"},
-		{"-P3Y6M39D", "3 years, 6 months, 39 days"},
+		{"P1Y1M1DT1H1M1S", "1 year, 1 month, 1 day, 1 hour, 1 minute, 1 second"},
+		{"P3Y6M39DT2H7M9S", "3 years, 6 months, 39 days, 2 hours, 7 minutes, 9 seconds"},
+		{"-P3Y6M39DT2H7M9S", "3 years, 6 months, 39 days, 2 hours, 7 minutes, 9 seconds"},
 		{"P1.1Y", "1.1 years"},
 		{"P2.5Y", "2.5 years"},
-		{"P2.15Y", "2.15 years"},
-		{"P2.125Y", "2.125 years"},
+		{"P2.15Y", "2.1 years"},
+		{"P2.125Y", "2.1 years"},
 	}
 	for _, c := range cases {
-		s := MustParsePeriod(c.period).FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames)
+		s := MustParse(c.period).FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames,
+			PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
 		if s != c.expect {
 			t.Errorf("Format() == %s, want %s for %+v", s, c.expect, c.period)
 		}

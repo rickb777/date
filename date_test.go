@@ -255,12 +255,12 @@ func xTestAddDuration(t *testing.T) {
 	for _, c := range cases {
 		di := New(c.year, c.month, c.day)
 		for _, days := range offsets {
-			dj := di.AddPeriod(period.NewPeriod(0, 0, int(days)))
+			dj := di.AddPeriod(period.New(0, 0, int(days), 0, 0, 0))
 			days2 := dj.Sub(di)
 			if days2 != days {
 				t.Errorf("AddSub(%v,%v) == %v, want %v", di, days, days2, days)
 			}
-			dk := dj.AddPeriod(period.NewPeriod(0, 0, -int(days)))
+			dk := dj.AddPeriod(period.New(0, 0, -int(days), 0, 0, 0))
 			if dk != di {
 				t.Errorf("AddNeg(%v,%v) == %v, want %v", di, days, dk, di)
 			}
