@@ -3,7 +3,8 @@
 // license that can be found in the LICENSE file.
 
 // Package date provides functionality for working with dates. Subpackages support
-// clock-face time, spans of time and ranges of dates.
+// clock-face time, spans of time, ranges of dates, and periods (as years, months,
+// weeks and days).
 //
 // This package introduces a light-weight Date type that is storage-efficient
 // and covenient for calendrical calculations and date parsing and formatting
