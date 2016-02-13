@@ -181,6 +181,32 @@ func TestPeriodApproxDays(t *testing.T) {
 	}
 }
 
+func TestPeriodApproxMonths(t *testing.T) {
+	cases := []struct {
+		value        string
+		approxMonths int
+	}{
+		{"P0D", 0},
+		{"P1D", 0},
+		{"P30D", 0},
+		{"P31D", 1},
+		{"P1M", 1},
+		{"P2M31D", 3},
+		{"P1Y", 12},
+		{"P2Y3M", 27},
+		{"-P1Y", -12},
+		{"PT24H", 0},
+		{"PT744H", 1},
+	}
+	for _, c := range cases {
+		p := MustParse(c.value)
+		td := p.TotalMonthsApprox()
+		if td != c.approxMonths {
+			t.Errorf("%v.TotalMonthsApprox() == %v, want %v", p, td, c.approxMonths)
+		}
+	}
+}
+
 func TestNewPeriod(t *testing.T) {
 	cases := []struct {
 		years, months, days, hours, minutes, seconds int

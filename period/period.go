@@ -232,9 +232,6 @@ func (period Period) Duration() (time.Duration, bool) {
 	return tdE6*time.Microsecond + stE3*time.Millisecond, tdE6 == 0
 }
 
-// TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
-// a year is 365.25 days and a month is 1/12 of that.
-// The result does not include any time field.
 func totalDaysApproxE6(period Period) int64 {
 	// remember that the fields are all fixed-point 1E1
 	ydE6 := int64(period.years) * 36525000 // 365.25 days
@@ -244,11 +241,21 @@ func totalDaysApproxE6(period Period) int64 {
 }
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
-// a year is 365.25 days and a month is 1/12 of that.
-// The result does not include any time field.
+// a year is 365.25 days and a month is 1/12 of that. Whole multiples of 24 hours are also included
+// in the calculation.
 func (period Period) TotalDaysApprox() int {
 	tdE6 := totalDaysApproxE6(period.Normalise(false))
 	return int(tdE6 / 1000000)
+}
+
+// TotalMonthsApprox gets the approximate total number of months in the period. The days component
+// is included by approximately assumes a year is 365.25 days and a month is 1/12 of that.
+// Whole multiples of 24 hours are also included in the calculation.
+func (period Period) TotalMonthsApprox() int {
+	p := period.Normalise(false)
+	mE1 := int(p.years)*12 + int(p.months)
+	dE6 := int64(p.days) * 100000 / 3043750 // 30.437 days per month
+	return (mE1 + int(dE6)) / 10
 }
 
 // Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
