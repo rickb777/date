@@ -345,6 +345,29 @@ func TestNewOf(t *testing.T) {
 	}
 }
 
+func TestBetween(t *testing.T) {
+	cases := []struct {
+		a, b     time.Time
+		expected Period
+	}{
+		{time.Now(), time.Now(), Period{0, 0, 0, 0, 0, 0}},
+		{time.Date(2015, 5, 1, 0, 0, 0, 0, time.UTC), time.Date(2016, 6, 2, 1, 1, 1, 1, time.UTC), Period{10, 10, 10, 10, 10, 10}},
+		{time.Date(2016, 1, 2, 0, 0, 0, 0, time.UTC), time.Date(2016, 2, 1, 0, 0, 0, 0, time.UTC), Period{0, 0, 300, 0, 0, 0}},
+		{time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC), time.Date(2015, 3, 1, 0, 0, 0, 0, time.UTC), Period{0, 10, 0, 0, 0, 0}},
+		{time.Date(2016, 2, 1, 0, 0, 0, 0, time.UTC), time.Date(2016, 3, 1, 0, 0, 0, 0, time.UTC), Period{0, 10, 0, 0, 0, 0}},
+		{time.Date(2015, 2, 2, 0, 0, 0, 0, time.UTC), time.Date(2015, 3, 1, 0, 0, 0, 0, time.UTC), Period{0, 0, 270, 0, 0, 0}},
+		{time.Date(2016, 2, 2, 0, 0, 0, 0, time.UTC), time.Date(2016, 3, 1, 0, 0, 0, 0, time.UTC), Period{0, 0, 280, 0, 0, 0}},
+		{time.Date(2015, 2, 11, 0, 0, 0, 0, time.UTC), time.Date(2016, 1, 12, 0, 0, 0, 0, time.UTC), Period{0, 110, 10, 0, 0, 0}},
+		{time.Date(2016, 1, 12, 0, 0, 0, 0, time.UTC), time.Date(2015, 2, 11, 0, 0, 0, 0, time.UTC), Period{0, -110, -10, 0, 0, 0}},
+	}
+	for _, c := range cases {
+		n := Between(c.a, c.b)
+		if n != c.expected {
+			t.Errorf("Between(%v, %v) gives %v %#v, want %v", c.a, c.b, n, n, c.expected)
+		}
+	}
+}
+
 func TestNormalise(t *testing.T) {
 	cases := []struct {
 		source, expected Period

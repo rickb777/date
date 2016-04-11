@@ -86,6 +86,82 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 	return New(0, 0, 0, sign*int(hours), sign*int(minutes), sign*int(seconds)), true
 }
 
+// Between converts the span between two times to a period. Based on the Gregorian conversion algorithms
+// of `time.Time`, the resultant period is precise.
+//
+// Remember that the resultant period does not retain any knowledge of the calendar, so any subsequent
+// computations applied to the period can only be precise if they concern either the date (year, month,
+// day) part, or the clock (hour, minute, second) part, but not both.
+func Between(t1, t2 time.Time) Period {
+	if t1.Location() != t2.Location() {
+		t2 = t2.In(t1.Location())
+	}
+
+	sign := 1
+	if t2.Before(t1) {
+		t1, t2, sign = t2, t1, -1
+	}
+
+	year, month, day, hour, min, sec := timeDiff(t1, t2)
+	if sign < 0 {
+		return New(year, month, day, hour, min, sec).Negate()
+	}
+	return New(year, month, day, hour, min, sec)
+}
+
+//func TimeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
+//	if t1.Location() != t2.Location() {
+//		t2 = t2.In(t1.Location())
+//	}
+//	if t1.After(t2) {
+//		t1, t2 = t2, t1
+//	}
+//	return timeDiff(t1, t2)
+//}
+
+func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+
+	hh1, mm1, ss1 := t1.Clock()
+	hh2, mm2, ss2 := t2.Clock()
+
+	year = int(y2 - y1)
+	month = int(m2 - m1)
+	day = int(d2 - d1)
+	hour = int(hh2 - hh1)
+	min = int(mm2 - mm1)
+	sec = int(ss2 - ss1)
+	//fmt.Printf("A) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
+
+	// Normalize negative values
+	if sec < 0 {
+		sec += 60
+		min--
+	}
+	if min < 0 {
+		min += 60
+		hour--
+	}
+	if hour < 0 {
+		hour += 24
+		day--
+	}
+	if day < 0 {
+		// days in month:
+		t := time.Date(y1, m1, 32, 0, 0, 0, 0, time.UTC)
+		day += 32 - t.Day()
+		month--
+	}
+	if month < 0 {
+		month += 12
+		year--
+	}
+
+	//fmt.Printf("B) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
+	return
+}
+
 // IsZero returns true if applied to a zero-length period.
 func (period Period) IsZero() bool {
 	return period == Period{}
