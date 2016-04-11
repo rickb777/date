@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+const daysPerYearApproxE3 = 365250  // 365.25 days
+const daysPerMonthApproxE4 = 304375 // 30.437 days per month
+const oneE5 = 100000
+const oneE6 = 1000000
+
 // Period holds a period of time and provides conversion to/from ISO-8601 representations.
 // In the ISO representation, decimal fractions are supported, although only the last non-zero
 // component is allowed to have a fraction according to the Standard. For example "P2.5Y"
@@ -14,14 +19,15 @@ import (
 // of integers with fixed point arithmetic. This avoids using float32 in the struct, so
 // there are no problems testing equality using ==.
 //
-// The implementation limits the range of possible values to +/- 2^16 / 10. Note in
-// particular that the range of years is limited to approximately +/- 3276.
+// The implementation limits the range of possible values to ± 2^16 / 10. Note in
+// particular that the range of years is limited to approximately ± 3276.
 //
 // The concept of weeks exists in string representations of periods, but otherwise weeks
 // are unimportant. The period contains a number of days from which the number of weeks can
 // be calculated when needed.
-// Note that although fractional weeks can be parsed, they will never be returned. This is
-// because the number of weeks is always computed as an integer from the number of days.
+//
+// Note that although fractional weeks can be parsed, they will never be returned via String().
+// This is because the number of weeks is always inferred from the number of days.
 //
 type Period struct {
 	years, months, days, hours, minutes, seconds int16
@@ -47,8 +53,37 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 		return Period{int16(years) * 10, int16(months) * 10, int16(days) * 10,
 			int16(hours) * 10, int16(minutes) * 10, int16(seconds) * 10}
 	}
-	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dD%%dH%dM%dS",
+	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dDT%dH%dM%dS",
 		years, months, days, hours, minutes, seconds))
+}
+
+// NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
+// Any time duration that spans more than ± 3276 hours will be approximated by assuming that there
+// are 24 hours per day, 30.4375 per month and 365.25 days per year.
+func NewOf(duration time.Duration) (p Period, precise bool) {
+	sign := 1
+	d := duration
+	if duration < 0 {
+		sign = -1
+		d = -duration
+	}
+
+	hours := int64(d / time.Hour)
+
+	// check for 16-bit overflow
+	if hours > 3276 {
+		days := hours / 24
+		years := (1000 * days) / daysPerYearApproxE3
+		months := ((10000 * days) / daysPerMonthApproxE4) - (12 * years)
+		hours -= days * 24
+		days = ((days * 10000) - (daysPerMonthApproxE4 * months) - (10 * daysPerYearApproxE3 * years)) / 10000
+		return New(sign*int(years), sign*int(months), sign*int(days), sign*int(hours), 0, 0), false
+	}
+
+	minutes := int64(d % time.Hour / time.Minute)
+	seconds := int64(d % time.Minute / time.Second)
+
+	return New(0, 0, 0, sign*int(hours), sign*int(minutes), sign*int(seconds)), true
 }
 
 // IsZero returns true if applied to a zero-length period.
@@ -93,14 +128,14 @@ func (period Period) Negate() Period {
 }
 
 // Add adds two periods together.
-func (this Period) Add(that Period) Period {
+func (period Period) Add(that Period) Period {
 	return Period{
-		this.years + that.years,
-		this.months + that.months,
-		this.days + that.days,
-		this.hours + that.hours,
-		this.minutes + that.minutes,
-		this.seconds + that.seconds,
+		period.years + that.years,
+		period.months + that.months,
+		period.days + that.days,
+		period.hours + that.hours,
+		period.minutes + that.minutes,
+		period.seconds + that.seconds,
 	}
 }
 
@@ -108,14 +143,14 @@ func (this Period) Add(that Period) Period {
 // and change the sign if negative.
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
 // decimal place; each field is only int16.
-func (this Period) Scale(factor float32) Period {
+func (period Period) Scale(factor float32) Period {
 	return Period{
-		int16(float32(this.years) * factor),
-		int16(float32(this.months) * factor),
-		int16(float32(this.days) * factor),
-		int16(float32(this.hours) * factor),
-		int16(float32(this.minutes) * factor),
-		int16(float32(this.seconds) * factor),
+		int16(float32(period.years) * factor),
+		int16(float32(period.months) * factor),
+		int16(float32(period.days) * factor),
+		int16(float32(period.hours) * factor),
+		int16(float32(period.minutes) * factor),
+		int16(float32(period.seconds) * factor),
 	}
 }
 
@@ -234,9 +269,9 @@ func (period Period) Duration() (time.Duration, bool) {
 
 func totalDaysApproxE6(period Period) int64 {
 	// remember that the fields are all fixed-point 1E1
-	ydE6 := int64(period.years) * 36525000 // 365.25 days
-	mdE6 := int64(period.months) * 3043750 // 30.437 days
-	ddE6 := int64(period.days) * 100000
+	ydE6 := int64(period.years) * (daysPerYearApproxE3 * 100)
+	mdE6 := int64(period.months) * (daysPerMonthApproxE4 * 10)
+	ddE6 := int64(period.days) * oneE5
 	return ydE6 + mdE6 + ddE6
 }
 
@@ -245,7 +280,7 @@ func totalDaysApproxE6(period Period) int64 {
 // in the calculation.
 func (period Period) TotalDaysApprox() int {
 	tdE6 := totalDaysApproxE6(period.Normalise(false))
-	return int(tdE6 / 1000000)
+	return int(tdE6 / oneE6)
 }
 
 // TotalMonthsApprox gets the approximate total number of months in the period. The days component
@@ -254,7 +289,7 @@ func (period Period) TotalDaysApprox() int {
 func (period Period) TotalMonthsApprox() int {
 	p := period.Normalise(false)
 	mE1 := int(p.years)*12 + int(p.months)
-	dE6 := int64(p.days) * 100000 / 3043750 // 30.437 days per month
+	dE6 := int64(p.days) * 1000 / daysPerMonthApproxE4
 	return (mE1 + int(dE6)) / 10
 }
 
@@ -264,8 +299,8 @@ func (period Period) TotalMonthsApprox() int {
 // Multiples of 60 seconds become minutes.
 // Multiples of 60 minutes become hours.
 // Multiples of 12 months become years.
-
-// Addtionally, in imprecise mode:
+//
+// Additionally, in imprecise mode:
 // Multiples of 24 hours become days.
 // Multiples of 30.4 days become months.
 func (period Period) Normalise(precise bool) Period {

@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+var oneDayApprox = 24 * time.Hour
+var oneMonthApprox = 2629800 * time.Second
+var oneYearApprox = 31557600 * time.Second
+
 func TestParsePeriod(t *testing.T) {
 	cases := []struct {
 		value  string
@@ -139,13 +143,13 @@ func TestPeriodToDuration(t *testing.T) {
 		precise  bool
 	}{
 		{"P0D", time.Duration(0), true},
-		{"PT1S", time.Duration(1 * time.Second), true},
-		{"PT1M", time.Duration(60 * time.Second), true},
-		{"PT1H", time.Duration(3600 * time.Second), true},
-		{"P1D", time.Duration(24 * time.Hour), false},
-		{"P1M", time.Duration(2629800 * time.Second), false},
-		{"P1Y", time.Duration(31557600 * time.Second), false},
-		{"-P1Y", -time.Duration(31557600 * time.Second), false},
+		{"PT1S", 1 * time.Second, true},
+		{"PT1M", 60 * time.Second, true},
+		{"PT1H", 3600 * time.Second, true},
+		{"P1D", 24 * time.Hour, false},
+		{"P1M", oneMonthApprox, false},
+		{"P1Y", oneYearApprox, false},
+		{"-P1Y", -oneYearApprox, false},
 	}
 	for _, c := range cases {
 		p := MustParse(c.value)
@@ -240,6 +244,103 @@ func TestNewPeriod(t *testing.T) {
 		}
 		if p.Days() != c.days {
 			t.Errorf("%#v, got %d want %d", p, p.Days(), c.days)
+		}
+	}
+}
+
+func TestNewHMS(t *testing.T) {
+	cases := []struct {
+		hours, minutes, seconds int
+		period                  Period
+	}{
+		{0, 0, 0, Period{0, 0, 0, 0, 0, 0}},
+		{0, 0, 1, Period{0, 0, 0, 0, 0, 10}},
+		{0, 1, 0, Period{0, 0, 0, 0, 10, 0}},
+		{1, 0, 0, Period{0, 0, 0, 10, 0, 0}},
+		{0, 0, -1, Period{0, 0, 0, 0, 0, -10}},
+		{0, -1, 0, Period{0, 0, 0, 0, -10, 0}},
+		{-1, 0, 0, Period{0, 0, 0, -10, 0, 0}},
+	}
+	for _, c := range cases {
+		p := NewHMS(c.hours, c.minutes, c.seconds)
+		if p != c.period {
+			t.Errorf("gives %#v, want %#v", p, c.period)
+		}
+		if p.Hours() != c.hours {
+			t.Errorf("%#v, got %d want %d", p, p.Years(), c.hours)
+		}
+		if p.Minutes() != c.minutes {
+			t.Errorf("%#v, got %d want %d", p, p.Months(), c.minutes)
+		}
+		if p.Seconds() != c.seconds {
+			t.Errorf("%#v, got %d want %d", p, p.Days(), c.seconds)
+		}
+	}
+}
+
+func TestNewYMD(t *testing.T) {
+	cases := []struct {
+		years, months, days int
+		period              Period
+	}{
+		{0, 0, 0, Period{0, 0, 0, 0, 0, 0}},
+		{0, 0, 1, Period{0, 0, 10, 0, 0, 0}},
+		{0, 1, 0, Period{0, 10, 0, 0, 0, 0}},
+		{1, 0, 0, Period{10, 0, 0, 0, 0, 0}},
+		{100, 222, 700, Period{1000, 2220, 7000, 0, 0, 0}},
+		{0, 0, -1, Period{0, 0, -10, 0, 0, 0}},
+		{0, -1, 0, Period{0, -10, 0, 0, 0, 0}},
+		{-1, 0, 0, Period{-10, 0, 0, 0, 0, 0}},
+	}
+	for _, c := range cases {
+		p := NewYMD(c.years, c.months, c.days)
+		if p != c.period {
+			t.Errorf("%d,%d,%d gives %#v, want %#v", c.years, c.months, c.days, p, c.period)
+		}
+		if p.Years() != c.years {
+			t.Errorf("%#v, got %d want %d", p, p.Years(), c.years)
+		}
+		if p.Months() != c.months {
+			t.Errorf("%#v, got %d want %d", p, p.Months(), c.months)
+		}
+		if p.Days() != c.days {
+			t.Errorf("%#v, got %d want %d", p, p.Days(), c.days)
+		}
+	}
+}
+
+func TestNewOf(t *testing.T) {
+	cases := []struct {
+		source   time.Duration
+		expected Period
+		precise  bool
+	}{
+		{time.Second, Period{0, 0, 0, 0, 0, 10}, true},
+		{time.Minute, Period{0, 0, 0, 0, 10, 0}, true},
+		{time.Hour, Period{0, 0, 0, 10, 0, 0}, true},
+		{time.Hour + time.Minute + time.Second, Period{0, 0, 0, 10, 10, 10}, true},
+		{24*time.Hour + time.Minute + time.Second, Period{0, 0, 0, 240, 10, 10}, true},
+		{300 * oneDayApprox, Period{0, 90, 260, 0, 0, 0}, false},
+		{305 * oneDayApprox, Period{0, 100, 0, 0, 0, 0}, false},
+		{305*oneDayApprox - time.Hour, Period{0, 90, 300, 230, 0, 0}, false},
+		{36525 * oneDayApprox, Period{1000, 0, 0, 0, 0, 0}, false},
+		{36525*oneDayApprox - time.Hour, Period{990, 110, 290, 230, 0, 0}, false},
+
+		{-time.Second, Period{0, 0, 0, 0, 0, -10}, true},
+		{-time.Minute, Period{0, 0, 0, 0, -10, 0}, true},
+		{-time.Hour, Period{0, 0, 0, -10, 0, 0}, true},
+		{-time.Hour - time.Minute - time.Second, Period{0, 0, 0, -10, -10, -10}, true},
+		{-300 * oneDayApprox, Period{0, -90, -260, 0, 0, 0}, false},
+		{-305 * oneDayApprox, Period{0, -100, 0, 0, 0, 0}, false},
+		{-36525 * oneDayApprox, Period{-1000, 0, 0, 0, 0, 0}, false},
+	}
+	for _, c := range cases {
+		n, p := NewOf(c.source)
+		if n != c.expected {
+			t.Errorf("NewOf(%v) gives %v %#v, want %v", c.source, n, n, c.expected)
+		}
+		if p != c.precise {
+			t.Errorf("NewOf(%v) gives %v, want %v for %v", c.source, p, c.precise, c.expected)
 		}
 	}
 }

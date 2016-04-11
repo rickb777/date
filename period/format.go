@@ -91,12 +91,6 @@ func (period Period) String() string {
 		m = fmt.Sprintf("%gM", absFloat10(period.months))
 	}
 	if period.days != 0 {
-		//days := absInt32(period.days)
-		//weeks := days / 7
-		//if (weeks >= 10) {
-		//	w = fmt.Sprintf("%gW", absFloat(weeks))
-		//}
-		//mdays := days % 7
 		if period.days != 0 {
 			d = fmt.Sprintf("%gD", absFloat10(period.days))
 		}
