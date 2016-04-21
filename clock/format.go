@@ -36,21 +36,33 @@ func clockMillisec(cm Clock) Clock {
 
 // Hh gets the clock-face number of hours as a two-digit string.
 // It is calculated from the modulo time; see Mod24.
+// Note the special case of midnight at the end of a day is "24".
 func (c Clock) Hh() string {
+	if c == Day {
+		return "24"
+	}
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d", clockHours(cm))
 }
 
 // HhMm gets the clock-face number of hours and minutes as a five-character ISO-8601 time string.
 // It is calculated from the modulo time; see Mod24.
+// Note the special case of midnight at the end of a day is "24:00".
 func (c Clock) HhMm() string {
+	if c == Day {
+		return "24:00"
+	}
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d:%02d", clockHours(cm), clockMinutes(cm))
 }
 
 // HhMmSs gets the clock-face number of hours, minutes, seconds as an eight-character ISO-8601 time string.
 // It is calculated from the modulo time; see Mod24.
+// Note the special case of midnight at the end of a day is "24:00:00".
 func (c Clock) HhMmSs() string {
+	if c == Day {
+		return "24:00:00"
+	}
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d:%02d:%02d", clockHours(cm), clockMinutes(cm), clockSeconds(cm))
 }
@@ -84,7 +96,11 @@ func (c Clock) HhMmSs12() string {
 
 // String gets the clock-face number of hours, minutes, seconds and milliseconds as a 12-character ISO-8601
 // time string (calculated from the modulo time, see Mod24), specified to the nearest millisecond.
+// Note the special case of midnight at the end of a day is "24:00:00.000".
 func (c Clock) String() string {
+	if c == Day {
+		return "24:00:00.000"
+	}
 	cm := c.Mod24()
 	return fmt.Sprintf("%02d:%02d:%02d.%03d", clockHours(cm), clockMinutes(cm), clockSeconds(cm), clockMillisec(cm))
 }
