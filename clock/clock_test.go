@@ -114,6 +114,27 @@ func TestClockAddDuration(t *testing.T) {
 	}
 }
 
+func TestClockSubtract(t *testing.T) {
+	cases := []struct {
+		c1, c2 Clock
+		want   time.Duration
+	}{
+		{New(1, 2, 3, 4), New(1, 2, 3, 4), 0 * time.Hour},
+		{New(2, 0, 0, 0), New(0, 0, 0, 0), 2 * time.Hour},
+		{New(0, 0, 0, 0), New(2, 0, 0, 0), 22 * time.Hour},
+		{New(1, 0, 0, 0), New(23, 0, 0, 0), 2 * time.Hour},
+		{New(23, 0, 0, 0), New(1, 0, 0, 0), 22 * time.Hour},
+		{New(1, 2, 3, 5), New(1, 2, 3, 4), 1 * time.Millisecond},
+		{New(1, 2, 3, 4), New(1, 2, 3, 5), 24*time.Hour - 1*time.Millisecond},
+	}
+	for i, x := range cases {
+		got := x.c1.ModSubtract(x.c2)
+		if got != x.want {
+			t.Errorf("%d: %v - %v: got %v, want %v", i, x.c1, x.c2, got, x.want)
+		}
+	}
+}
+
 func TestClockIsMidnight(t *testing.T) {
 	cases := []struct {
 		in   Clock

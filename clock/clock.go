@@ -94,6 +94,18 @@ func (c Clock) AddDuration(d time.Duration) Clock {
 	return c + Clock(d/time.Millisecond)
 }
 
+// ModSubtract returns the duration between two clock times.
+//
+// If c2 is before c1 (i.e. c2 < c1), the result is the duration computed from c1 - c2.
+//
+// But if c1 is before c2, it is assumed that c1 is after midnight and c2 is before midnight. The
+// result is the sum of the evening time from c2 to midnight with the morning time from midnight to c1.
+// This is the same as Mod24(c1 - c2).
+func (c1 Clock) ModSubtract(c2 Clock) time.Duration {
+	ms := c1 - c2
+	return ms.Mod24().DurationSinceMidnight()
+}
+
 // IsInOneDay tests whether a clock time is in the range 0 to 24 hours, inclusive. Inside this
 // range, a Clock is generally well-behaved. But outside it, there may be errors due to daylight
 // savings. Note that 24:00:00 is included as a special case as per ISO-8601 definition of midnight.
