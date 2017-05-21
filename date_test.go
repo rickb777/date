@@ -58,9 +58,13 @@ func TestDaysSinceEpoch(t *testing.T) {
 	}
 	today := Today()
 	days := today.DaysSinceEpoch()
-	copy := NewOfDays(days)
-	if today != copy || days == 0 {
-		t.Errorf("Today == %v, want date of %v", today, copy)
+	copy1 := NewOfDays(days)
+	copy2 := days.Date()
+	if today != copy1 || days == 0 {
+		t.Errorf("Today == %v, want date of %v", today, copy1)
+	}
+	if today != copy2 || days == 0 {
+		t.Errorf("Today == %v, want date of %v", today, copy2)
 	}
 }
 

@@ -1,3 +1,7 @@
+// Copyright 2015 Rick Beton. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 // Package view provides a simple API for formatting dates as strings in a manner that is easy to use in view-models,
 // especially when using Go templates.
 package view

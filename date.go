@@ -68,6 +68,12 @@ func NewOfDays(p PeriodOfDays) Date {
 	return Date{p}
 }
 
+// Date returns the Date value corresponding to the given period since the
+// epoch (1st January 1970), which may be negative.
+func (p PeriodOfDays) Date() Date {
+	return Date{p}
+}
+
 // Today returns today's date according to the current local time.
 func Today() Date {
 	t := time.Now()
