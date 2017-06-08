@@ -8,25 +8,7 @@ install:
   - go get github.com/mattn/goveralls
 
 script:
-  - go test -v -covermode=count -coverprofile=date.out .
-  - go tool cover -func=date.out
-  - $HOME/gopath/bin/goveralls -coverprofile=date.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-
-  - go test -v -covermode=count -coverprofile=clock.out clock
-  - go tool cover -func=clock.out
-  - $HOME/gopath/bin/goveralls -coverprofile=clock.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-
-  - go test -v -covermode=count -coverprofile=period.out period
-  - go tool cover -func=period.out
-  - $HOME/gopath/bin/goveralls -coverprofile=period.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-
-  - go test -v -covermode=count -coverprofile=timespan.out timespan
-  - go tool cover -func=timespan.out
-  - $HOME/gopath/bin/goveralls -coverprofile=timespan.out -service=travis-ci -repotoken $COVERALLS_TOKEN
-
-  - go test -v -covermode=count -coverprofile=view.out view
-  - go tool cover -func=view.out
-  - $HOME/gopath/bin/goveralls -coverprofile=view.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  - ./build+test.sh
 
 #env:
 #  secure: "kcksCWXVeZKmFUWcyi2S/j87iwUmXMxZXxA2DG9ymc11QP43QoPNSG9pBjA/DDjvzt4WdKIFphTrxVfvawii/9j3oXA1aPmAcHGu87i4iOVg4IIZ4bPZLfUo0e7s6XP5FakzegYvPP6HWV5Xr5h+Q6osrjq3czOnPY+rVII6MRrxXMOfsqo8HEER+YIOOD6vj5LV2/quY8d0XHtThqgGvQ1cz4OB3vbd4KFBl48kmfXKefTrRG1NoqoQMMpwUVzU395JIEAg1eWbGkquhWU5v13gRwk3VMVWF75jZna8TSiqWha0P5iQdaED30kNCz3poIaBI1MLdxktJxwUQJZ5AaYIMCxh7ZCiW0FXTYCRu3EoeYusTPMLqy1ghK+gIlA46sNd26cKk5/OngXRrHo/J0aF5NWjydlk5FLHfKm9ih/Y426M9nV2zYNQAcVKgO8zVNb2IkJ3e7aTB2NH4DpkvjSV4D4hlnmW9xxmo14TKF+gXJ9Hw9ssKbigRHoL6S92aQHcpkdjGGnI5YSTy1fZh/nIE3HDmx+hcK4/ZtPHj9KnXopKYxBGyNswN5Eko+q6h3BB/Q7LwALtEexdDbznwsRmcZXJsOU4chvcjAKgIAi6cbeTwq8kG5E/w8TTY2wGeRm2ZFysQu6Jf8hgTZDQTV343RG80STWeUbiD0o7/WY="
