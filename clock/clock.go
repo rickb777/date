@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Clock specifies a time of day with resolution to the nearest millisecond.
+// Package clock specifies a time of day with resolution to the nearest millisecond.
 //
 package clock
 
@@ -147,9 +147,8 @@ func (c Clock) Mod24() Clock {
 func (c Clock) Days() int {
 	if c < Midnight {
 		return int(c/Day) - 1
-	} else {
-		return int(c / Day)
 	}
+	return int(c / Day)
 }
 
 // Hours gets the clock-face number of hours (calculated from the modulo time, see Mod24).

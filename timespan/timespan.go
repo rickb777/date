@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// TimestampFormat is a simple format for date & time, "2006-01-02 15:04:05".
 const TimestampFormat = "2006-01-02 15:04:05"
 
 //const ISOFormat = "2006-01-02T15:04:05"

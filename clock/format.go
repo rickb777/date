@@ -85,7 +85,7 @@ func (c Clock) HhMm12() string {
 	return fmt.Sprintf("%d:%02d%s", h, clockMinutes(cm), sfx)
 }
 
-// HhMm12 gets the clock-face number of hours, minutes and seconds, followed by am or pm.
+// HhMmSs12 gets the clock-face number of hours, minutes and seconds, followed by am or pm.
 // Remember that midnight is 12am, noon is 12pm.
 // It is calculated from the modulo time; see Mod24.
 func (c Clock) HhMmSs12() string {

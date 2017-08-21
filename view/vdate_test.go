@@ -46,7 +46,7 @@ func TestPrevious(t *testing.T) {
 
 func is(t *testing.T, s1, s2 string) {
 	if s1 != s2 {
-		t.Error("%s != %s", s1, s2)
+		t.Errorf("%s != %s", s1, s2)
 	}
 }
 

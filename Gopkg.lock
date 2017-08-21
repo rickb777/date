@@ -4,8 +4,8 @@
 [[projects]]
   name = "github.com/rickb777/plural"
   packages = ["."]
-  revision = "fb23b1a142e9fd02ad69a10fb69ff25b5bcfe079"
-  version = "v1.0.0"
+  revision = "a4d8479dc7ebd80a2cbe436c908b3e8ce28d7b22"
+  version = "v1.0.1"
 
 [solve-meta]
   analyzer-name = "dep"

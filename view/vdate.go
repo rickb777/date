@@ -31,80 +31,80 @@ func NewVDate(d date.Date) VDate {
 }
 
 // String formats the date in basic ISO8601 format YYYY-MM-DD.
-func (d VDate) String() string {
-	return d.d.String()
+func (v VDate) String() string {
+	return v.d.String()
 }
 
 // WithFormat creates a new instance containing the specified format string.
-func (d VDate) WithFormat(f string) VDate {
-	return VDate{d.d, f}
+func (v VDate) WithFormat(f string) VDate {
+	return VDate{v.d, f}
 }
 
 // Format formats the date using the specified format string, or "02/01/2006" by default.
 // Use WithFormat to set this up.
-func (d VDate) Format() string {
-	return d.d.Format(d.f)
+func (v VDate) Format() string {
+	return v.d.Format(v.f)
 }
 
 // Mon returns the day name as three letters.
-func (d VDate) Mon() string {
-	return d.d.Format("Mon")
+func (v VDate) Mon() string {
+	return v.d.Format("Mon")
 }
 
 // Monday returns the full day name.
-func (d VDate) Monday() string {
-	return d.d.Format("Monday")
+func (v VDate) Monday() string {
+	return v.d.Format("Monday")
 }
 
 // Day2 returns the day number without a leading zero.
-func (d VDate) Day2() string {
-	return d.d.Format("2")
+func (v VDate) Day2() string {
+	return v.d.Format("2")
 }
 
 // Day02 returns the day number with a leading zero if necessary.
-func (d VDate) Day02() string {
-	return d.d.Format("02")
+func (v VDate) Day02() string {
+	return v.d.Format("02")
 }
 
 // Day2nd returns the day number without a leading zero but with the appropriate
 // "st", "nd", "rd", "th" suffix.
-func (d VDate) Day2nd() string {
-	return d.d.Format("2nd")
+func (v VDate) Day2nd() string {
+	return v.d.Format("2nd")
 }
 
 // Month1 returns the month number without a leading zero.
-func (d VDate) Month1() string {
-	return d.d.Format("1")
+func (v VDate) Month1() string {
+	return v.d.Format("1")
 }
 
 // Month01 returns the month number with a leading zero if necessary.
-func (d VDate) Month01() string {
-	return d.d.Format("01")
+func (v VDate) Month01() string {
+	return v.d.Format("01")
 }
 
 // Jan returns the month name abbreviated to three letters.
-func (d VDate) Jan() string {
-	return d.d.Format("Jan")
+func (v VDate) Jan() string {
+	return v.d.Format("Jan")
 }
 
 // January returns the full month name.
-func (d VDate) January() string {
-	return d.d.Format("January")
+func (v VDate) January() string {
+	return v.d.Format("January")
 }
 
 // Year returns the four-digit year.
-func (d VDate) Year() string {
-	return d.d.Format("2006")
+func (v VDate) Year() string {
+	return v.d.Format("2006")
 }
 
 // Next returns a fluent generator for later dates.
-func (d VDate) Next() VDateDelta {
-	return VDateDelta{d.d, d.f, 1}
+func (v VDate) Next() VDateDelta {
+	return VDateDelta{v.d, v.f, 1}
 }
 
 // Previous returns a fluent generator for earlier dates.
-func (d VDate) Previous() VDateDelta {
-	return VDateDelta{d.d, d.f, -1}
+func (v VDate) Previous() VDateDelta {
+	return VDateDelta{v.d, v.f, -1}
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -113,7 +113,7 @@ func (d VDate) Previous() VDateDelta {
 
 // MarshalJSON implements the json.Marshaler interface.
 //func (v VDate) MarshalJSON() ([]byte, error) {
-//	return v.d.MarshalJSON()
+//	return v.v.MarshalJSON()
 //}
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -122,7 +122,7 @@ func (d VDate) Previous() VDateDelta {
 //	u := &date.Date{}
 //	err = u.UnmarshalJSON(data)
 //	if err == nil {
-//		v.d = *u
+//		v.v = *u
 //		v.f = DefaultFormat
 //	}
 //	return err
@@ -147,6 +147,7 @@ func (v *VDate) UnmarshalText(data []byte) (err error) {
 
 //-------------------------------------------------------------------------------------------------
 
+// VDateDelta is a VDate with the ability to add or subtract days, weeks, months or years.
 type VDateDelta struct {
 	d    date.Date
 	f    string

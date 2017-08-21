@@ -201,7 +201,7 @@ func (d Date) After(u Date) bool {
 	return d.day > u.day
 }
 
-// Max returns the earlier of two dates.
+// Min returns the earlier of two dates.
 func (d Date) Min(u Date) Date {
 	if d.day > u.day {
 		return u

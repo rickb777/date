@@ -57,11 +57,6 @@ func EmptyRange(day Date) DateRange {
 	return DateRange{day, 0}
 }
 
-// Deprecated - ZeroRange constructs an empty range. Use EmptyRange instead.
-func ZeroRange(day Date) DateRange {
-	return DateRange{day, 0}
-}
-
 // OneDayRange constructs a range of exactly one day. This is often a useful basis for
 // further operations. Note that the end date is the same as the start date.
 func OneDayRange(day Date) DateRange {

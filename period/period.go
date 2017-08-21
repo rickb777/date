@@ -49,7 +49,7 @@ func NewHMS(hours, minutes, seconds int) Period {
 	return New(0, 0, 0, hours, minutes, seconds)
 }
 
-// NewPeriod creates a simple period without any fractional parts. All the parameters
+// New creates a simple period without any fractional parts. All the parameters
 // must have the same sign (otherwise a panic occurs).
 func New(years, months, days, hours, minutes, seconds int) Period {
 	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
