@@ -24,6 +24,10 @@ full documentation and examples.
 
     go get -u github.com/rickb777/date
 
+## Status
+
+This library has been in reliable production use for some time. Versioning follows the well-known semantic version pattern.
+
 ## Credits
 
 This package follows very closely the design of package
