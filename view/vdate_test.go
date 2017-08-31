@@ -28,6 +28,44 @@ func TestBasicFormatting(t *testing.T) {
 	is(t, d.Year(), "2016")
 }
 
+func TestDate(t *testing.T) {
+	d := date.New(2016, 2, 7)
+	vd := NewVDate(d)
+	if vd.Date() != d {
+		t.Errorf("%v != %v", vd.Date(), d)
+	}
+}
+
+func TestIsToday(t *testing.T) {
+	today := date.Today()
+
+	cases := []struct {
+		value           VDate
+		expectYesterday bool
+		expectToday     bool
+		expectTomorrow  bool
+	}{
+		{NewVDate(date.New(2012, time.June, 25)), false, false, false},
+		{NewVDate(today.Add(-2)), false, false, false},
+		{NewVDate(today.Add(-1)), true, false, false},
+		{NewVDate(today.Add(0)), false, true, false},
+		{NewVDate(today.Add(1)), false, false, true},
+		{NewVDate(today.Add(2)), false, false, false},
+	}
+	for _, c := range cases {
+		if c.value.IsYesterday() != c.expectYesterday {
+			t.Errorf("%s should be 'yesterday': %v", c.value, c.expectYesterday)
+		}
+		if c.value.IsToday() != c.expectToday {
+			t.Errorf("%s should be 'today': %v", c.value, c.expectToday)
+		}
+		if c.value.IsTomorrow() != c.expectTomorrow {
+			t.Errorf("%s should be 'tomorrow': %v", c.value, c.expectTomorrow)
+		}
+	}
+
+}
+
 func TestNext(t *testing.T) {
 	d := NewVDate(date.New(2016, 2, 7))
 	is(t, d.Next().Day().String(), "2016-02-08")
@@ -45,6 +83,7 @@ func TestPrevious(t *testing.T) {
 }
 
 func is(t *testing.T, s1, s2 string) {
+	t.Helper()
 	if s1 != s2 {
 		t.Errorf("%s != %s", s1, s2)
 	}

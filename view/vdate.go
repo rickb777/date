@@ -30,6 +30,26 @@ func NewVDate(d date.Date) VDate {
 	return VDate{d, DefaultFormat}
 }
 
+// Date returns the underlying date.
+func (v VDate) Date() date.Date {
+	return v.d
+}
+
+// IsYesterday returns true if the date is yesterday's date.
+func (v VDate) IsYesterday() bool {
+	return v.d.DaysSinceEpoch() + 1 == date.Today().DaysSinceEpoch()
+}
+
+// IsToday returns true if the date is today's date.
+func (v VDate) IsToday() bool {
+	return v.d.DaysSinceEpoch() == date.Today().DaysSinceEpoch()
+}
+
+// IsTomorrow returns true if the date is tomorrow's date.
+func (v VDate) IsTomorrow() bool {
+	return v.d.DaysSinceEpoch() - 1 == date.Today().DaysSinceEpoch()
+}
+
 // String formats the date in basic ISO8601 format YYYY-MM-DD.
 func (v VDate) String() string {
 	return v.d.String()
@@ -110,23 +130,6 @@ func (v VDate) Previous() VDateDelta {
 //-------------------------------------------------------------------------------------------------
 // Only lossy transcoding is supported here because the intention is that data exchange should be
 // via the main Date type; VDate is only intended for output through view layers.
-
-// MarshalJSON implements the json.Marshaler interface.
-//func (v VDate) MarshalJSON() ([]byte, error) {
-//	return v.v.MarshalJSON()
-//}
-
-// UnmarshalJSON implements the json.Unmarshaler interface.
-// Note that the format value gets lost.
-//func (v *VDate) UnmarshalJSON(data []byte) (err error) {
-//	u := &date.Date{}
-//	err = u.UnmarshalJSON(data)
-//	if err == nil {
-//		v.v = *u
-//		v.f = DefaultFormat
-//	}
-//	return err
-//}
 
 // MarshalText implements the encoding.TextMarshaler interface.
 func (v VDate) MarshalText() ([]byte, error) {
