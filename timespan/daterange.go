@@ -227,15 +227,15 @@ func (dateRange DateRange) ContainsTime(t time.Time) bool {
 //
 // Secondly, if either range is the zero value (see IsZero), it is excluded from the merge and
 // the other range is returned unchanged.
-func (thisRange DateRange) Merge(thatRange DateRange) DateRange {
-	if thatRange.IsZero() {
-		return thisRange
+func (dateRange DateRange) Merge(otherRange DateRange) DateRange {
+	if otherRange.IsZero() {
+		return dateRange
 	}
-	if thisRange.IsZero() {
-		return thatRange
+	if dateRange.IsZero() {
+		return otherRange
 	}
-	minStart := thisRange.Start().Min(thatRange.Start())
-	maxEnd := thisRange.End().Max(thatRange.End())
+	minStart := dateRange.Start().Min(otherRange.Start())
+	maxEnd := dateRange.End().Max(otherRange.End())
 	return NewDateRange(minStart, maxEnd)
 }
 
