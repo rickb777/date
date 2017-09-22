@@ -6,7 +6,7 @@ package period
 
 import (
 	"fmt"
-	. "github.com/rickb777/plural"
+	"github.com/rickb777/plural"
 	"strings"
 )
 
@@ -16,7 +16,7 @@ func (period Period) Format() string {
 }
 
 // FormatWithPeriodNames converts the period to human-readable form in a localisable way.
-func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, dayNames, hourNames, minNames, secNames Plurals) string {
+func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, dayNames, hourNames, minNames, secNames plural.Plurals) string {
 	period = period.Abs()
 
 	parts := make([]string, 0)
@@ -55,25 +55,25 @@ func appendNonBlank(parts []string, s string) []string {
 // PeriodDayNames provides the English default format names for the days part of the period.
 // This is a sequence of plurals where the first match is used, otherwise the last one is used.
 // The last one must include a "%v" placeholder for the number.
-var PeriodDayNames = Plurals{Case{0, "%v days"}, Case{1, "%v day"}, Case{2, "%v days"}}
+var PeriodDayNames = plural.Plurals{plural.Case{0, "%v days"}, plural.Case{1, "%v day"}, plural.Case{2, "%v days"}}
 
 // PeriodWeekNames is as for PeriodDayNames but for weeks.
-var PeriodWeekNames = Plurals{Case{0, ""}, Case{1, "%v week"}, Case{2, "%v weeks"}}
+var PeriodWeekNames = plural.Plurals{plural.Case{0, ""}, plural.Case{1, "%v week"}, plural.Case{2, "%v weeks"}}
 
 // PeriodMonthNames is as for PeriodDayNames but for months.
-var PeriodMonthNames = Plurals{Case{0, ""}, Case{1, "%v month"}, Case{2, "%g months"}}
+var PeriodMonthNames = plural.Plurals{plural.Case{0, ""}, plural.Case{1, "%v month"}, plural.Case{2, "%g months"}}
 
 // PeriodYearNames is as for PeriodDayNames but for years.
-var PeriodYearNames = Plurals{Case{0, ""}, Case{1, "%v year"}, Case{2, "%v years"}}
+var PeriodYearNames = plural.Plurals{plural.Case{0, ""}, plural.Case{1, "%v year"}, plural.Case{2, "%v years"}}
 
 // PeriodHourNames is as for PeriodDayNames but for hours.
-var PeriodHourNames = Plurals{Case{0, ""}, Case{1, "%v hour"}, Case{2, "%v hours"}}
+var PeriodHourNames = plural.Plurals{plural.Case{0, ""}, plural.Case{1, "%v hour"}, plural.Case{2, "%v hours"}}
 
 // PeriodMinuteNames is as for PeriodDayNames but for minutes.
-var PeriodMinuteNames = Plurals{Case{0, ""}, Case{1, "%v minute"}, Case{2, "%v minutes"}}
+var PeriodMinuteNames = plural.Plurals{plural.Case{0, ""}, plural.Case{1, "%v minute"}, plural.Case{2, "%v minutes"}}
 
 // PeriodSecondNames is as for PeriodDayNames but for seconds.
-var PeriodSecondNames = Plurals{Case{0, ""}, Case{1, "%v second"}, Case{2, "%v seconds"}}
+var PeriodSecondNames = plural.Plurals{plural.Case{0, ""}, plural.Case{1, "%v second"}, plural.Case{2, "%v seconds"}}
 
 // String converts the period to -8601 form.
 func (period Period) String() string {

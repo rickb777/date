@@ -37,7 +37,7 @@ func (v VDate) Date() date.Date {
 
 // IsYesterday returns true if the date is yesterday's date.
 func (v VDate) IsYesterday() bool {
-	return v.d.DaysSinceEpoch() + 1 == date.Today().DaysSinceEpoch()
+	return v.d.DaysSinceEpoch()+1 == date.Today().DaysSinceEpoch()
 }
 
 // IsToday returns true if the date is today's date.
@@ -47,7 +47,7 @@ func (v VDate) IsToday() bool {
 
 // IsTomorrow returns true if the date is tomorrow's date.
 func (v VDate) IsTomorrow() bool {
-	return v.d.DaysSinceEpoch() - 1 == date.Today().DaysSinceEpoch()
+	return v.d.DaysSinceEpoch()-1 == date.Today().DaysSinceEpoch()
 }
 
 // String formats the date in basic ISO8601 format YYYY-MM-DD.

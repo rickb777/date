@@ -9,7 +9,7 @@ package main
 
 import (
 	"fmt"
-	. "github.com/rickb777/date"
+	"github.com/rickb777/date"
 	"github.com/rickb777/date/clock"
 	"os"
 	"strconv"
@@ -20,11 +20,11 @@ func printPair(a string, b interface{}) {
 	fmt.Printf("%-12s %12v\n", a, b)
 }
 
-func printOneDate(s string, d Date, err error) {
+func printOneDate(s string, d date.Date, err error) {
 	if err != nil {
 		printPair(s, err.Error())
 	} else {
-		printPair(s, d.Sub(Date{}))
+		printPair(s, d.Sub(date.Date{}))
 	}
 }
 
@@ -37,18 +37,18 @@ func printOneClock(s string, c clock.Clock, err error) {
 }
 
 func printArg(arg string) {
-	d := Date{}
+	d := date.Date{}
 
-	d, e1 := AutoParse(arg)
+	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
-		printPair(arg, d.Sub(Date{}))
+		printPair(arg, d.Sub(date.Date{}))
 	} else if strings.Index(arg, ":") == 2 {
 		c, err := clock.Parse(arg)
 		printOneClock(arg, c, err)
 	} else {
 		i, err := strconv.Atoi(arg)
 		if err == nil {
-			d = d.Add(PeriodOfDays(i))
+			d = d.Add(date.PeriodOfDays(i))
 			fmt.Printf("%-12s %12s  %s\n", arg, d, clock.Clock(i))
 		} else {
 			printPair(arg, err)

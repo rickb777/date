@@ -96,13 +96,13 @@ func (c Clock) AddDuration(d time.Duration) Clock {
 
 // ModSubtract returns the duration between two clock times.
 //
-// If c2 is before c1 (i.e. c2 < c1), the result is the duration computed from c1 - c2.
+// If c2 is before c (i.e. c2 < c), the result is the duration computed from c - c2.
 //
-// But if c1 is before c2, it is assumed that c1 is after midnight and c2 is before midnight. The
-// result is the sum of the evening time from c2 to midnight with the morning time from midnight to c1.
-// This is the same as Mod24(c1 - c2).
-func (c1 Clock) ModSubtract(c2 Clock) time.Duration {
-	ms := c1 - c2
+// But if c is before c2, it is assumed that c is after midnight and c2 is before midnight. The
+// result is the sum of the evening time from c2 to midnight with the morning time from midnight to c.
+// This is the same as Mod24(c - c2).
+func (c Clock) ModSubtract(c2 Clock) time.Duration {
+	ms := c - c2
 	return ms.Mod24().DurationSinceMidnight()
 }
 
