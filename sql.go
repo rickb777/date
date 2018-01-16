@@ -18,9 +18,17 @@ import (
 // Scan parses some value. It implements sql.Scanner,
 // https://golang.org/pkg/database/sql/#Scanner
 func (d *Date) Scan(value interface{}) (err error) {
+	if value == nil {
+		return nil
+	}
+
 	if DisableTextStorage {
 		return d.scanInt(value)
 	}
+	return d.scanAny(value)
+}
+
+func (d *Date) scanAny(value interface{}) (err error) {
 	var n int64
 	err = nil
 	switch value.(type) {
@@ -35,8 +43,9 @@ func (d *Date) Scan(value interface{}) (err error) {
 	case time.Time:
 		*d = NewAt(value.(time.Time))
 	default:
-		err = fmt.Errorf("%#v", value)
+		err = fmt.Errorf("%T %+v is not a meaningful date", value, value)
 	}
+
 	return
 }
 
@@ -46,7 +55,7 @@ func (d *Date) scanInt(value interface{}) (err error) {
 	case int64:
 		*d = Date{PeriodOfDays(value.(int64))}
 	default:
-		err = fmt.Errorf("%#v", value)
+		err = fmt.Errorf("%T %+v is not a meaningful date", value, value)
 	}
 	return
 }

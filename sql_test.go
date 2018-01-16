@@ -54,3 +54,38 @@ func TestDateScan(t *testing.T) {
 
 	DisableTextStorage = prior
 }
+
+func TestDateScanWithJunk(t *testing.T) {
+	cases := []struct {
+		v        interface{}
+		disallow bool
+		expected string
+	}{
+		{true, false, "bool true is not a meaningful date"},
+		{true, true, "bool true is not a meaningful date"},
+	}
+
+	prior := DisableTextStorage
+
+	for i, c := range cases {
+		DisableTextStorage = c.disallow
+		r := new(Date)
+		e := r.Scan(c.v)
+		if e.Error() != c.expected {
+			t.Errorf("%d: Got %q, want %q", i, e.Error(), c.expected)
+		}
+	}
+
+	DisableTextStorage = prior
+}
+
+func TestDateScanWithNil(t *testing.T) {
+	var r *Date
+	e := r.Scan(nil)
+	if e != nil {
+		t.Errorf("Got %v", e)
+	}
+	if r != nil {
+		t.Errorf("Got %v", r)
+	}
+}
