@@ -66,6 +66,28 @@ func TestIsToday(t *testing.T) {
 
 }
 
+func TestIsOdd(t *testing.T) {
+	d25 := date.New(2012, time.June, 25)
+
+	cases := []struct {
+		value     VDate
+		expectOdd bool
+	}{
+		{NewVDate(d25), true},
+		{NewVDate(d25.Add(-2)), true},
+		{NewVDate(d25.Add(-1)), false},
+		{NewVDate(d25.Add(0)), true},
+		{NewVDate(d25.Add(1)), false},
+		{NewVDate(d25.Add(2)), true},
+	}
+	for _, c := range cases {
+		if c.value.IsOdd() != c.expectOdd {
+			t.Errorf("%s should be odd: %v", c.value, c.expectOdd)
+		}
+	}
+
+}
+
 func TestNext(t *testing.T) {
 	d := NewVDate(date.New(2016, 2, 7))
 	is(t, d.Next().Day().String(), "2016-02-08")
