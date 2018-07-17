@@ -9,6 +9,7 @@ import (
 	"github.com/rickb777/date"
 	"time"
 	"github.com/rickb777/date/period"
+	"strings"
 )
 
 // TimestampFormat is a simple format for date & time, "2006-01-02 15:04:05".
@@ -150,20 +151,62 @@ func (ts TimeSpan) Merge(other TimeSpan) TimeSpan {
 // that "Z" is to be appended when the time is UTC.
 const RFC5545DateTimeLayout = "20060102T150405"
 
-func (ts TimeSpan) Format() string {
-	format := RFC5545DateTimeLayout
-	if ts.mark.Location().String() == "UTC" {
-		format = RFC5545DateTimeLayout + "Z"
+func layoutHasTimezone(layout string) bool {
+	return strings.IndexByte(layout, 'Z') >= 0 || strings.Contains(layout, "-07")
+}
+
+// Format returns a textual representation of the time value formatted according to layout.
+// It produces a string containing the start and end time separated by a slash. Or, if
+// useDuration is true, it returns a string containing the start time and the duration,
+// separated by a slash.
+//
+// The layout string is as specified for time.Format. If it doesn't have a timezone element
+// ("07" or "Z") and the times in the timespan are UTC, the "Z" zulu indicator is added.
+// THis is as required by RFC5545. Also, if the layout is blank, it defaults to
+// RFC5545DateTimeLayout.
+func (ts TimeSpan) Format(layout, separator string, useDuration bool) string {
+	if layout == "" {
+		layout = RFC5545DateTimeLayout
+	}
+
+	// if the time is UTC and the format doesn't contain zulu field ("Z") or timezone field ("07")
+	if ts.mark.Location().String() == "UTC" && !layoutHasTimezone(layout) {
+		layout = RFC5545DateTimeLayout + "Z"
 	}
 	s := ts.Start()
 	e := ts.End()
-	p := period.Between(s, e)
-	return fmt.Sprintf("%s/%s", s.Format(format), p)
+	if useDuration {
+		p := period.Between(s, e)
+		return fmt.Sprintf("%s%s%s", s.Format(layout), separator, p)
+	}
+
+	return fmt.Sprintf("%s%s%s", s.Format(layout), separator, e.Format(layout))
 }
 
-// MarshalText formats the timespan as a string. This implements
-// then encoding.TextMarshaler interface.
+func (ts TimeSpan) FormatRFC5545(useDuration bool) string {
+	return ts.Format(RFC5545DateTimeLayout, "/", useDuration)
+}
+
+// MarshalText formats the timespan as a string using, using RFC5545 layout.
+// This implements the encoding.TextMarshaler interface.
 func (ts TimeSpan) MarshalText() (text []byte, err error) {
-	s := ts.Format()
+	s := ts.Format(RFC5545DateTimeLayout, "/", true)
 	return []byte(s), nil
 }
+
+// ParseInLocation parses a string as a timespan. The string must contain either of
+//
+//     time "/" time
+//     time "/" period
+//
+// The RFC5545 format is expected.
+//func ParseInLocation(format, text string, loc *time.Location) (TimeSpan, error) {
+//	return TimeSpan{}, nil
+//}
+
+// UnmarshalText parses a string as a timespan. It expects RFC5545 layout.
+// This implements the encoding.TextUnmarshaler interface.
+//func (ts *TimeSpan) UnmarshalText(text []byte) (err error) {
+//	*ts, err = ParseInLocation(RFC5545DateTimeLayout, string(text), time.UTC)
+//	return
+//}

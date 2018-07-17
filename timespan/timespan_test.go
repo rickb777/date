@@ -101,10 +101,44 @@ func TestTSFormat(t *testing.T) {
 	berlin, _ := time.LoadLocation("Europe/Berlin")
 	t0 := time.Date(2015, 3, 27, 10, 13, 14, 0, time.UTC)
 
-	cases := []struct{
-		start time.Time
+	cases := []struct {
+		start                  time.Time
+		duration               time.Duration
+		useDuration            bool
+		layout, separator, exp string
+	}{
+		{t0, time.Hour, true, "", " for ", "20150327T101314Z for PT1H"},
+		{t0, time.Hour, true, "", "/", "20150327T101314Z/PT1H"},
+		{t0.In(berlin), time.Minute, true, "", "/","20150327T111314/PT1M"},
+		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05", "/","2015-03-27T11:13:14/PT1H"},
+		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05-07", "/","2015-03-27T11:13:14+01/PT1H"},
+		{t0, time.Hour, true, "2006-01-02T15:04:05-07", "/","2015-03-27T10:13:14+00/PT1H"},
+		{t0, time.Hour, true, "2006-01-02T15:04:05Z07", "/","2015-03-27T10:13:14Z/PT1H"},
+
+		{t0, time.Hour, false, "", " to ","20150327T101314Z to 20150327T111314Z"},
+		{t0, time.Hour, false, "", "/","20150327T101314Z/20150327T111314Z"},
+		{t0.In(berlin), time.Minute, false, "", "/","20150327T111314/20150327T111414"},
+		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05", "/","2015-03-27T11:13:14/2015-03-27T12:13:14"},
+		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05-07", "/","2015-03-27T11:13:14+01/2015-03-27T12:13:14+01"},
+		{t0, time.Hour, false, "2006-01-02T15:04:05-07", "/","2015-03-27T10:13:14+00/2015-03-27T11:13:14+00"},
+		{t0, time.Hour, false, "2006-01-02T15:04:05Z07", "/","2015-03-27T10:13:14Z/2015-03-27T11:13:14Z"},
+	}
+
+	for _, c := range cases {
+		ts := TimeSpan{c.start, c.duration}
+		isEq(t, ts.Format(c.layout, c.separator, c.useDuration), c.exp)
+	}
+}
+
+func TestTSMarshalText(t *testing.T) {
+	// use Berlin, which is UTC-1
+	berlin, _ := time.LoadLocation("Europe/Berlin")
+	t0 := time.Date(2015, 3, 27, 10, 13, 14, 0, time.UTC)
+
+	cases := []struct {
+		start    time.Time
 		duration time.Duration
-		exp string
+		exp      string
 	}{
 		{t0, time.Hour, "20150327T101314Z/PT1H"},
 		{t0.In(berlin), time.Minute, "20150327T111314/PT1M"},
@@ -112,8 +146,11 @@ func TestTSFormat(t *testing.T) {
 
 	for _, c := range cases {
 		ts := TimeSpan{c.start, c.duration}
+
+		s := ts.FormatRFC5545(true)
+		isEq(t, s, c.exp)
+
 		b, err := ts.MarshalText()
-		isEq(t, ts.Format(), c.exp)
 		isEq(t, err, nil)
 		isEq(t, string(b), c.exp)
 	}
