@@ -109,19 +109,19 @@ func TestTSFormat(t *testing.T) {
 	}{
 		{t0, time.Hour, true, "", " for ", "20150327T101314Z for PT1H"},
 		{t0, time.Hour, true, "", "/", "20150327T101314Z/PT1H"},
-		{t0.In(berlin), time.Minute, true, "", "/","20150327T111314/PT1M"},
-		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05", "/","2015-03-27T11:13:14/PT1H"},
-		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05-07", "/","2015-03-27T11:13:14+01/PT1H"},
-		{t0, time.Hour, true, "2006-01-02T15:04:05-07", "/","2015-03-27T10:13:14+00/PT1H"},
-		{t0, time.Hour, true, "2006-01-02T15:04:05Z07", "/","2015-03-27T10:13:14Z/PT1H"},
+		{t0.In(berlin), time.Minute, true, "", "/", "20150327T111314/PT1M"},
+		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05", "/", "2015-03-27T11:13:14/PT1H"},
+		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05-07", "/", "2015-03-27T11:13:14+01/PT1H"},
+		{t0, time.Hour, true, "2006-01-02T15:04:05-07", "/", "2015-03-27T10:13:14+00/PT1H"},
+		{t0, time.Hour, true, "2006-01-02T15:04:05Z07", "/", "2015-03-27T10:13:14Z/PT1H"},
 
-		{t0, time.Hour, false, "", " to ","20150327T101314Z to 20150327T111314Z"},
-		{t0, time.Hour, false, "", "/","20150327T101314Z/20150327T111314Z"},
-		{t0.In(berlin), time.Minute, false, "", "/","20150327T111314/20150327T111414"},
-		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05", "/","2015-03-27T11:13:14/2015-03-27T12:13:14"},
-		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05-07", "/","2015-03-27T11:13:14+01/2015-03-27T12:13:14+01"},
-		{t0, time.Hour, false, "2006-01-02T15:04:05-07", "/","2015-03-27T10:13:14+00/2015-03-27T11:13:14+00"},
-		{t0, time.Hour, false, "2006-01-02T15:04:05Z07", "/","2015-03-27T10:13:14Z/2015-03-27T11:13:14Z"},
+		{t0, time.Hour, false, "", " to ", "20150327T101314Z to 20150327T111314Z"},
+		{t0, time.Hour, false, "", "/", "20150327T101314Z/20150327T111314Z"},
+		{t0.In(berlin), time.Minute, false, "", "/", "20150327T111314/20150327T111414"},
+		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05", "/", "2015-03-27T11:13:14/2015-03-27T12:13:14"},
+		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05-07", "/", "2015-03-27T11:13:14+01/2015-03-27T12:13:14+01"},
+		{t0, time.Hour, false, "2006-01-02T15:04:05-07", "/", "2015-03-27T10:13:14+00/2015-03-27T11:13:14+00"},
+		{t0, time.Hour, false, "2006-01-02T15:04:05Z07", "/", "2015-03-27T10:13:14Z/2015-03-27T11:13:14Z"},
 	}
 
 	for _, c := range cases {
@@ -153,6 +153,60 @@ func TestTSMarshalText(t *testing.T) {
 		b, err := ts.MarshalText()
 		isEq(t, err, nil)
 		isEq(t, string(b), c.exp)
+	}
+}
+
+func TestTSParseInLocation(t *testing.T) {
+	// use Berlin, which is UTC-1
+	berlin, _ := time.LoadLocation("Europe/Berlin")
+	t0120 := time.Date(2015, 1, 20, 10, 13, 14, 0, time.UTC)
+	t0327 := time.Date(2015, 3, 27, 10, 13, 14, 0, time.UTC)
+
+	cases := []struct {
+		start    time.Time
+		duration time.Duration
+		text     string
+	}{
+		{t0327, time.Hour, "20150327T101314Z/PT1H"},
+		{t0327, 2*time.Second, "20150327T101314Z/PT2S"},
+		{t0327.In(berlin), time.Minute, "20150327T111314/PT1M"},
+		{t0327, 168*time.Hour, "20150327T101314Z/P1W"},
+		{t0120.In(berlin), 168*time.Hour, "20150120T111314/P1W"},
+		// This case has the daylight-savings clock shift
+		{t0327.In(berlin), 167*time.Hour, "20150327T111314/P1W"},
+	}
+
+	for _, c := range cases {
+		ts, err := ParseRFC5545InLocation(c.text, c.start.Location())
+		isEq(t, err, nil)
+
+		if !ts.Start().Equal(c.start) {
+			t.Errorf(ts.String())
+		}
+
+		if ts.Duration() != c.duration {
+			t.Errorf(ts.String())
+		}
+	}
+}
+
+func TestTSParseInLocationErrors(t *testing.T) {
+	cases := []struct {
+		text     string
+	}{
+		{"20150327T101314Z PT1H"},
+		{"2015XX27T101314/PT1H"},
+		{"20150127T101314/2016XX27T101314"},
+		{"20150127T101314/P1Z"},
+		{"20150327T101314Z/"},
+		{"/PT1H"},
+	}
+
+	for _, c := range cases {
+		ts, err := ParseRFC5545InLocation(c.text, time.UTC)
+		if err == nil {
+			t.Errorf(ts.String())
+		}
 	}
 }
 

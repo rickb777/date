@@ -194,15 +194,57 @@ func (ts TimeSpan) MarshalText() (text []byte, err error) {
 	return []byte(s), nil
 }
 
-// ParseInLocation parses a string as a timespan. The string must contain either of
+// ParseRFC5545InLocation parses a string as a timespan. The string must contain either of
 //
 //     time "/" time
 //     time "/" period
 //
-// The RFC5545 format is expected.
-//func ParseInLocation(format, text string, loc *time.Location) (TimeSpan, error) {
-//	return TimeSpan{}, nil
-//}
+// The specified location will be used for the resulting times; this behaves the same
+// as time.ParseInLocation.
+func ParseRFC5545InLocation(text string, loc *time.Location) (TimeSpan, error) {
+	slash := strings.IndexByte(text, '/')
+	if slash < 0 {
+		return TimeSpan{}, fmt.Errorf("cannot parse %q because there is no separator '/'", text)
+	}
+
+	start := text[:slash]
+	rest := text[slash+1:]
+
+	st, err := parseTimeInLocation(start, loc)
+	if err != nil {
+		return TimeSpan{}, fmt.Errorf("cannot parse start time in %q: %s", text, err.Error())
+	}
+
+	if rest == "" {
+		return TimeSpan{}, fmt.Errorf("cannot parse %q because there is end time or duration", text)
+	}
+
+	if rest[0] == 'P' {
+		pe, err := period.Parse(rest)
+		if err != nil {
+			return TimeSpan{}, fmt.Errorf("cannot parse period in %q: %s", text, err.Error())
+		}
+
+		du, precise := pe.Duration()
+		if precise {
+			return TimeSpan{st, du}, nil
+		}
+
+		et := st.AddDate(pe.Years(), pe.Months(), pe.Days())
+		return NewTimeSpan(st, et), nil
+	}
+
+	et, err := parseTimeInLocation(rest, loc)
+	return NewTimeSpan(st, et), err
+}
+
+func parseTimeInLocation(text string, loc *time.Location) (time.Time, error) {
+	if strings.HasSuffix(text, "Z") {
+		text = text[:len(text)-1]
+		return time.ParseInLocation(RFC5545DateTimeLayout, text, time.UTC)
+	}
+	return time.ParseInLocation(RFC5545DateTimeLayout, text, loc)
+}
 
 // UnmarshalText parses a string as a timespan. It expects RFC5545 layout.
 // This implements the encoding.TextUnmarshaler interface.
