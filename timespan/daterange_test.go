@@ -304,6 +304,7 @@ func TestDurationInZoneWithDaylightSaving(t *testing.T) {
 }
 
 func isEq(t *testing.T, a, b interface{}, msg ...interface{}) {
+	t.Helper()
 	if a != b {
 		sa := make([]string, len(msg))
 		for i, m := range msg {

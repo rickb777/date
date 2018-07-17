@@ -96,6 +96,29 @@ func TestTSString(t *testing.T) {
 	isEq(t, s, "24h0m0s from 2015-03-27 00:00:00 to 2015-03-28 00:00:00")
 }
 
+func TestTSFormat(t *testing.T) {
+	// use Berlin, which is UTC-1
+	berlin, _ := time.LoadLocation("Europe/Berlin")
+	t0 := time.Date(2015, 3, 27, 10, 13, 14, 0, time.UTC)
+
+	cases := []struct{
+		start time.Time
+		duration time.Duration
+		exp string
+	}{
+		{t0, time.Hour, "20150327T101314Z/PT1H"},
+		{t0.In(berlin), time.Minute, "20150327T111314/PT1M"},
+	}
+
+	for _, c := range cases {
+		ts := TimeSpan{c.start, c.duration}
+		b, err := ts.MarshalText()
+		isEq(t, ts.Format(), c.exp)
+		isEq(t, err, nil)
+		isEq(t, string(b), c.exp)
+	}
+}
+
 func TestTSContains(t *testing.T) {
 	ts := NewTimeSpan(t0327, t0329)
 	isEq(t, ts.Contains(t0327.Add(minusOneNano)), false)

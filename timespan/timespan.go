@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/rickb777/date"
 	"time"
+	"github.com/rickb777/date/period"
 )
 
 // TimestampFormat is a simple format for date & time, "2006-01-02 15:04:05".
@@ -143,4 +144,26 @@ func (ts TimeSpan) Merge(other TimeSpan) TimeSpan {
 	} else {
 		return NewTimeSpan(ts.mark, other.End())
 	}
+}
+
+// RFC5545DateTimeLayout is the format string used by iCalendar (RFC5545). Note
+// that "Z" is to be appended when the time is UTC.
+const RFC5545DateTimeLayout = "20060102T150405"
+
+func (ts TimeSpan) Format() string {
+	format := RFC5545DateTimeLayout
+	if ts.mark.Location().String() == "UTC" {
+		format = RFC5545DateTimeLayout + "Z"
+	}
+	s := ts.Start()
+	e := ts.End()
+	p := period.Between(s, e)
+	return fmt.Sprintf("%s/%s", s.Format(format), p)
+}
+
+// MarshalText formats the timespan as a string. This implements
+// then encoding.TextMarshaler interface.
+func (ts TimeSpan) MarshalText() (text []byte, err error) {
+	s := ts.Format()
+	return []byte(s), nil
 }
