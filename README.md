@@ -26,6 +26,10 @@ full documentation and examples.
 
     go get -u github.com/rickb777/date
 
+or
+
+    dep ensure -add github.com/rickb777/date
+
 ## Status
 
 This library has been in reliable production use for some time. Versioning follows the well-known semantic version pattern.

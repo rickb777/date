@@ -8,7 +8,7 @@
 // and even day lengths depends on context. So a period is not necessarily a fixed duration
 // of time in terms of seconds.
 //
-// See https://en.wikipedia.org/wiki/ISO_8601#Periods
+// See https://en.wikipedia.org/wiki/ISO_8601#Durations
 //
 // Example representations:
 //
