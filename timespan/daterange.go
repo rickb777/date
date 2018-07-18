@@ -149,24 +149,33 @@ func (dateRange DateRange) ExtendBy(days date.PeriodOfDays) DateRange {
 
 // ShiftByPeriod moves the date range by moving both the start and end dates similarly.
 // A negative parameter is allowed.
-func (dateRange DateRange) ShiftByPeriod(period period.Period) DateRange {
-	if period.IsZero() {
+//
+// Any time component is ignored. Therefore, be careful with periods containing
+// more that 24 hours in the hours/minutes/seconds fields. These will not be
+// normalised for you; if you want this behaviour, call delta.Normalise(false)
+// on the input parameter.
+//
+// For example, PT24H adds nothing, whereas P1D adds one day as expected. To
+// convert a period such as PT24H to its equivalent P1D, use
+// delta.Normalise(false) as the input.
+func (dateRange DateRange) ShiftByPeriod(delta period.Period) DateRange {
+	if delta.IsZero() {
 		return dateRange
 	}
-	newMark := dateRange.mark.AddPeriod(period)
-	//fmt.Printf("mark + %v : %v -> %v", period, dateRange.mark, newMark)
+	newMark := dateRange.mark.AddPeriod(delta)
+	//fmt.Printf("mark + %v : %v -> %v", delta, dateRange.mark, newMark)
 	return DateRange{newMark, dateRange.days}
 }
 
 // ExtendByPeriod extends (or reduces) the date range by moving the end date.
 // A negative parameter is allowed and this may cause the range to become inverted
 // (i.e. the mark date becomes the end date instead of the start date).
-func (dateRange DateRange) ExtendByPeriod(period period.Period) DateRange {
-	if period.IsZero() {
+func (dateRange DateRange) ExtendByPeriod(delta period.Period) DateRange {
+	if delta.IsZero() {
 		return dateRange
 	}
-	newEnd := dateRange.End().AddPeriod(period)
-	//fmt.Printf("%v, end + %v : %v -> %v", dateRange.mark, period, dateRange.End(), newEnd)
+	newEnd := dateRange.End().AddPeriod(delta)
+	//fmt.Printf("%v, end + %v : %v -> %v", dateRange.mark, delta, dateRange.End(), newEnd)
 	return NewDateRange(dateRange.Start(), newEnd)
 }
 

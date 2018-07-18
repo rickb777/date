@@ -4,12 +4,12 @@
 [[projects]]
   name = "github.com/rickb777/plural"
   packages = ["."]
-  revision = "a4d8479dc7ebd80a2cbe436c908b3e8ce28d7b22"
-  version = "v1.0.1"
+  revision = "7589705ae1b0a218b5389c04b1505e0c8defbc1f"
+  version = "v1.2.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "db0a171068f0d4c1006d9df3c91278c67ddd77351c97a73786d90b2b432d7f3d"
+  inputs-digest = "1f971ef25906ec07445b5e0dbbb90e964612f80d60ae1ab8db48337a5fed448d"
   solver-name = "gps-cdcl"
   solver-version = 1

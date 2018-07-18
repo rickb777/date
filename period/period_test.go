@@ -45,10 +45,10 @@ func TestParsePeriod(t *testing.T) {
 		{"P1Y2.15M", Period{10, 21, 0, 0, 0, 0}},
 		{"P1Y2.125M", Period{10, 21, 0, 0, 0, 0}},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		d := MustParse(c.value)
 		if d != c.period {
-			t.Errorf("MustParsePeriod(%v) == %#v, want (%#v)", c.value, d, c.period)
+			t.Errorf("%d: MustParsePeriod(%v) == %#v, want (%#v)", i, c.value, d, c.period)
 		}
 	}
 
@@ -56,10 +56,10 @@ func TestParsePeriod(t *testing.T) {
 		"13M",
 		"P",
 	}
-	for _, c := range badCases {
+	for i, c := range badCases {
 		d, err := Parse(c)
 		if err == nil {
-			t.Errorf("ParsePeriod(%v) == %v", c, d)
+			t.Errorf("%d: ParsePeriod(%v) == %v", i, c, d)
 		}
 	}
 }
@@ -69,13 +69,15 @@ func TestPeriodString(t *testing.T) {
 		value  string
 		period Period
 	}{
-		{"P0D", Period{}},
-		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
-		{"-P3Y", Period{-30, 0, 0, 0, 0, 0}},
-		{"P6M", Period{0, 60, 0, 0, 0, 0}},
-		{"-P6M", Period{0, -60, 0, 0, 0, 0}},
-		{"P35D", Period{0, 0, 350, 0, 0, 0}},
-		{"-P35D", Period{0, 0, -350, 0, 0, 0}},
+		//{"P0D", Period{}},
+		//{"P3Y", Period{30, 0, 0, 0, 0, 0}},
+		//{"-P3Y", Period{-30, 0, 0, 0, 0, 0}},
+		//{"P6M", Period{0, 60, 0, 0, 0, 0}},
+		//{"-P6M", Period{0, -60, 0, 0, 0, 0}},
+		//{"P35D", Period{0, 0, 350, 0, 0, 0}},
+		//{"-P35D", Period{0, 0, -350, 0, 0, 0}},
+		{"P4W", Period{0, 0, 280, 0, 0, 0}},
+		{"-P4W", Period{0, 0, -280, 0, 0, 0}},
 		{"P4D", Period{0, 0, 40, 0, 0, 0}},
 		{"-P4D", Period{0, 0, -40, 0, 0, 0}},
 		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
@@ -85,10 +87,10 @@ func TestPeriodString(t *testing.T) {
 		{"-P3Y6M39DT1H2M4S", Period{-30, -60, -390, 10, 20, 40}},
 		{"P2.5Y", Period{25, 0, 0, 0, 0, 0}},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := c.period.String()
 		if s != c.value {
-			t.Errorf("String() == %s, want %s for %+v", s, c.value, c.period)
+			t.Errorf("%d: String() == %s, want %s for %+v", i, s, c.value, c.period)
 		}
 	}
 }
@@ -111,31 +113,31 @@ func TestPeriodComponents(t *testing.T) {
 		{"PT30M", 0, 0, 0, 0, 0, 0, 30, 0},
 		{"PT5S", 0, 0, 0, 0, 0, 0, 0, 5},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := MustParse(c.value)
 		if p.Years() != c.y {
-			t.Errorf("%s.Years() == %d, want %d", c.value, p.Years(), c.y)
+			t.Errorf("%d: %s.Years() == %d, want %d", i, c.value, p.Years(), c.y)
 		}
 		if p.Months() != c.m {
-			t.Errorf("%s.Months() == %d, want %d", c.value, p.Months(), c.m)
+			t.Errorf("%d: %s.Months() == %d, want %d", i, c.value, p.Months(), c.m)
 		}
 		if p.Weeks() != c.w {
-			t.Errorf("%s.Weeks() == %d, want %d", c.value, p.Weeks(), c.w)
+			t.Errorf("%d: %s.Weeks() == %d, want %d", i, c.value, p.Weeks(), c.w)
 		}
 		if p.Days() != c.d {
-			t.Errorf("%s.Days() == %d, want %d", c.value, p.Days(), c.d)
+			t.Errorf("%d: %s.Days() == %d, want %d", i, c.value, p.Days(), c.d)
 		}
 		if p.ModuloDays() != c.dx {
-			t.Errorf("%s.ModuloDays() == %d, want %d", c.value, p.ModuloDays(), c.dx)
+			t.Errorf("%d: %s.ModuloDays() == %d, want %d", i, c.value, p.ModuloDays(), c.dx)
 		}
 		if p.Hours() != c.hh {
-			t.Errorf("%s.Hours() == %d, want %d", c.value, p.Hours(), c.hh)
+			t.Errorf("%d: %s.Hours() == %d, want %d", i, c.value, p.Hours(), c.hh)
 		}
 		if p.Minutes() != c.mm {
-			t.Errorf("%s.Minutes() == %d, want %d", c.value, p.Minutes(), c.mm)
+			t.Errorf("%d: %s.Minutes() == %d, want %d", i, c.value, p.Minutes(), c.mm)
 		}
 		if p.Seconds() != c.ss {
-			t.Errorf("%s.Seconds() == %d, want %d", c.value, p.Seconds(), c.ss)
+			t.Errorf("%d: %s.Seconds() == %d, want %d", i, c.value, p.Seconds(), c.ss)
 		}
 	}
 }
@@ -155,14 +157,14 @@ func TestPeriodToDuration(t *testing.T) {
 		{"P1Y", oneYearApprox, false},
 		{"-P1Y", -oneYearApprox, false},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := MustParse(c.value)
 		s, prec := p.Duration()
 		if s != c.duration {
-			t.Errorf("Duration() == %s %v, want %s for %+v", s, prec, c.duration, c.value)
+			t.Errorf("%d: Duration() == %s %v, want %s for %+v", i, s, prec, c.duration, c.value)
 		}
 		if prec != c.precise {
-			t.Errorf("Duration() == %s %v, want %v for %+v", s, prec, c.precise, c.value)
+			t.Errorf("%d: Duration() == %s %v, want %v for %+v", i, s, prec, c.precise, c.value)
 		}
 	}
 }
@@ -180,11 +182,11 @@ func TestPeriodApproxDays(t *testing.T) {
 		{"P1Y", 365},
 		{"-P1Y", -365},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := MustParse(c.value)
 		td := p.TotalDaysApprox()
 		if td != c.approxDays {
-			t.Errorf("%v.TotalDaysApprox() == %v, want %v", p, td, c.approxDays)
+			t.Errorf("%d: %v.TotalDaysApprox() == %v, want %v", i, p, td, c.approxDays)
 		}
 	}
 }
@@ -206,11 +208,11 @@ func TestPeriodApproxMonths(t *testing.T) {
 		{"PT24H", 0},
 		{"PT744H", 1},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := MustParse(c.value)
 		td := p.TotalMonthsApprox()
 		if td != c.approxMonths {
-			t.Errorf("%v.TotalMonthsApprox() == %v, want %v", p, td, c.approxMonths)
+			t.Errorf("%d: %v.TotalMonthsApprox() == %v, want %v", i, p, td, c.approxMonths)
 		}
 	}
 }
@@ -235,19 +237,19 @@ func TestNewPeriod(t *testing.T) {
 		{0, -1, 0, 0, 0, 0, Period{0, -10, 0, 0, 0, 0}},
 		{-1, 0, 0, 0, 0, 0, Period{-10, 0, 0, 0, 0, 0}},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
 		if p != c.period {
-			t.Errorf("%d,%d,%d gives %#v, want %#v", c.years, c.months, c.days, p, c.period)
+			t.Errorf("%d: %d,%d,%d gives %#v, want %#v", i, c.years, c.months, c.days, p, c.period)
 		}
 		if p.Years() != c.years {
-			t.Errorf("%#v, got %d want %d", p, p.Years(), c.years)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Years(), c.years)
 		}
 		if p.Months() != c.months {
-			t.Errorf("%#v, got %d want %d", p, p.Months(), c.months)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Months(), c.months)
 		}
 		if p.Days() != c.days {
-			t.Errorf("%#v, got %d want %d", p, p.Days(), c.days)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Days(), c.days)
 		}
 	}
 }
@@ -265,19 +267,19 @@ func TestNewHMS(t *testing.T) {
 		{0, -1, 0, Period{0, 0, 0, 0, -10, 0}},
 		{-1, 0, 0, Period{0, 0, 0, -10, 0, 0}},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := NewHMS(c.hours, c.minutes, c.seconds)
 		if p != c.period {
-			t.Errorf("gives %#v, want %#v", p, c.period)
+			t.Errorf("%d: gives %#v, want %#v", i, p, c.period)
 		}
 		if p.Hours() != c.hours {
-			t.Errorf("%#v, got %d want %d", p, p.Years(), c.hours)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Years(), c.hours)
 		}
 		if p.Minutes() != c.minutes {
-			t.Errorf("%#v, got %d want %d", p, p.Months(), c.minutes)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Months(), c.minutes)
 		}
 		if p.Seconds() != c.seconds {
-			t.Errorf("%#v, got %d want %d", p, p.Days(), c.seconds)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Days(), c.seconds)
 		}
 	}
 }
@@ -296,19 +298,19 @@ func TestNewYMD(t *testing.T) {
 		{0, -1, 0, Period{0, -10, 0, 0, 0, 0}},
 		{-1, 0, 0, Period{-10, 0, 0, 0, 0, 0}},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		p := NewYMD(c.years, c.months, c.days)
 		if p != c.period {
-			t.Errorf("%d,%d,%d gives %#v, want %#v", c.years, c.months, c.days, p, c.period)
+			t.Errorf("%d: %d,%d,%d gives %#v, want %#v", i, c.years, c.months, c.days, p, c.period)
 		}
 		if p.Years() != c.years {
-			t.Errorf("%#v, got %d want %d", p, p.Years(), c.years)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Years(), c.years)
 		}
 		if p.Months() != c.months {
-			t.Errorf("%#v, got %d want %d", p, p.Months(), c.months)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Months(), c.months)
 		}
 		if p.Days() != c.days {
-			t.Errorf("%#v, got %d want %d", p, p.Days(), c.days)
+			t.Errorf("%d: %#v, got %d want %d", i, p, p.Days(), c.days)
 		}
 	}
 }
@@ -338,13 +340,13 @@ func TestNewOf(t *testing.T) {
 		{-305 * oneDayApprox, Period{0, -100, 0, 0, 0, 0}, false},
 		{-36525 * oneDayApprox, Period{-1000, 0, 0, 0, 0, 0}, false},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		n, p := NewOf(c.source)
 		if n != c.expected {
-			t.Errorf("NewOf(%v) gives %v %#v, want %v", c.source, n, n, c.expected)
+			t.Errorf("%d: NewOf(%v) gives %v %#v, want %v", i, c.source, n, n, c.expected)
 		}
 		if p != c.precise {
-			t.Errorf("NewOf(%v) gives %v, want %v for %v", c.source, p, c.precise, c.expected)
+			t.Errorf("%d: NewOf(%v) gives %v, want %v for %v", i, c.source, p, c.precise, c.expected)
 		}
 	}
 }
@@ -364,10 +366,10 @@ func TestBetween(t *testing.T) {
 		{time.Date(2015, 2, 11, 0, 0, 0, 0, time.UTC), time.Date(2016, 1, 12, 0, 0, 0, 0, time.UTC), Period{0, 110, 10, 0, 0, 0}},
 		{time.Date(2016, 1, 12, 0, 0, 0, 0, time.UTC), time.Date(2015, 2, 11, 0, 0, 0, 0, time.UTC), Period{0, -110, -10, 0, 0, 0}},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		n := Between(c.a, c.b)
 		if n != c.expected {
-			t.Errorf("Between(%v, %v) gives %v %#v, want %v", c.a, c.b, n, n, c.expected)
+			t.Errorf("%d: Between(%v, %v) gives %v %#v, want %v", i, c.a, c.b, n, n, c.expected)
 		}
 	}
 }
@@ -387,10 +389,10 @@ func TestNormalise(t *testing.T) {
 		{New(0, 11, 30, 23, 59, 60), Period{10, 0, 6, 0, 0, 0}, false},
 		{New(0, 11, 30, 23, 59, 60).Negate(), Period{10, 0, 6, 0, 0, 0}.Negate(), false},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		n := c.source.Normalise(c.precise)
 		if n != c.expected {
-			t.Errorf("%v.Normalise(%v) gives %v %#v, want %v", c.source, c.precise, n, n, c.expected)
+			t.Errorf("%d: %v.Normalise(%v) gives %v %#v, want %v", i, c.source, c.precise, n, n, c.expected)
 		}
 	}
 }
@@ -423,10 +425,10 @@ func TestPeriodFormat(t *testing.T) {
 		{"P2.15Y", "2.1 years"},
 		{"P2.125Y", "2.1 years"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := MustParse(c.period).Format()
 		if s != c.expect {
-			t.Errorf("Format() == %s, want %s for %+v", s, c.expect, c.period)
+			t.Errorf("%d: Format() == %s, want %s for %+v", i, s, c.expect, c.period)
 		}
 	}
 }
@@ -457,11 +459,11 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 		{"P2.15Y", "2.1 years"},
 		{"P2.125Y", "2.1 years"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := MustParse(c.period).FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames,
 			PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
 		if s != c.expect {
-			t.Errorf("Format() == %s, want %s for %+v", s, c.expect, c.period)
+			t.Errorf("%d: Format() == %s, want %s for %+v", i, s, c.expect, c.period)
 		}
 	}
 }
@@ -474,10 +476,10 @@ func TestPeriodOnlyYMD(t *testing.T) {
 		{"P1Y2M3DT4H5M6S", "P1Y2M3D"},
 		{"-P6Y5M4DT3H2M1S", "-P6Y5M4D"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := MustParse(c.one).OnlyYMD()
 		if s != MustParse(c.expect) {
-			t.Errorf("%s.OnlyYMD() == %v, want %s", c.one, s, c.expect)
+			t.Errorf("%d: %s.OnlyYMD() == %v, want %s", i, c.one, s, c.expect)
 		}
 	}
 }
@@ -490,10 +492,10 @@ func TestPeriodOnlyHMS(t *testing.T) {
 		{"P1Y2M3DT4H5M6S", "PT4H5M6S"},
 		{"-P6Y5M4DT3H2M1S", "-PT3H2M1S"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := MustParse(c.one).OnlyHMS()
 		if s != MustParse(c.expect) {
-			t.Errorf("%s.OnlyHMS() == %v, want %s", c.one, s, c.expect)
+			t.Errorf("%d: %s.OnlyHMS() == %v, want %s", i, c.one, s, c.expect)
 		}
 	}
 }
@@ -513,10 +515,10 @@ func TestPeriodAdd(t *testing.T) {
 		{"P1Y2M3DT4H5M6S", "P6Y5M4DT3H2M1S", "P7Y7M7DT7H7M7S"},
 		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := MustParse(c.one).Add(MustParse(c.two))
 		if s != MustParse(c.expect) {
-			t.Errorf("%s.Add(%s) == %v, want %s", c.one, c.two, s, c.expect)
+			t.Errorf("%d: %s.Add(%s) == %v, want %s", i, c.one, c.two, s, c.expect)
 		}
 	}
 }
@@ -543,10 +545,10 @@ func TestPeriodScale(t *testing.T) {
 		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
 		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		s := MustParse(c.one).Scale(c.m)
 		if s != MustParse(c.expect) {
-			t.Errorf("%s.Scale(%g) == %v, want %s", c.one, c.m, s, c.expect)
+			t.Errorf("%d: %s.Scale(%g) == %v, want %s", i, c.one, c.m, s, c.expect)
 		}
 	}
 }

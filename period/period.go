@@ -15,16 +15,18 @@ const oneE5 = 100000
 const oneE6 = 1000000
 
 // Period holds a period of time and provides conversion to/from ISO-8601 representations.
+// Therefore there are six fields: years, months, days, hours, minutes, and seconds.
+//
 // In the ISO representation, decimal fractions are supported, although only the last non-zero
 // component is allowed to have a fraction according to the Standard. For example "P2.5Y"
 // is 2.5 years.
 //
-// In this implementation, the precision is limited to one decimal place only, by means
-// of integers with fixed point arithmetic. This avoids using float32 in the struct, so
-// there are no problems testing equality using ==.
+// However, in this implementation, the precision is limited to one decimal place only, by
+// means of integers with fixed point arithmetic. (This avoids using float32 in the struct,
+// so there are no problems testing equality using ==.)
 //
-// The implementation limits the range of possible values to ± 2^16 / 10. Note in
-// particular that the range of years is limited to approximately ± 3276.
+// The implementation limits the range of possible values to ± 2^16 / 10 in each field.
+// Note in particular that the range of years is limited to approximately ± 3276.
 //
 // The concept of weeks exists in string representations of periods, but otherwise weeks
 // are unimportant. The period contains a number of days from which the number of weeks can
