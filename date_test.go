@@ -240,34 +240,26 @@ func TestAddDate(t *testing.T) {
 	}
 }
 
-func xTestAddDuration(t *testing.T) {
+func TestAddPeriod(t *testing.T) {
 	cases := []struct {
-		year  int
-		month time.Month
-		day   int
+		in       Date
+		delta    period.Period
+		expected Date
 	}{
-		{-1234, time.February, 5},
-		{0, time.April, 12},
-		{1, time.January, 1},
-		{1946, time.February, 4},
-		{1970, time.January, 1},
-		{1976, time.April, 1},
-		{1999, time.December, 1},
-		{1111111, time.June, 21},
+		{New(1970, time.January, 1), period.NewYMD(0, 0, 0), New(1970, time.January, 1)},
+		{New(1971, time.January, 1), period.NewYMD(10, 0, 0), New(1981, time.January, 1)},
+		{New(1972, time.January, 1), period.NewYMD(0, 10, 0), New(1972, time.November, 1)},
+		{New(1972, time.January, 1), period.NewYMD(0, 24, 0), New(1974, time.January, 1)},
+		{New(1973, time.January, 1), period.NewYMD(0, 0, 10), New(1973, time.January, 11)},
+		{New(1973, time.January, 1), period.NewYMD(0, 0, 365), New(1974, time.January, 1)},
+		{New(1974, time.January, 1), period.NewHMS(1, 2, 3), New(1974, time.January, 1)},
+		// note: the period is not normalised so the HMS is ignored even though it's more than one day
+		{New(1975, time.January, 1), period.NewHMS(24, 2, 3), New(1975, time.January, 1)},
 	}
-	offsets := []PeriodOfDays{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
-	for _, c := range cases {
-		di := New(c.year, c.month, c.day)
-		for _, days := range offsets {
-			dj := di.AddPeriod(period.New(0, 0, int(days), 0, 0, 0))
-			days2 := dj.Sub(di)
-			if days2 != days {
-				t.Errorf("AddSub(%v,%v) == %v, want %v", di, days, days2, days)
-			}
-			dk := dj.AddPeriod(period.New(0, 0, -int(days), 0, 0, 0))
-			if dk != di {
-				t.Errorf("AddNeg(%v,%v) == %v, want %v", di, days, dk, di)
-			}
+	for i, c := range cases {
+		out := c.in.AddPeriod(c.delta)
+		if out != c.expected {
+			t.Errorf("%d: %v.AddPeriod(%v) == %v, want %v", i, c.in, c.delta, out, c.expected)
 		}
 	}
 }

@@ -8,13 +8,13 @@ import (
 	"fmt"
 	. "github.com/rickb777/date"
 	"github.com/rickb777/date/period"
-	"runtime/debug"
 	"strings"
 	"testing"
 	"time"
 )
 
 var d0320 = New(2015, time.March, 20)
+var d0321 = New(2015, time.March, 21)
 var d0325 = New(2015, time.March, 25)
 var d0326 = New(2015, time.March, 26)
 var d0327 = New(2015, time.March, 27)
@@ -43,13 +43,21 @@ func mustLoadLocation(name string) *time.Location {
 }
 
 func TestNewDateRangeOf(t *testing.T) {
-	dr := NewDateRangeOf(t0327, time.Duration(7*24*60*60*1e9))
+	dr := NewDateRangeOf(t0327, 7*24*time.Hour)
 	isEq(t, dr.mark, d0327)
 	isEq(t, dr.Days(), PeriodOfDays(7))
 	isEq(t, dr.IsEmpty(), false)
 	isEq(t, dr.Start(), d0327)
 	isEq(t, dr.Last(), d0402)
 	isEq(t, dr.End(), d0403)
+
+	dr2 := NewDateRangeOf(t0327, -7*24*time.Hour)
+	isEq(t, dr2.mark, d0327)
+	isEq(t, dr2.Days(), PeriodOfDays(7))
+	isEq(t, dr2.IsEmpty(), false)
+	isEq(t, dr2.Start(), d0321)
+	isEq(t, dr2.Last(), d0327)
+	isEq(t, dr2.End(), d0328)
 }
 
 func TestNewDateRangeWithNormalise(t *testing.T) {
@@ -310,6 +318,6 @@ func isEq(t *testing.T, a, b interface{}, msg ...interface{}) {
 		for i, m := range msg {
 			sa[i] = fmt.Sprintf(", %v", m)
 		}
-		t.Errorf("%v (%#v) is not equal to %v (%#v)%s\n%s", a, a, b, b, strings.Join(sa, ""), debug.Stack())
+		t.Errorf("%+v is not equal to %+v%s", a, b, strings.Join(sa, ""))
 	}
 }

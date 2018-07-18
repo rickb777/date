@@ -239,12 +239,20 @@ func (d Date) AddDate(years, months, days int) Date {
 }
 
 // AddPeriod returns the date corresponding to adding the given period. If the
-// period's fields are be negative, this results in an earlier date. Any time
-// component is ignored.
+// period's fields are be negative, this results in an earlier date.
+//
+// Any time component is ignored. Therefore, be careful with periods containing
+// more that 24 hours in the hours/minutes/seconds fields. These will not be
+// normalised for you; if you want this behaviour, call delta.Normalise(false)
+// on the input parameter.
+//
+// For example, PT24H adds nothing, whereas P1D adds one day as expected. To
+// convert a period such as PT24H to its equivalent P1D, use
+// delta.Normalise(false) as the input.
 //
 // See the description for AddDate.
-func (d Date) AddPeriod(period period.Period) Date {
-	return d.AddDate(period.Years(), period.Months(), period.Days())
+func (d Date) AddPeriod(delta period.Period) Date {
+	return d.AddDate(delta.Years(), delta.Months(), delta.Days())
 }
 
 // Sub returns d-u as the number of days between the two dates.

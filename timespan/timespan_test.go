@@ -96,6 +96,50 @@ func TestTSString(t *testing.T) {
 	isEq(t, s, "24h0m0s from 2015-03-27 00:00:00 to 2015-03-28 00:00:00")
 }
 
+func TestTSEqual(t *testing.T) {
+	// use Berlin, which is UTC+1/+2
+	berlin, _ := time.LoadLocation("Europe/Berlin")
+	t0 := time.Date(2015, 2, 20, 10, 13, 25, 0, time.UTC)
+	t1 := t0.Add(time.Hour)
+	z0 := ZeroTimeSpan(t0)
+	ts1 := z0.ExtendBy(time.Hour)
+
+	cases := []struct {
+		a, b TimeSpan
+	}{
+		{z0, NewTimeSpan(t0, t0)},
+		{z0, z0.In(berlin)},
+		{ts1, ts1},
+		{ts1, NewTimeSpan(t0, t1)},
+		{ts1, ts1.In(berlin)},
+		{ts1, ZeroTimeSpan(t1).ExtendBy(-time.Hour)},
+	}
+
+	for i, c := range cases {
+		if !c.a.Equal(c.b) {
+			t.Errorf("%d: %v is not equal to %v", i, c.a, c.b)
+		}
+	}
+}
+
+func TestTSNotEqual(t *testing.T) {
+	t0 := time.Date(2015, 2, 20, 10, 13, 25, 0, time.UTC)
+	t1 := t0.Add(time.Hour)
+
+	cases := []struct {
+		a, b TimeSpan
+	}{
+		{ZeroTimeSpan(t0), TimeSpanOf(t0, time.Hour)},
+		{ZeroTimeSpan(t0), ZeroTimeSpan(t1)},
+	}
+
+	for i, c := range cases {
+		if c.a.Equal(c.b) {
+			t.Errorf("%d: %v is not equal to %v", i, c.a, c.b)
+		}
+	}
+}
+
 func TestTSFormat(t *testing.T) {
 	// use Berlin, which is UTC-1
 	berlin, _ := time.LoadLocation("Europe/Berlin")
@@ -160,39 +204,52 @@ func TestTSParseInLocation(t *testing.T) {
 	// use Berlin, which is UTC-1
 	berlin, _ := time.LoadLocation("Europe/Berlin")
 	t0120 := time.Date(2015, 1, 20, 10, 13, 14, 0, time.UTC)
-	t0327 := time.Date(2015, 3, 27, 10, 13, 14, 0, time.UTC)
+	// just before start of daylight savings
+	t0325 := time.Date(2015, 3, 25, 10, 13, 14, 0, time.UTC)
 
 	cases := []struct {
 		start    time.Time
 		duration time.Duration
 		text     string
 	}{
-		{t0327, time.Hour, "20150327T101314Z/PT1H"},
-		{t0327, 2*time.Second, "20150327T101314Z/PT2S"},
-		{t0327.In(berlin), time.Minute, "20150327T111314/PT1M"},
-		{t0327, 168*time.Hour, "20150327T101314Z/P1W"},
-		{t0120.In(berlin), 168*time.Hour, "20150120T111314/P1W"},
+		{t0325, time.Hour, "20150325T101314Z/PT1H"},
+		{t0325, 2 * time.Second, "20150325T101314Z/PT2S"},
+		{t0120.In(berlin), time.Minute, "20150120T111314/PT1M"},
+		{t0325, 336 * time.Hour, "20150325T101314Z/P2W"},
+		{t0120.In(berlin), 72*time.Hour, "20150120T111314/P3D"},
 		// This case has the daylight-savings clock shift
-		{t0327.In(berlin), 167*time.Hour, "20150327T111314/P1W"},
+		{t0325.In(berlin), 167*time.Hour, "20150325T111314/P1W"},
 	}
 
-	for _, c := range cases {
-		ts, err := ParseRFC5545InLocation(c.text, c.start.Location())
-		isEq(t, err, nil)
-
-		if !ts.Start().Equal(c.start) {
-			t.Errorf(ts.String())
+	for i, c := range cases {
+		ts1, err := ParseRFC5545InLocation(c.text, c.start.Location())
+		if err != nil {
+			t.Errorf("%d: %s %v %v", i, c.text, ts1.String(), err)
 		}
 
-		if ts.Duration() != c.duration {
-			t.Errorf(ts.String())
+		if !ts1.Start().Equal(c.start) {
+			t.Errorf("%d: %s", i, ts1)
+		}
+
+		if ts1.Duration() != c.duration {
+			t.Errorf("%d: %s", i, ts1)
+		}
+
+		ts2 := TimeSpan{}.In(c.start.Location())
+		err = ts2.UnmarshalText([]byte(c.text))
+		if err != nil {
+			t.Errorf("%d: %s: %v %v", i, c.text, ts2.String(), err)
+		}
+
+		if !ts1.Equal(ts2) {
+			t.Errorf("%d: %s: %v is not equal to %v", i, c.text, ts1, ts2)
 		}
 	}
 }
 
 func TestTSParseInLocationErrors(t *testing.T) {
 	cases := []struct {
-		text     string
+		text string
 	}{
 		{"20150327T101314Z PT1H"},
 		{"2015XX27T101314/PT1H"},

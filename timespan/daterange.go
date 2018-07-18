@@ -31,6 +31,7 @@ func NewDateRangeOf(start time.Time, duration time.Duration) DateRange {
 // NewDateRange assembles a new date range from two dates. These are half-open, so
 // if start and end are the same, the range spans zero (not one) day. Similarly, if they
 // are on subsequent days, the range is one date (not two).
+// The result is normalised.
 func NewDateRange(start, end date.Date) DateRange {
 	return DateRange{start, date.PeriodOfDays(end.Sub(start))}.Normalise()
 }

@@ -56,13 +56,13 @@ func TestDateJSONMarshalling(t *testing.T) {
 	}
 	for _, c := range cases {
 		var d Date
-		bytes, err := json.Marshal(c.value)
+		bb, err := json.Marshal(c.value)
 		if err != nil {
 			t.Errorf("JSON(%v) marshal error %v", c, err)
-		} else if string(bytes) != c.want {
-			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bytes), c.want)
+		} else if string(bb) != c.want {
+			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bb), c.want)
 		} else {
-			err = json.Unmarshal(bytes, &d)
+			err = json.Unmarshal(bb, &d)
 			if err != nil {
 				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
 			} else if d != c.value {
@@ -87,19 +87,60 @@ func TestDateTextMarshalling(t *testing.T) {
 	}
 	for _, c := range cases {
 		var d Date
-		bytes, err := c.value.MarshalText()
+		bb, err := c.value.MarshalText()
 		if err != nil {
 			t.Errorf("Text(%v) marshal error %v", c, err)
-		} else if string(bytes) != c.want {
-			t.Errorf("Text(%v) == %v, want %v", c.value, string(bytes), c.want)
+		} else if string(bb) != c.want {
+			t.Errorf("Text(%v) == %v, want %v", c.value, string(bb), c.want)
 		} else {
-			err = d.UnmarshalText(bytes)
+			err = d.UnmarshalText(bb)
 			if err != nil {
 				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
 			} else if d != c.value {
 				t.Errorf("Text(%v) unmarshal got %v", c.value, d)
 			}
 		}
+	}
+}
+
+func TestDateBinaryMarshalling(t *testing.T) {
+	cases := []struct {
+		value Date
+	}{
+		{New(-11111, time.February, 3)},
+		{New(-1, time.December, 31)},
+		{New(0, time.January, 1)},
+		{New(1, time.January, 1)},
+		{New(1970, time.January, 1)},
+		{New(2012, time.June, 25)},
+		{New(12345, time.June, 7)},
+	}
+	for _, c := range cases {
+		bb, err := c.value.MarshalBinary()
+		if err != nil {
+			t.Errorf("Binary(%v) marshal error %v", c, err)
+		} else {
+			var d Date
+			err = d.UnmarshalBinary(bb)
+			if err != nil {
+				t.Errorf("Binary(%v) unmarshal error %v", c.value, err)
+			} else if d != c.value {
+				t.Errorf("Binary(%v) unmarshal got %v", c.value, d)
+			}
+		}
+	}
+}
+
+func TestDateBinaryUnmarshallingErrors(t *testing.T) {
+	var d Date
+	err1 := d.UnmarshalBinary([]byte{})
+	if err1 == nil {
+		t.Errorf("unmarshal no empty data error")
+	}
+
+	err2 := d.UnmarshalBinary([]byte("12345"))
+	if err2 == nil {
+		t.Errorf("unmarshal no wrong length error")
 	}
 }
 
