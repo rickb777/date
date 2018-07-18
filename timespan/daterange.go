@@ -33,7 +33,10 @@ func NewDateRangeOf(start time.Time, duration time.Duration) DateRange {
 // are on subsequent days, the range is one date (not two).
 // The result is normalised.
 func NewDateRange(start, end date.Date) DateRange {
-	return DateRange{start, date.PeriodOfDays(end.Sub(start))}.Normalise()
+	if end.Before(start) {
+		return DateRange{end, date.PeriodOfDays(start.Sub(end))}
+	}
+	return DateRange{start, date.PeriodOfDays(end.Sub(start))}
 }
 
 // NewYearOf constructs the range encompassing the whole year specified.
@@ -59,9 +62,21 @@ func EmptyRange(day date.Date) DateRange {
 }
 
 // OneDayRange constructs a range of exactly one day. This is often a useful basis for
-// further operations. Note that the end date is the same as the start date.
+// further operations. Note that the last date is the same as the start date.
 func OneDayRange(day date.Date) DateRange {
 	return DateRange{day, 1}
+}
+
+// DayRange constructs a range of n days.
+//
+// Note that n can be negative. In this case, the specified day will be the end day,
+// which is outside of the half-open range; the last day will be the day before the
+// day specified.
+func DayRange(day date.Date, n date.PeriodOfDays) DateRange {
+	if n < 0 {
+		return DateRange{day.Add(n), -n}
+	}
+	return DateRange{day, n}
 }
 
 // Days returns the period represented by this range. This will never be negative.

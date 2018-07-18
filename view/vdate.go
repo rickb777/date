@@ -53,7 +53,7 @@ func (v VDate) IsTomorrow() bool {
 // IsOdd returns true if the date is an odd number. This is useful for
 // zebra striping etc.
 func (v VDate) IsOdd() bool {
-	return v.d.DaysSinceEpoch() % 2 == 0
+	return v.d.DaysSinceEpoch()%2 == 0
 }
 
 // String formats the date in basic ISO8601 format YYYY-MM-DD.

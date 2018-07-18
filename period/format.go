@@ -5,10 +5,10 @@
 package period
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/rickb777/plural"
 	"strings"
-	"bytes"
 )
 
 // Format converts the period to human-readable form using the default localisation.
