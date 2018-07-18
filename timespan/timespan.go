@@ -156,6 +156,10 @@ func (ts TimeSpan) Merge(other TimeSpan) TimeSpan {
 // that "Z" is to be appended when the time is UTC.
 const RFC5545DateTimeLayout = "20060102T150405"
 
+// RFC5545DateTimeZulu is the UTC format string used by iCalendar (RFC5545). Note
+// that this cannot be used for parsing with time.Parse.
+const RFC5545DateTimeZulu = RFC5545DateTimeLayout + "Z"
+
 func layoutHasTimezone(layout string) bool {
 	return strings.IndexByte(layout, 'Z') >= 0 || strings.Contains(layout, "-07")
 }
@@ -186,10 +190,12 @@ func (ts TimeSpan) Format(layout, separator string, useDuration bool) string {
 
 	// if the time is UTC and the format doesn't contain zulu field ("Z") or timezone field ("07")
 	if ts.mark.Location().String() == "UTC" && !layoutHasTimezone(layout) {
-		layout = RFC5545DateTimeLayout + "Z"
+		layout = RFC5545DateTimeZulu
 	}
+
 	s := ts.Start()
 	e := ts.End()
+
 	if useDuration {
 		p := period.Between(s, e)
 		return fmt.Sprintf("%s%s%s", s.Format(layout), separator, p)
@@ -198,14 +204,18 @@ func (ts TimeSpan) Format(layout, separator string, useDuration bool) string {
 	return fmt.Sprintf("%s%s%s", s.Format(layout), separator, e.Format(layout))
 }
 
+// FormatRFC5545 formats the timespan as a string containing the start time and end time, or the
+// start time and duration, if useDuration is true. The two parts are separated by slash.
+// The time(s) is expressed as UTC zulu.
+// This is as required by iCalendar (RFC5545).
 func (ts TimeSpan) FormatRFC5545(useDuration bool) string {
-	return ts.Format(RFC5545DateTimeLayout, "/", useDuration)
+	return ts.Format(RFC5545DateTimeZulu, "/", useDuration)
 }
 
 // MarshalText formats the timespan as a string using, using RFC5545 layout.
 // This implements the encoding.TextMarshaler interface.
 func (ts TimeSpan) MarshalText() (text []byte, err error) {
-	s := ts.Format(RFC5545DateTimeLayout, "/", true)
+	s := ts.Format(RFC5545DateTimeZulu, "/", true)
 	return []byte(s), nil
 }
 

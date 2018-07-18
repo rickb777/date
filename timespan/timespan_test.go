@@ -175,28 +175,31 @@ func TestTSFormat(t *testing.T) {
 }
 
 func TestTSMarshalText(t *testing.T) {
-	// use Berlin, which is UTC-1
+	// use Berlin, which is UTC+1 or +2 in summer
 	berlin, _ := time.LoadLocation("Europe/Berlin")
-	t0 := time.Date(2015, 3, 27, 10, 13, 14, 0, time.UTC)
+	t0 := time.Date(2015, 2, 14, 10, 13, 14, 0, time.UTC)
+	t1 := time.Date(2015, 6, 27, 10, 13, 15, 0, time.UTC)
 
 	cases := []struct {
 		start    time.Time
 		duration time.Duration
 		exp      string
 	}{
-		{t0, time.Hour, "20150327T101314Z/PT1H"},
-		{t0.In(berlin), time.Minute, "20150327T111314/PT1M"},
+		{t0, time.Hour, "20150214T101314Z/PT1H"},
+		{t1, 2*time.Hour, "20150627T101315Z/PT2H"},
+		{t0.In(berlin), time.Minute, "20150214T111314Z/PT1M"}, // UTC+1
+		{t1.In(berlin), time.Second, "20150627T121315Z/PT1S"}, // UTC+2
 	}
 
-	for _, c := range cases {
+	for i, c := range cases {
 		ts := TimeSpan{c.start, c.duration}
 
 		s := ts.FormatRFC5545(true)
-		isEq(t, 0, s, c.exp)
+		isEq(t, i, s, c.exp)
 
 		b, err := ts.MarshalText()
-		isEq(t, 0, err, nil)
-		isEq(t, 0, string(b), c.exp)
+		isEq(t, i, err, nil)
+		isEq(t, i, string(b), c.exp)
 	}
 }
 
