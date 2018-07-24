@@ -5,7 +5,7 @@
 package date
 
 import (
-	"fmt"
+	"github.com/rickb777/date/gregorian"
 	"github.com/rickb777/date/period"
 	"math"
 	"time"
@@ -267,23 +267,10 @@ func (d Date) DaysSinceEpoch() (days PeriodOfDays) {
 
 // IsLeap simply tests whether a given year is a leap year, using the Gregorian calendar algorithm.
 func IsLeap(year int) bool {
-	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
+	return gregorian.IsLeap(year)
 }
 
 // DaysIn gives the number of days in a given month, according to the Gregorian calendar.
 func DaysIn(year int, month time.Month) int {
-	switch month {
-	case time.January, time.March, time.May, time.July, time.August, time.October, time.December:
-		return 31
-
-	case time.September, time.April, time.June, time.November:
-		return 30
-
-	case time.February:
-		if IsLeap(year) {
-			return 29
-		}
-		return 28
-	}
-	panic(fmt.Sprintf("Not valid: year %d month %d", year, month))
+	return gregorian.DaysIn(year, month)
 }

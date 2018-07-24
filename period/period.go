@@ -7,10 +7,11 @@ package period
 import (
 	"fmt"
 	"time"
+	"github.com/rickb777/date/gregorian"
 )
 
-const daysPerYearApproxE3 = 365250  // 365.25 days
-const daysPerMonthApproxE4 = 304375 // 30.437 days per month
+const daysPerYearApproxE3 = 365250  // 365.25 days (TODO should be 365.2425)
+const daysPerMonthApproxE4 = 304375 // 30.4375 days per month
 const oneE5 = 100000
 const oneE6 = 1000000
 
@@ -39,20 +40,29 @@ type Period struct {
 	years, months, days, hours, minutes, seconds int16
 }
 
-// NewYMD creates a simple period without any fractional parts. All the parameters
-// must have the same sign (otherwise a panic occurs).
+// NewYMD creates a simple period without any fractional parts. The fields are initialised verbatim
+// without any normalisation; e.g. 12 months will not become 1 year. Use the Normalise method if you
+// need to.
+//
+// All the parameters must have the same sign (otherwise a panic occurs).
 func NewYMD(years, months, days int) Period {
 	return New(years, months, days, 0, 0, 0)
 }
 
-// NewHMS creates a simple period without any fractional parts. All the parameters
-// must have the same sign (otherwise a panic occurs).
+// NewHMS creates a simple period without any fractional parts. The fields are initialised verbatim
+// without any normalisation; e.g. 120 seconds will not become 2 minutes. Use the Normalise method
+// if you need to.
+//
+// All the parameters must have the same sign (otherwise a panic occurs).
 func NewHMS(hours, minutes, seconds int) Period {
 	return New(0, 0, 0, hours, minutes, seconds)
 }
 
-// New creates a simple period without any fractional parts. All the parameters
-// must have the same sign (otherwise a panic occurs).
+// New creates a simple period without any fractional parts. The fields are initialised verbatim
+// without any normalisation; e.g. 120 seconds will not become 2 minutes. Use the Normalise method
+// if you need to.
+//
+// All the parameters must have the same sign (otherwise a panic occurs).
 func New(years, months, days, hours, minutes, seconds int) Period {
 	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
 		(years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
@@ -63,11 +73,14 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 		years, months, days, hours, minutes, seconds))
 }
 
+// TODO normalise (precise)
+// TODO NewFloat
+
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
 // Any time duration that spans more than ± 3276 hours will be approximated by assuming that there
 // are 24 hours per day, 30.4375 per month and 365.25 days per year.
 func NewOf(duration time.Duration) (p Period, precise bool) {
-	sign := 1
+	var sign int16 = 1
 	d := duration
 	if duration < 0 {
 		sign = -1
@@ -83,22 +96,23 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		months := ((10000 * days) / daysPerMonthApproxE4) - (12 * years)
 		hours -= days * 24
 		days = ((days * 10000) - (daysPerMonthApproxE4 * months) - (10 * daysPerYearApproxE3 * years)) / 10000
-		return New(sign*int(years), sign*int(months), sign*int(days), sign*int(hours), 0, 0), false
+		return Period{10*sign*int16(years), 10*sign*int16(months), 10*sign*int16(days), 10*sign*int16(hours), 0, 0}, false
 	}
 
 	minutes := int64(d % time.Hour / time.Minute)
-	seconds := int64(d % time.Minute / time.Second)
+	seconds := int64(d % time.Minute / (100*time.Millisecond))
 
-	return New(0, 0, 0, sign*int(hours), sign*int(minutes), sign*int(seconds)), true
+	return Period{0, 0, 0, 10*sign*int16(hours), 10*sign*int16(minutes), sign*int16(seconds)}, true
 }
 
 // Between converts the span between two times to a period. Based on the Gregorian conversion algorithms
-// of `time.Time`, the resultant period is precise.
+// of `time.Time`, the resultant period is precise. It is normalised based on the calendar: the whole
+// number of years and months are calculated and the number of days obtained from what's left over.
 //
 // Remember that the resultant period does not retain any knowledge of the calendar, so any subsequent
 // computations applied to the period can only be precise if they concern either the date (year, month,
 // day) part, or the clock (hour, minute, second) part, but not both.
-func Between(t1, t2 time.Time) Period {
+func Between(t1, t2 time.Time) (p Period) {
 	if t1.Location() != t2.Location() {
 		t2 = t2.In(t1.Location())
 	}
@@ -108,11 +122,15 @@ func Between(t1, t2 time.Time) Period {
 		t1, t2, sign = t2, t1, -1
 	}
 
-	year, month, day, hour, min, sec := timeDiff(t1, t2)
+	year, month, day, hour, min, sec, hundredth := timeDiff(t1, t2)
 	if sign < 0 {
-		return New(year, month, day, hour, min, sec).Negate()
+		p = New(-year, -month, -day, -hour, -min, -sec)
+		p.seconds -= int16(hundredth)
+	} else {
+		p = New(year, month, day, hour, min, sec)
+		p.seconds += int16(hundredth)
 	}
-	return New(year, month, day, hour, min, sec)
+	return
 }
 
 //func TimeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
@@ -125,7 +143,7 @@ func Between(t1, t2 time.Time) Period {
 //	return timeDiff(t1, t2)
 //}
 
-func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
+func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, hundredth int) {
 	y1, m1, d1 := t1.Date()
 	y2, m2, d2 := t2.Date()
 
@@ -138,6 +156,93 @@ func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
 	hour = int(hh2 - hh1)
 	min = int(mm2 - mm1)
 	sec = int(ss2 - ss1)
+	hundredth = (t2.Nanosecond() - t1.Nanosecond()) / int(100*time.Millisecond)
+	//fmt.Printf("A) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
+
+	// Normalize negative values
+	if sec < 0 {
+		sec += 60
+		min--
+	}
+
+	if min < 0 {
+		min += 60
+		hour--
+	}
+
+	//delta := 0
+	if hour < 0 {
+		hour += 24
+		//delta = -1
+	}
+
+	if month < 0 { // second month is earlier in the year than the first month
+		//if month > 0 {
+		//	end := gregorian.DaysIn(y1, m1) - d1
+		//	day = end + d2 + delta
+		//	month--
+		//}
+		//for month < -12 {
+			month += 12
+			year--
+		//}
+
+		//}
+		//if day < 0 {
+		end := gregorian.DaysIn(y2, m2) - d2
+		day = d1 + end
+		//}
+	} else {
+		if d1 > 1 {
+
+		}
+	}
+
+	fmt.Printf("B) %d %d %d, %d %d %d %d\n", year, month, day, hour, min, sec, hundredth)
+	return
+}
+
+// DaysBetween converts the span between two times to a period. Based on the Gregorian conversion
+// algorithms of `time.Time`, the resultant period is precise. It is not normalised; the result will
+// contain zero in the years and months fields, but the number of days may be large.
+//
+// Remember that the resultant period does not retain any knowledge of the calendar, so any subsequent
+// computations applied to the period can only be precise if they concern either the date (year, month,
+// day) part, or the clock (hour, minute, second) part, but not both.
+func DaysBetween(t1, t2 time.Time) (p Period) {
+	if t1.Location() != t2.Location() {
+		t2 = t2.In(t1.Location())
+	}
+
+	sign := 1
+	if t2.Before(t1) {
+		t1, t2, sign = t2, t1, -1
+	}
+
+	day, hour, min, sec, hundredth := daysDiff(t1, t2)
+	if sign < 0 {
+		p = New(0, 0, -day, -hour, -min, -sec)
+		p.seconds -= int16(hundredth)
+	} else {
+		p = New(0, 0, day, hour, min, sec)
+		p.seconds += int16(hundredth)
+	}
+	return
+}
+
+func daysDiff(t1, t2 time.Time) (day, hour, min, sec, hundredth int) {
+	duration := t2.Sub(t1)
+
+	hh1, mm1, ss1 := t1.Clock()
+	hh2, mm2, ss2 := t2.Clock()
+
+	//year = int(y2 - y1)
+	//month = int(m2 - m1)
+	day = int(duration / (24*time.Hour))
+	hour = int(hh2 - hh1)
+	min = int(mm2 - mm1)
+	sec = int(ss2 - ss1)
+	hundredth = (t2.Nanosecond() - t1.Nanosecond()) / 100000000
 	//fmt.Printf("A) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
 
 	// Normalize negative values
@@ -153,18 +258,8 @@ func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
 		hour += 24
 		day--
 	}
-	if day < 0 {
-		// days in month:
-		t := time.Date(y1, m1, 32, 0, 0, 0, 0, time.UTC)
-		day += 32 - t.Day()
-		month--
-	}
-	if month < 0 {
-		month += 12
-		year--
-	}
 
-	//fmt.Printf("B) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
+	fmt.Printf("B) %d, %d %d %d %d\n", day, hour, min, sec, hundredth)
 	return
 }
 
@@ -245,45 +340,52 @@ func (period Period) Sign() int {
 }
 
 // Years gets the whole number of years in the period.
-// The result does not include any other field.
+// The result is the number of years and does not include any other field.
 func (period Period) Years() int {
 	return int(period.YearsFloat())
 }
 
 // YearsFloat gets the number of years in the period, including a fraction if any is present.
-// The result does not include any other field.
+// The result is the number of years and does not include any other field.
 func (period Period) YearsFloat() float32 {
 	return float32(period.years) / 10
 }
 
 // Months gets the whole number of months in the period.
-// The result does not include any other field.
+// The result is the number of months and does not include any other field.
 func (period Period) Months() int {
 	return int(period.MonthsFloat())
 }
 
 // MonthsFloat gets the number of months in the period.
-// The result does not include any other field.
+// The result is the number of months and does not include any other field.
 func (period Period) MonthsFloat() float32 {
 	return float32(period.months) / 10
 }
 
 // Days gets the whole number of days in the period. This includes the implied
-// number of weeks but excludes the specified years and months.
+// number of weeks but does not include any other field.
 func (period Period) Days() int {
 	return int(period.DaysFloat())
 }
 
 // DaysFloat gets the number of days in the period. This includes the implied
-// number of weeks.
+// number of weeks but does not include any other field.
 func (period Period) DaysFloat() float32 {
 	return float32(period.days) / 10
 }
 
 // Weeks calculates the number of whole weeks from the number of days. If the result
 // would contain a fraction, it is truncated.
+// The result is the number of weeks and does not include any other field.
 func (period Period) Weeks() int {
 	return int(period.days) / 70
+}
+
+// WeeksFloat calculates the number of weeks from the number of days.
+// The result is the number of weeks and does not include any other field.
+func (period Period) WeeksFloat() float32 {
+	return float32(period.days) / 70
 }
 
 // ModuloDays calculates the whole number of days remaining after the whole number of weeks
@@ -298,46 +400,47 @@ func (period Period) ModuloDays() int {
 }
 
 // Hours gets the whole number of hours in the period.
-// The result does not include any other field.
+// The result is the number of hours and does not include any other field.
 func (period Period) Hours() int {
 	return int(period.HoursFloat())
 }
 
 // HoursFloat gets the number of hours in the period.
-// The result does not include any other field.
+// The result is the number of hours and does not include any other field.
 func (period Period) HoursFloat() float32 {
 	return float32(period.hours) / 10
 }
 
 // Minutes gets the whole number of minutes in the period.
-// The result does not include any other field.
+// The result is the number of minutes and does not include any other field.
 func (period Period) Minutes() int {
 	return int(period.MinutesFloat())
 }
 
 // MinutesFloat gets the number of minutes in the period.
-// The result does not include any other field.
+// The result is the number of minutes and does not include any other field.
 func (period Period) MinutesFloat() float32 {
 	return float32(period.minutes) / 10
 }
 
 // Seconds gets the whole number of seconds in the period.
-// The result does not include any other field.
+// The result is the number of seconds and does not include any other field.
 func (period Period) Seconds() int {
 	return int(period.SecondsFloat())
 }
 
 // SecondsFloat gets the number of seconds in the period.
-// The result does not include any other field.
+// The result is the number of seconds and does not include any other field.
 func (period Period) SecondsFloat() float32 {
 	return float32(period.seconds) / 10
 }
 
 // Duration converts a period to the equivalent duration in nanoseconds.
 // A flag is also returned that is true when the conversion was precise and false otherwise.
-// When the period specifies years, months and days, it is impossible to be precise, so
-// the duration is calculated on the basis of a year being 365.25 days and a month being
-// 1/12 of a that; days are all 24 hours long.
+// When the period specifies years, months and days, it is impossible to be precise because
+// the result would depend on knowing date and timezone information, so the duration is
+// estimated on the basis of a year being 365.25 days and a month being
+// 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
 	tdE6 := time.Duration(totalDaysApproxE6(period)) * 86400

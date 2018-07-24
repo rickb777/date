@@ -278,24 +278,14 @@ func max(a, b PeriodOfDays) PeriodOfDays {
 	return b
 }
 
+// See main testin in period_test.go
 func TestIsLeap(t *testing.T) {
 	cases := []struct {
 		year     int
 		expected bool
 	}{
 		{2000, true},
-		{2400, true},
 		{2001, false},
-		{2002, false},
-		{2003, false},
-		{2003, false},
-		{2004, true},
-		{2005, false},
-		{1800, false},
-		{1900, false},
-		{2200, false},
-		{2300, false},
-		{2500, false},
 	}
 	for _, c := range cases {
 		got := IsLeap(c.year)
@@ -319,7 +309,7 @@ func TestDaysIn(t *testing.T) {
 	for _, c := range cases {
 		got1 := DaysIn(c.year, c.month)
 		if got1 != c.expected {
-			t.Errorf("DaysIn(%d) == %v, want %v", c.year, got1, c.expected)
+			t.Errorf("DaysIn(%d, %d) == %v, want %v", c.year, c.month, got1, c.expected)
 		}
 		d := New(c.year, c.month, 1)
 		got2 := d.LastDayOfMonth()
