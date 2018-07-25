@@ -29,7 +29,7 @@ func MustParse(value string) Period {
 // The canonical zero is "P0D".
 func Parse(period string) (Period, error) {
 	if period == "" {
-		return Period{}, fmt.Errorf("Cannot parse a blank string as a period.")
+		return Period{}, fmt.Errorf("cannot parse a blank string as a period")
 	}
 
 	if period == "P0" {
@@ -46,7 +46,7 @@ func Parse(period string) (Period, error) {
 	}
 
 	if pcopy[0] != 'P' {
-		return Period{}, fmt.Errorf("Expected 'P' period mark at the start: %s", period)
+		return Period{}, fmt.Errorf("expected 'P' period mark at the start: %s", period)
 	}
 	pcopy = pcopy[1:]
 
@@ -99,7 +99,7 @@ func Parse(period string) (Period, error) {
 	//fmt.Printf("%#v\n", st)
 
 	if !st.ok {
-		return Period{}, fmt.Errorf("Expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
+		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
 	}
 	if negate {
 		return result.Negate(), nil

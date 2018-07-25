@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-var oneDayApprox = 24 * time.Hour
-var oneMonthApprox = 2629800 * time.Second // 30.4375 days
-var oneYearApprox = 31557600 * time.Second // 365.25 days
+var oneDay = 24 * time.Hour
+var oneMonthApprox = 2629746 * time.Second // 30.436875 days
+var oneYearApprox = 31556952 * time.Second // 365.2425 days
 
 func TestParsePeriod(t *testing.T) {
 	cases := []struct {
@@ -209,23 +209,32 @@ func TestPeriodToDuration(t *testing.T) {
 		{"P0D", time.Duration(0), true},
 		{"PT1S", 1 * time.Second, true},
 		{"PT0.1S", 100 * time.Millisecond, true},
+		{"PT3276S", 3276 * time.Second, true},
 		{"PT1M", 60 * time.Second, true},
 		{"PT0.1M", 6 * time.Second, true},
+		{"PT3276M", 3276 * time.Minute, true},
 		{"PT1H", 3600 * time.Second, true},
 		{"PT0.1H", 360 * time.Second, true},
+		{"PT3276H", 3276 * time.Hour, true},
 		{"P1D", 24 * time.Hour, false},
+		{"P0.1D", 144 * time.Minute, false},
+		{"P3276D", 3276 * 24 * time.Hour, false},
 		{"P1M", oneMonthApprox, false},
+		{"P0.1M", oneMonthApprox / 10, false},
+		{"P3276M", 3276 * oneMonthApprox, false},
 		{"P1Y", oneYearApprox, false},
 		{"-P1Y", -oneYearApprox, false},
+		{"P3276Y", 3276 * oneYearApprox, false},   // near the upper limit of range
+		{"-P3276Y", -3276 * oneYearApprox, false}, // near the lower limit of range
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
 		s, prec := p.Duration()
 		if s != c.duration {
-			t.Errorf("%d: Duration() == %s %v, want %s for %+v", i, s, prec, c.duration, c.value)
+			t.Errorf("%d: Duration() == %s %v, want %s for %s", i, s, prec, c.duration, c.value)
 		}
 		if prec != c.precise {
-			t.Errorf("%d: Duration() == %s %v, want %v for %+v", i, s, prec, c.precise, c.value)
+			t.Errorf("%d: Duration() == %s %v, want %v for %s", i, s, prec, c.precise, c.value)
 		}
 	}
 }
@@ -376,41 +385,62 @@ func TestNewYMD(t *testing.T) {
 	}
 }
 
+func durationOf(p Period) time.Duration {
+	d, _ := p.Duration()
+	return d
+}
+
 func TestNewOf(t *testing.T) {
+	ms := time.Millisecond
+
 	cases := []struct {
 		source   time.Duration
 		expected Period
 		precise  bool
 	}{
+		// HMS tests
 		{100 * time.Millisecond, Period{0, 0, 0, 0, 0, 1}, true},
 		{time.Second, Period{0, 0, 0, 0, 0, 10}, true},
 		{time.Minute, Period{0, 0, 0, 0, 10, 0}, true},
 		{time.Hour, Period{0, 0, 0, 10, 0, 0}, true},
 		{time.Hour + time.Minute + time.Second, Period{0, 0, 0, 10, 10, 10}, true},
 		{24*time.Hour + time.Minute + time.Second, Period{0, 0, 0, 240, 10, 10}, true},
-		{300 * oneDayApprox, Period{0, 90, 260, 0, 0, 0}, false},
-		{305 * oneDayApprox, Period{0, 100, 0, 0, 0, 0}, false},
-		{305*oneDayApprox - time.Hour, Period{0, 90, 300, 230, 0, 0}, false},
-		{36525 * oneDayApprox, Period{1000, 0, 0, 0, 0, 0}, false},
-		{36525*oneDayApprox - time.Hour, Period{990, 110, 290, 230, 0, 0}, false},
+		{3276*time.Hour + 59*time.Minute + 59*time.Second, Period{0, 0, 0, 32760, 590, 590}, true},
 
+		// YMD tests: must be over 3276 hours (approx 4.5 months), otherwise HMS will take care of it
+		// first rollover: 3276 hours
+		{3288 * time.Hour, Period{0, 0, 1370, 0, 0, 0}, false},
+		{3289 * time.Hour, Period{0, 0, 1370, 10, 0, 0}, false},
+		{3277 * time.Hour, Period{0, 0, 1360, 130, 0, 0}, false},
+
+		// second rollover: 3276 days
+		{3277 * oneDay, Period{80, 110, 200, 0, 0, 0}, false},
+		{3277*oneDay + time.Hour + time.Minute + time.Second, Period{80, 110, 200, 10, 0, 0}, false},
+		{36525 * oneDay, Period{1000, 0, 0, 0, 0, 0}, false},
+
+		// negative cases too
 		{-100 * time.Millisecond, Period{0, 0, 0, 0, 0, -1}, true},
 		{-time.Second, Period{0, 0, 0, 0, 0, -10}, true},
 		{-time.Minute, Period{0, 0, 0, 0, -10, 0}, true},
 		{-time.Hour, Period{0, 0, 0, -10, 0, 0}, true},
 		{-time.Hour - time.Minute - time.Second, Period{0, 0, 0, -10, -10, -10}, true},
-		{-300 * oneDayApprox, Period{0, -90, -260, 0, 0, 0}, false},
-		{-305 * oneDayApprox, Period{0, -100, 0, 0, 0, 0}, false},
-		{-36525 * oneDayApprox, Period{-1000, 0, 0, 0, 0, 0}, false},
+		{-oneDay, Period{0, 0, 0, -240, 0, 0}, true},
+		{-305 * oneDay, Period{0, 0, -3050, 0, 0, 0}, false},
+		{-36525 * oneDay, Period{-1000, 0, 0, 0, 0, 0}, false},
 	}
+
 	for i, c := range cases {
 		n, p := NewOf(c.source)
+		rev, _ := c.expected.Duration()
 		if n != c.expected {
-			t.Errorf("%d: NewOf(%v) gives %v %#v, want %v", i, c.source, n, n, c.expected)
+			t.Errorf("%d: NewOf(%s) (%dms)\n    gives %-20s %#v,\n     want %-20s (%dms)", i, c.source, c.source/ms, n, n, c.expected, rev/ms)
 		}
 		if p != c.precise {
-			t.Errorf("%d: NewOf(%v) gives %v, want %v for %v", i, c.source, p, c.precise, c.expected)
+			t.Errorf("%d: NewOf(%s) (%dms)\n    gives %v,\n     want %v for %v (%dms)", i, c.source, c.source/ms, p, c.precise, c.expected, rev/ms)
 		}
+		//if rev != c.source {
+		//	t.Logf("%d: NewOf(%s) input %dms differs from expected %dms", i, c.source, c.source/ms, rev/ms)
+		//}
 	}
 }
 

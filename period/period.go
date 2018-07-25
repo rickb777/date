@@ -10,10 +10,18 @@ import (
 	"github.com/rickb777/date/gregorian"
 )
 
-const daysPerYearApproxE3 = 365250  // 365.25 days (TODO should be 365.2425)
-const daysPerMonthApproxE4 = 304375 // 30.4375 days per month
+const daysPerYearApproxE4 time.Duration = 3652425   // 365.2425 days by the Gregorian rule
+const daysPerMonthApproxE4 time.Duration = 304375   // 30.4375 days per month
+const daysPerMonthApproxE6 time.Duration = 30436875 // 30.436875 days per month
+
+const oneE4 = 10000
 const oneE5 = 100000
 const oneE6 = 1000000
+const oneE7 = 10000000
+
+const hundredMs = 100 * time.Millisecond
+
+// reminder: int64 overflow is after 9,223,372,036,854,775,807 (math.MaxInt64)
 
 // Period holds a period of time and provides conversion to/from ISO-8601 representations.
 // Therefore there are six fields: years, months, days, hours, minutes, and seconds.
@@ -87,22 +95,33 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		d = -duration
 	}
 
-	hours := int64(d / time.Hour)
+	sign10 := sign * 10
 
-	// check for 16-bit overflow
-	if hours > 3276 {
-		days := hours / 24
-		years := (1000 * days) / daysPerYearApproxE3
-		months := ((10000 * days) / daysPerMonthApproxE4) - (12 * years)
-		hours -= days * 24
-		days = ((days * 10000) - (daysPerMonthApproxE4 * months) - (10 * daysPerYearApproxE3 * years)) / 10000
-		return Period{10*sign*int16(years), 10*sign*int16(months), 10*sign*int16(days), 10*sign*int16(hours), 0, 0}, false
+	totalHours := d / time.Hour
+
+	// check for 16-bit overflow - occurs near the 4.5 month mark
+	if totalHours < 3277 {
+		// simple HMS case
+		minutes := d % time.Hour / time.Minute
+		seconds := d % time.Minute / hundredMs
+		return Period{0, 0, 0, sign10 * int16(totalHours), sign10 * int16(minutes), sign * int16(seconds)}, true
 	}
 
-	minutes := int64(d % time.Hour / time.Minute)
-	seconds := int64(d % time.Minute / (100*time.Millisecond))
+	totalDays := totalHours / 24 // ignoring daylight savings adjustments
 
-	return Period{0, 0, 0, 10*sign*int16(hours), 10*sign*int16(minutes), sign*int16(seconds)}, true
+	if totalDays < 3277 {
+		hours := totalHours - totalDays*24
+		minutes := d % time.Hour / time.Minute
+		seconds := d % time.Minute / hundredMs
+		return Period{0, 0, sign10 * int16(totalDays), sign10 * int16(hours), sign10 * int16(minutes), sign * int16(seconds)}, false
+	}
+
+	// TODO it is uncertain whether this is too imprecise and should be improved
+	years := (oneE4 * totalDays) / daysPerYearApproxE4
+	months := ((oneE4 * totalDays) / daysPerMonthApproxE4) - (12 * years)
+	hours := totalHours - totalDays*24
+	totalDays = ((totalDays * oneE4) - (daysPerMonthApproxE4 * months) - (daysPerYearApproxE4 * years)) / oneE4
+	return Period{sign10 * int16(years), sign10 * int16(months), sign10 * int16(totalDays), sign10 * int16(hours), 0, 0}, false
 }
 
 // Between converts the span between two times to a period. Based on the Gregorian conversion algorithms
@@ -183,8 +202,8 @@ func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, hundredth int
 		//	month--
 		//}
 		//for month < -12 {
-			month += 12
-			year--
+		month += 12
+		year--
 		//}
 
 		//}
@@ -238,7 +257,7 @@ func daysDiff(t1, t2 time.Time) (day, hour, min, sec, hundredth int) {
 
 	//year = int(y2 - y1)
 	//month = int(m2 - m1)
-	day = int(duration / (24*time.Hour))
+	day = int(duration / (24 * time.Hour))
 	hour = int(hh2 - hh1)
 	min = int(mm2 - mm1)
 	sec = int(ss2 - ss1)
@@ -443,7 +462,7 @@ func (period Period) SecondsFloat() float32 {
 // 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
-	tdE6 := time.Duration(totalDaysApproxE6(period)) * 86400
+	tdE6 := totalDaysApproxE7(period) * 8640
 	hhE3 := time.Duration(period.hours) * 360000
 	mmE3 := time.Duration(period.minutes) * 6000
 	ssE3 := time.Duration(period.seconds) * 100
@@ -452,11 +471,11 @@ func (period Period) Duration() (time.Duration, bool) {
 	return tdE6*time.Microsecond + stE3*time.Millisecond, tdE6 == 0
 }
 
-func totalDaysApproxE6(period Period) int64 {
+func totalDaysApproxE7(period Period) time.Duration {
 	// remember that the fields are all fixed-point 1E1
-	ydE6 := int64(period.years) * (daysPerYearApproxE3 * 100)
-	mdE6 := int64(period.months) * (daysPerMonthApproxE4 * 10)
-	ddE6 := int64(period.days) * oneE5
+	ydE6 := time.Duration(period.years) * (daysPerYearApproxE4 * 100)
+	mdE6 := time.Duration(period.months) * daysPerMonthApproxE6
+	ddE6 := time.Duration(period.days) * oneE6
 	return ydE6 + mdE6 + ddE6
 }
 
@@ -464,8 +483,8 @@ func totalDaysApproxE6(period Period) int64 {
 // a year is 365.25 days and a month is 1/12 of that. Whole multiples of 24 hours are also included
 // in the calculation.
 func (period Period) TotalDaysApprox() int {
-	tdE6 := totalDaysApproxE6(period.Normalise(false))
-	return int(tdE6 / oneE6)
+	tdE6 := totalDaysApproxE7(period.Normalise(false))
+	return int(tdE6 / oneE7)
 }
 
 // TotalMonthsApprox gets the approximate total number of months in the period. The days component
@@ -473,9 +492,9 @@ func (period Period) TotalDaysApprox() int {
 // Whole multiples of 24 hours are also included in the calculation.
 func (period Period) TotalMonthsApprox() int {
 	p := period.Normalise(false)
-	mE1 := int(p.years)*12 + int(p.months)
-	dE6 := int64(p.days) * 1000 / daysPerMonthApproxE4
-	return (mE1 + int(dE6)) / 10
+	mE1 := time.Duration(p.years)*12 + time.Duration(p.months)
+	dE6 := time.Duration(p.days) * 100 / daysPerMonthApproxE6
+	return int((mE1 + dE6) / 10)
 }
 
 // Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
