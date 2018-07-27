@@ -69,13 +69,13 @@ func TestPeriodString(t *testing.T) {
 		value  string
 		period Period
 	}{
-		//{"P0D", Period{}},
-		//{"P3Y", Period{30, 0, 0, 0, 0, 0}},
-		//{"-P3Y", Period{-30, 0, 0, 0, 0, 0}},
-		//{"P6M", Period{0, 60, 0, 0, 0, 0}},
-		//{"-P6M", Period{0, -60, 0, 0, 0, 0}},
-		//{"P35D", Period{0, 0, 350, 0, 0, 0}},
-		//{"-P35D", Period{0, 0, -350, 0, 0, 0}},
+		{"P0D", Period{}},
+		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
+		{"-P3Y", Period{-30, 0, 0, 0, 0, 0}},
+		{"P6M", Period{0, 60, 0, 0, 0, 0}},
+		{"-P6M", Period{0, -60, 0, 0, 0, 0}},
+		{"P5W", Period{0, 0, 350, 0, 0, 0}},
+		{"-P5W", Period{0, 0, -350, 0, 0, 0}},
 		{"P4W", Period{0, 0, 280, 0, 0, 0}},
 		{"-P4W", Period{0, 0, -280, 0, 0, 0}},
 		{"P4D", Period{0, 0, 40, 0, 0, 0}},
@@ -385,11 +385,6 @@ func TestNewYMD(t *testing.T) {
 	}
 }
 
-func durationOf(p Period) time.Duration {
-	d, _ := p.Duration()
-	return d
-}
-
 func TestNewOf(t *testing.T) {
 	ms := time.Millisecond
 
@@ -453,56 +448,8 @@ func TestBetween(t *testing.T) {
 	}{
 		{now, now, Period{0, 0, 0, 0, 0, 0}},
 
-		//// simple positive date calculations
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2016, 2, 2, 1, 1, 1, 1), Period{10, 10, 10, 10, 10, 10}},
-		{utc(2015, 2, 1, 0, 0, 0, 0), utc(2016, 3, 2, 1, 1, 1, 1), Period{10, 10, 10, 10, 10, 10}},
-		{utc(2015, 3, 1, 0, 0, 0, 0), utc(2016, 4, 2, 1, 1, 1, 1), Period{10, 10, 10, 10, 10, 10}},
-		{utc(2015, 4, 1, 0, 0, 0, 0), utc(2016, 5, 2, 1, 1, 1, 1), Period{10, 10, 10, 10, 10, 10}},
-		{utc(2015, 5, 1, 0, 0, 0, 0), utc(2016, 6, 2, 1, 1, 1, 1), Period{10, 10, 10, 10, 10, 10}},
-		{utc(2015, 6, 1, 0, 0, 0, 0), utc(2016, 7, 2, 1, 1, 1, 1), Period{10, 10, 10, 10, 10, 10}},
-
-		// negative date calculation
-		{utc(2016, 6, 2, 1, 1, 1, 1), utc(2015, 5, 1, 0, 0, 0, 0), Period{-10, -10, -10, -10, -10, -10}},
-
-		// less than one month
-		//{utc(2016, 1, 2, 0, 0, 0, 0), utc(2016, 2, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
-		//{utc(2015, 2, 2, 0, 0, 0, 0), utc(2015, 3, 1, 0, 0, 0, 0), Period{0, 0, 270, 0, 0, 0}}, // non-leap
-		//{utc(2016, 2, 2, 0, 0, 0, 0), utc(2016, 3, 1, 0, 0, 0, 0), Period{0, 0, 280, 0, 0, 0}}, // leap year
-		//{utc(2016, 3, 2, 0, 0, 0, 0), utc(2016, 4, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
-		//{utc(2016, 4, 2, 0, 0, 0, 0), utc(2016, 5, 1, 0, 0, 0, 0), Period{0, 0, 290, 0, 0, 0}},
-		//{utc(2016, 5, 2, 0, 0, 0, 0), utc(2016, 6, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
-		//{utc(2016, 6, 2, 0, 0, 0, 0), utc(2016, 7, 1, 0, 0, 0, 0), Period{0, 0, 290, 0, 0, 0}},
-
-		// daytime only
-		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 4, 4, 7, 500), Period{0, 0, 0, 20, 10, 35}},
-		{utc(2015, 1, 1, 2, 3, 4, 500), utc(2015, 1, 1, 4, 4, 7, 0), Period{0, 0, 0, 20, 10, 25}},
-
-		// different dates and times
-		//{utc(2015, 2, 1, 0, 0, 0, 0), utc(2015, 4, 30, 5, 6, 7, 0), Period{0, 10, 260, 50, 60, 70}},
-		//{utc(2015, 2, 12, 0, 0, 0, 0), utc(2015, 4, 10, 5, 6, 7, 0), Period{0, 10, 260, 50, 60, 70}},
-
-		// earlier month in later year
-		//{utc(2015, 12, 22, 0, 0, 0, 0), utc(2016, 1, 10, 5, 6, 7, 0), Period{0, 0, 200, 50, 60, 70}},
-		//{utc(2015, 2, 11, 5, 6, 7, halfSec), utc(2016, 1, 10, 0, 0, 0, 0), Period{0, 100, 290, 220, 570, 565}},
-	}
-	for i, c := range cases {
-		n := Between(c.a, c.b)
-		if n != c.expected {
-			t.Errorf("%d: Between(%v, %v)\n  gives %-20s %#v,\n   want %-20s %#v", i, c.a, c.b, n, n, c.expected, c.expected)
-		}
-	}
-}
-
-func TestDaysBetween(t *testing.T) {
-	now := time.Now()
-
-	cases := []struct {
-		a, b     time.Time
-		expected Period
-	}{
-		{now, now, Period{0, 0, 0, 0, 0, 0}},
-
 		// simple positive date calculations
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 1, 1, 0, 0, 0, 100), Period{0, 0, 0, 0, 0, 1}},
 		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 2, 2, 1, 1, 1, 1), Period{0, 0, 320, 10, 10, 10}},
 		{utc(2015, 2, 1, 0, 0, 0, 0), utc(2015, 3, 2, 1, 1, 1, 1), Period{0, 0, 290, 10, 10, 10}},
 		{utc(2015, 3, 1, 0, 0, 0, 0), utc(2015, 4, 2, 1, 1, 1, 1), Period{0, 0, 320, 10, 10, 10}},
@@ -511,10 +458,20 @@ func TestDaysBetween(t *testing.T) {
 		{utc(2015, 6, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{0, 0, 310, 10, 10, 10}},
 		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{0, 0, 1820, 10, 10, 10}},
 
+		// less than one month
+		{utc(2016, 1, 2, 0, 0, 0, 0), utc(2016, 2, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
+		{utc(2015, 2, 2, 0, 0, 0, 0), utc(2015, 3, 1, 0, 0, 0, 0), Period{0, 0, 270, 0, 0, 0}}, // non-leap
+		{utc(2016, 2, 2, 0, 0, 0, 0), utc(2016, 3, 1, 0, 0, 0, 0), Period{0, 0, 280, 0, 0, 0}}, // leap year
+		{utc(2016, 3, 2, 0, 0, 0, 0), utc(2016, 4, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
+		{utc(2016, 4, 2, 0, 0, 0, 0), utc(2016, 5, 1, 0, 0, 0, 0), Period{0, 0, 290, 0, 0, 0}},
+		{utc(2016, 5, 2, 0, 0, 0, 0), utc(2016, 6, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
+		{utc(2016, 6, 2, 0, 0, 0, 0), utc(2016, 7, 1, 0, 0, 0, 0), Period{0, 0, 290, 0, 0, 0}},
+
 		// BST drops an hour at the daylight-saving transition
 		{utc(2015, 1, 1, 0, 0, 0, 0), bst(2015, 7, 2, 1, 1, 1, 1), Period{0, 0, 1820, 0, 10, 10}},
 
 		// negative date calculation
+		{utc(2015, 1, 1, 0, 0, 0, 100), utc(2015, 1, 1, 0, 0, 0, 0), Period{0, 0, 0, 0, 0, -1}},
 		{utc(2015, 6, 2, 0, 0, 0, 0), utc(2015, 5, 1, 0, 0, 0, 0), Period{0, 0, -320, 0, 0, 0}},
 		{utc(2015, 6, 2, 1, 1, 1, 1), utc(2015, 5, 1, 0, 0, 0, 0), Period{0, 0, -320, -10, -10, -10}},
 
@@ -529,10 +486,14 @@ func TestDaysBetween(t *testing.T) {
 
 		// earlier month in later year
 		{utc(2015, 12, 22, 0, 0, 0, 0), utc(2016, 1, 10, 5, 6, 7, 0), Period{0, 0, 190, 50, 60, 70}},
-		//{utc(2015, 2, 11, 5, 6, 7, 500), utc(2016, 1, 10, 0, 0, 0, 0), Period{0, 0, 3320, 180, 530, 525}},
+		{utc(2015, 2, 11, 5, 6, 7, 500), utc(2016, 1, 10, 0, 0, 0, 0), Period{0, 0, 3320, 180, 530, 525}},
+
+		// larger ranges
+		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{0, 0, 29210, 0, 0, 10}},
+		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{80, 110, 300, 0, 0, 10}},
 	}
 	for i, c := range cases {
-		n := DaysBetween(c.a, c.b)
+		n := Between(c.a, c.b)
 		if n != c.expected {
 			t.Errorf("%d: Between(%v, %v)\n  gives %-20s %#v,\n   want %-20s %#v", i, c.a, c.b, n, n, c.expected, c.expected)
 		}
@@ -554,7 +515,7 @@ func TestNormalise(t *testing.T) {
 
 		// carry minutes to hours
 		{Period{0, 0, 0, 0, 699, 0}, Period{0, 0, 0, 10, 99, 0}, true},
-		//{Period{0, 0, 0, 0, -699, 0}, Period{0, 0, 0, -10, -99, 0}, true},
+		{Period{0, 0, 0, 0, -699, 0}, Period{0, 0, 0, -10, -99, 0}, true},
 
 		// carry hours to days - two cases
 		{Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 0, 249, 0, 0}, true},
@@ -562,18 +523,18 @@ func TestNormalise(t *testing.T) {
 
 		// carry days to months - two cases
 		{Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0}, true},
-		{Period{0, 0, 323, 0, 0, 0}, Period{0, 10, 19, 0, 0, 0}, false},
+		{Period{0, 0, 323, 0, 0, 0}, Period{0, 10, 18, 0, 0, 0}, false},
 
 		// carry months to years
 		{Period{0, 129, 0, 0, 0, 0}, Period{10, 9, 0, 0, 0, 0}, true},
 
 		// full ripple - two cases
 		{Period{0, 121, 305, 239, 591, 601}, Period{10, 1, 305, 249, 1, 1}, true},
-		{Period{0, 119, 300, 239, 591, 601}, Period{10, 9, 6, 9, 1, 1}, false},
+		{Period{0, 119, 300, 239, 591, 601}, Period{10, 9, 5, 9, 1, 1}, false},
 
 		// full ripple - negative cases
 		{Period{0, -121, -305, -239, -591, -601}, Period{-10, -1, -305, -249, -1, -1}, true},
-		{Period{0, -119, -300, -239, -591, -601}, Period{-10, -9, -6, -9, -1, -1}, false},
+		{Period{0, -119, -300, -239, -591, -601}, Period{-10, -9, -5, -9, -1, -1}, false},
 	}
 	for i, c := range cases {
 		n := c.source.Normalise(c.precise)
@@ -732,6 +693,12 @@ func TestPeriodScale(t *testing.T) {
 		{"PT1S", 0.5, "PT0.5S"},
 		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
 		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
+		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
+		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
+		{"PT1M", 60, "PT1H"},
+		{"PT1S", 60, "PT1M"},
+		{"PT1S", 36000, "PT10H"},
+		{"P365.5D", 10, "P10Y2.5D"},
 	}
 	for i, c := range cases {
 		s := MustParse(c.one).Scale(c.m)

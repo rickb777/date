@@ -7,12 +7,11 @@ package period
 import (
 	"fmt"
 	"time"
-	"github.com/rickb777/date/gregorian"
 )
 
-const daysPerYearApproxE4 time.Duration = 3652425   // 365.2425 days by the Gregorian rule
-const daysPerMonthApproxE4 time.Duration = 304375   // 30.4375 days per month
-const daysPerMonthApproxE6 time.Duration = 30436875 // 30.436875 days per month
+const daysPerYearE4 int64 = 3652425   // 365.2425 days by the Gregorian rule
+const daysPerMonthE4 int64 = 304375   // 30.4375 days per month
+const daysPerMonthE6 int64 = 30436875 // 30.436875 days per month
 
 const oneE4 = 10000
 const oneE5 = 100000
@@ -74,14 +73,22 @@ func NewHMS(hours, minutes, seconds int) Period {
 func New(years, months, days, hours, minutes, seconds int) Period {
 	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
 		(years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
-		return Period{int16(years) * 10, int16(months) * 10, int16(days) * 10,
-			int16(hours) * 10, int16(minutes) * 10, int16(seconds) * 10}
+		return Period{
+			int16(years) * 10, int16(months) * 10, int16(days) * 10,
+			int16(hours) * 10, int16(minutes) * 10, int16(seconds) * 10,
+		}
 	}
 	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dDT%dH%dM%dS",
 		years, months, days, hours, minutes, seconds))
 }
 
-// TODO normalise (precise)
+func newE1(years, months, days, hours, minutes, seconds int64) Period {
+	return Period{
+		int16(years), int16(months), int16(days),
+		int16(hours), int16(minutes), int16(seconds),
+	}
+}
+
 // TODO NewFloat
 
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
@@ -97,7 +104,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 
 	sign10 := sign * 10
 
-	totalHours := d / time.Hour
+	totalHours := int64(d / time.Hour)
 
 	// check for 16-bit overflow - occurs near the 4.5 month mark
 	if totalHours < 3277 {
@@ -117,16 +124,20 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 	}
 
 	// TODO it is uncertain whether this is too imprecise and should be improved
-	years := (oneE4 * totalDays) / daysPerYearApproxE4
-	months := ((oneE4 * totalDays) / daysPerMonthApproxE4) - (12 * years)
+	years := (oneE4 * totalDays) / daysPerYearE4
+	months := ((oneE4 * totalDays) / daysPerMonthE4) - (12 * years)
 	hours := totalHours - totalDays*24
-	totalDays = ((totalDays * oneE4) - (daysPerMonthApproxE4 * months) - (daysPerYearApproxE4 * years)) / oneE4
+	totalDays = ((totalDays * oneE4) - (daysPerMonthE4 * months) - (daysPerYearE4 * years)) / oneE4
 	return Period{sign10 * int16(years), sign10 * int16(months), sign10 * int16(totalDays), sign10 * int16(hours), 0, 0}, false
 }
 
-// Between converts the span between two times to a period. Based on the Gregorian conversion algorithms
-// of `time.Time`, the resultant period is precise. It is normalised based on the calendar: the whole
-// number of years and months are calculated and the number of days obtained from what's left over.
+// Between converts the span between two times to a period. Based on the Gregorian conversion
+// algorithms of `time.Time`, the resultant period is precise.
+//
+// The result is not normalised; for time differences less than 3276 days, it will contain zero in the
+// years and months fields but the number of days may be up to 3275; this reduces errors arising from
+// the variable lengths of months. For larger time differences, greater than 3276 days, the months and
+// years fields are used as well.
 //
 // Remember that the resultant period does not retain any knowledge of the calendar, so any subsequent
 // computations applied to the period can only be precise if they concern either the date (year, month,
@@ -141,7 +152,8 @@ func Between(t1, t2 time.Time) (p Period) {
 		t1, t2, sign = t2, t1, -1
 	}
 
-	year, month, day, hour, min, sec, hundredth := timeDiff(t1, t2)
+	year, month, day, hour, min, sec, hundredth := daysDiff(t1, t2)
+
 	if sign < 0 {
 		p = New(-year, -month, -day, -hour, -min, -sec)
 		p.seconds -= int16(hundredth)
@@ -152,130 +164,42 @@ func Between(t1, t2 time.Time) (p Period) {
 	return
 }
 
-//func TimeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec int) {
-//	if t1.Location() != t2.Location() {
-//		t2 = t2.In(t1.Location())
-//	}
-//	if t1.After(t2) {
-//		t1, t2 = t2, t1
-//	}
-//	return timeDiff(t1, t2)
-//}
-
-func timeDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, hundredth int) {
-	y1, m1, d1 := t1.Date()
-	y2, m2, d2 := t2.Date()
-
-	hh1, mm1, ss1 := t1.Clock()
-	hh2, mm2, ss2 := t2.Clock()
-
-	year = int(y2 - y1)
-	month = int(m2 - m1)
-	day = int(d2 - d1)
-	hour = int(hh2 - hh1)
-	min = int(mm2 - mm1)
-	sec = int(ss2 - ss1)
-	hundredth = (t2.Nanosecond() - t1.Nanosecond()) / int(100*time.Millisecond)
-	//fmt.Printf("A) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
-
-	// Normalize negative values
-	if sec < 0 {
-		sec += 60
-		min--
-	}
-
-	if min < 0 {
-		min += 60
-		hour--
-	}
-
-	//delta := 0
-	if hour < 0 {
-		hour += 24
-		//delta = -1
-	}
-
-	if month < 0 { // second month is earlier in the year than the first month
-		//if month > 0 {
-		//	end := gregorian.DaysIn(y1, m1) - d1
-		//	day = end + d2 + delta
-		//	month--
-		//}
-		//for month < -12 {
-		month += 12
-		year--
-		//}
-
-		//}
-		//if day < 0 {
-		end := gregorian.DaysIn(y2, m2) - d2
-		day = d1 + end
-		//}
-	} else {
-		if d1 > 1 {
-
-		}
-	}
-
-	fmt.Printf("B) %d %d %d, %d %d %d %d\n", year, month, day, hour, min, sec, hundredth)
-	return
-}
-
-// DaysBetween converts the span between two times to a period. Based on the Gregorian conversion
-// algorithms of `time.Time`, the resultant period is precise. It is not normalised; the result will
-// contain zero in the years and months fields, but the number of days may be large.
-//
-// Remember that the resultant period does not retain any knowledge of the calendar, so any subsequent
-// computations applied to the period can only be precise if they concern either the date (year, month,
-// day) part, or the clock (hour, minute, second) part, but not both.
-func DaysBetween(t1, t2 time.Time) (p Period) {
-	if t1.Location() != t2.Location() {
-		t2 = t2.In(t1.Location())
-	}
-
-	sign := 1
-	if t2.Before(t1) {
-		t1, t2, sign = t2, t1, -1
-	}
-
-	day, hour, min, sec, hundredth := daysDiff(t1, t2)
-	if sign < 0 {
-		p = New(0, 0, -day, -hour, -min, -sec)
-		p.seconds -= int16(hundredth)
-	} else {
-		p = New(0, 0, day, hour, min, sec)
-		p.seconds += int16(hundredth)
-	}
-	return
-}
-
-func daysDiff(t1, t2 time.Time) (day, hour, min, sec, hundredth int) {
+func daysDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, hundredth int) {
 	duration := t2.Sub(t1)
 
 	hh1, mm1, ss1 := t1.Clock()
 	hh2, mm2, ss2 := t2.Clock()
 
-	//year = int(y2 - y1)
-	//month = int(m2 - m1)
 	day = int(duration / (24 * time.Hour))
+
 	hour = int(hh2 - hh1)
 	min = int(mm2 - mm1)
 	sec = int(ss2 - ss1)
 	hundredth = (t2.Nanosecond() - t1.Nanosecond()) / 100000000
-	//fmt.Printf("A) %d %d %d, %d %d %d\n", year, month, day, hour, min, sec)
 
 	// Normalize negative values
 	if sec < 0 {
 		sec += 60
 		min--
 	}
+
 	if min < 0 {
 		min += 60
 		hour--
 	}
+
 	if hour < 0 {
 		hour += 24
-		day--
+		// no need to reduce day - it's calculated differently.
+	}
+
+	// test 16bit storage limit (with 1 fixed decimal place)
+	if day > 3276 {
+		y1, m1, d1 := t1.Date()
+		y2, m2, d2 := t2.Date()
+		year = y2 - y1
+		month = int(m2 - m1)
+		day = d2 - d1
 	}
 
 	fmt.Printf("B) %d, %d %d %d %d\n", day, hour, min, sec, hundredth)
@@ -336,18 +260,21 @@ func (period Period) Add(that Period) Period {
 }
 
 // Scale a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
-// and change the sign if negative.
+// and change the sign if negative. The result is normalised.
+//
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
 // decimal place; each field is only int16.
 func (period Period) Scale(factor float32) Period {
-	return Period{
-		int16(float32(period.years) * factor),
-		int16(float32(period.months) * factor),
-		int16(float32(period.days) * factor),
-		int16(float32(period.hours) * factor),
-		int16(float32(period.minutes) * factor),
-		int16(float32(period.seconds) * factor),
-	}
+
+	y := int64(float32(period.years) * factor)
+	m := int64(float32(period.months) * factor)
+	d := int64(float32(period.days) * factor)
+	hh := int64(float32(period.hours) * factor)
+	mm := int64(float32(period.minutes) * factor)
+	ss := int64(float32(period.seconds) * factor)
+
+	y, m, d, hh, mm, ss, _ = normalise64(y, m, d, hh, mm, ss, true)
+	return newE1(y, m, d, hh, mm, ss)
 }
 
 // Sign returns +1 for positive periods and -1 for negative periods.
@@ -462,7 +389,7 @@ func (period Period) SecondsFloat() float32 {
 // 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
-	tdE6 := totalDaysApproxE7(period) * 8640
+	tdE6 := time.Duration(totalDaysApproxE7(period) * 8640)
 	hhE3 := time.Duration(period.hours) * 360000
 	mmE3 := time.Duration(period.minutes) * 6000
 	ssE3 := time.Duration(period.seconds) * 100
@@ -471,11 +398,11 @@ func (period Period) Duration() (time.Duration, bool) {
 	return tdE6*time.Microsecond + stE3*time.Millisecond, tdE6 == 0
 }
 
-func totalDaysApproxE7(period Period) time.Duration {
+func totalDaysApproxE7(period Period) int64 {
 	// remember that the fields are all fixed-point 1E1
-	ydE6 := time.Duration(period.years) * (daysPerYearApproxE4 * 100)
-	mdE6 := time.Duration(period.months) * daysPerMonthApproxE6
-	ddE6 := time.Duration(period.days) * oneE6
+	ydE6 := int64(period.years) * (daysPerYearE4 * 100)
+	mdE6 := int64(period.months) * daysPerMonthE6
+	ddE6 := int64(period.days) * oneE6
 	return ydE6 + mdE6 + ddE6
 }
 
@@ -492,8 +419,8 @@ func (period Period) TotalDaysApprox() int {
 // Whole multiples of 24 hours are also included in the calculation.
 func (period Period) TotalMonthsApprox() int {
 	p := period.Normalise(false)
-	mE1 := time.Duration(p.years)*12 + time.Duration(p.months)
-	dE6 := time.Duration(p.days) * 100 / daysPerMonthApproxE6
+	mE1 := int64(p.years)*12 + int64(p.months)
+	dE6 := int64(p.days) * 100 / daysPerMonthE6
 	return int((mE1 + dE6) / 10)
 }
 
@@ -508,29 +435,100 @@ func (period Period) TotalMonthsApprox() int {
 // Multiples of 24 hours become days.
 // Multiples of 30.4 days become months.
 func (period Period) Normalise(precise bool) Period {
+	const limit = 32670 - (32670/24)
+
+	// can we use a quicker algorithm with int16 arithmetic?
+	if precise && period.days == 0 && period.hours > -limit && period.hours < limit {
+		s := period.Sign()
+		ap := period.Abs()
+
+		// remember that the fields are all fixed-point 1E1
+		ap.minutes += (ap.seconds / 600) * 10
+		ap.seconds = ap.seconds % 600
+
+		ap.hours += (ap.minutes / 600) * 10
+		ap.minutes = ap.minutes % 600
+
+		// can't touch days because of precision issues
+
+		ap.years += (ap.months / 120) * 10
+		ap.months = ap.months % 120
+
+		if s < 0 {
+			return ap.Negate()
+		}
+		return ap
+	}
+
+	// do things the no-nonsense way using int64 arithmetic
+	y, m, d, hh, mm, ss, _ := normalise64(int64(period.years), int64(period.months), int64(period.days),
+		int64(period.hours), int64(period.minutes), int64(period.seconds), precise)
+	return newE1(y, m, d, hh, mm, ss)
+}
+
+func normalise64(yearsE1, monthsE1, daysE1, hoursE1, minutesE1, secondsE1 int64, precise bool) (y, m, d, hh, mm, ss int64, imprecise bool) {
+	// first sort out sign and absolute values
+	neg := false
+
+	if yearsE1 < 0 {
+		yearsE1 = -yearsE1
+		neg = true
+	}
+
+	if monthsE1 < 0 {
+		monthsE1 = -monthsE1
+		neg = true
+	}
+
+	if daysE1 < 0 {
+		daysE1 = -daysE1
+		neg = true
+	}
+
+	if hoursE1 < 0 {
+		hoursE1 = -hoursE1
+		neg = true
+	}
+
+	if minutesE1 < 0 {
+		minutesE1 = -minutesE1
+		neg = true
+	}
+
+	if secondsE1 < 0 {
+		secondsE1 = -secondsE1
+		neg = true
+	}
+
 	// remember that the fields are all fixed-point 1E1
-	s := period.Sign()
-	p := period.Abs()
+	mm = minutesE1 + (secondsE1/600)*10
+	ss = secondsE1 % 600
 
-	p.minutes += (p.seconds / 600) * 10
-	p.seconds = p.seconds % 600
+	hh = hoursE1 + (mm/600)*10
+	mm = mm % 600
 
-	p.hours += (p.minutes / 600) * 10
-	p.minutes = p.minutes % 600
+	d = daysE1
+	m = monthsE1
+	y = yearsE1
 
-	if !precise {
-		p.days += (p.hours / 240) * 10
-		p.hours = p.hours % 240
-
-		p.months += (p.days / 304) * 10
-		p.days = p.days % 304
+	if !precise || hh > 32670-(32670/60)-(32670/3600) {
+		d += (hh / 240) * 10
+		hh = hh % 240
+		imprecise = true
 	}
 
-	p.years += (p.months / 120) * 10
-	p.months = p.months % 120
-
-	if s < 0 {
-		return p.Negate()
+	if !precise || d > 32760 {
+		dE6 := d * oneE6
+		m += dE6 / daysPerMonthE6
+		d = (dE6 % daysPerMonthE6) / oneE6
+		imprecise = true
 	}
-	return p
+
+	y = yearsE1 + (m/120)*10
+	m = m % 120
+
+	if neg {
+		return -y, -m, -d, -hh, -mm, -ss, imprecise
+	}
+	return
 }
