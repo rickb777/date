@@ -247,7 +247,10 @@ func (period Period) Negate() Period {
 	return Period{-period.years, -period.months, -period.days, -period.hours, -period.minutes, -period.seconds}
 }
 
-// Add adds two periods together.
+// Add adds two periods together. Use this method along with Negate in order to subtract periods.
+//
+// The result is not normalised and may overflow arithmetically (to make this unlikely, use Normalise on
+// the inputs before adding them).
 func (period Period) Add(that Period) Period {
 	return Period{
 		period.years + that.years,
@@ -264,6 +267,8 @@ func (period Period) Add(that Period) Period {
 //
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
 // decimal place; each field is only int16.
+//
+// Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
 func (period Period) Scale(factor float32) Period {
 
 	y := int64(float32(period.years) * factor)
@@ -273,8 +278,7 @@ func (period Period) Scale(factor float32) Period {
 	mm := int64(float32(period.minutes) * factor)
 	ss := int64(float32(period.seconds) * factor)
 
-	y, m, d, hh, mm, ss, _ = normalise64(y, m, d, hh, mm, ss, true)
-	return newE1(y, m, d, hh, mm, ss)
+	return newE1(normalise64(y, m, d, hh, mm, ss, true))
 }
 
 // Sign returns +1 for positive periods and -1 for negative periods.
@@ -426,6 +430,10 @@ func (period Period) TotalMonthsApprox() int {
 
 // Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
 //
+// Because the number of hours per day is imprecise (due to daylight savings etc), and because
+// the number of days per month is variable in the Gregorian calendar, there is a reluctance
+// to transfer time too or from the days element. To give control over this, there are two modes.
+//
 // In precise mode:
 // Multiples of 60 seconds become minutes.
 // Multiples of 60 minutes become hours.
@@ -433,7 +441,7 @@ func (period Period) TotalMonthsApprox() int {
 //
 // Additionally, in imprecise mode:
 // Multiples of 24 hours become days.
-// Multiples of 30.4 days become months.
+// Multiples of approx. 30.4 days become months.
 func (period Period) Normalise(precise bool) Period {
 	const limit = 32670 - (32670/24)
 
@@ -461,12 +469,11 @@ func (period Period) Normalise(precise bool) Period {
 	}
 
 	// do things the no-nonsense way using int64 arithmetic
-	y, m, d, hh, mm, ss, _ := normalise64(int64(period.years), int64(period.months), int64(period.days),
-		int64(period.hours), int64(period.minutes), int64(period.seconds), precise)
-	return newE1(y, m, d, hh, mm, ss)
+	return newE1(normalise64(int64(period.years), int64(period.months), int64(period.days),
+		int64(period.hours), int64(period.minutes), int64(period.seconds), precise))
 }
 
-func normalise64(yearsE1, monthsE1, daysE1, hoursE1, minutesE1, secondsE1 int64, precise bool) (y, m, d, hh, mm, ss int64, imprecise bool) {
+func normalise64(yearsE1, monthsE1, daysE1, hoursE1, minutesE1, secondsE1 int64, precise bool) (y, m, d, hh, mm, ss int64) {
 	// first sort out sign and absolute values
 	neg := false
 
@@ -514,21 +521,19 @@ func normalise64(yearsE1, monthsE1, daysE1, hoursE1, minutesE1, secondsE1 int64,
 	if !precise || hh > 32670-(32670/60)-(32670/3600) {
 		d += (hh / 240) * 10
 		hh = hh % 240
-		imprecise = true
 	}
 
 	if !precise || d > 32760 {
 		dE6 := d * oneE6
 		m += dE6 / daysPerMonthE6
 		d = (dE6 % daysPerMonthE6) / oneE6
-		imprecise = true
 	}
 
 	y = yearsE1 + (m/120)*10
 	m = m % 120
 
 	if neg {
-		return -y, -m, -d, -hh, -mm, -ss, imprecise
+		return -y, -m, -d, -hh, -mm, -ss
 	}
 	return
 }

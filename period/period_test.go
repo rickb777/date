@@ -528,13 +528,26 @@ func TestNormalise(t *testing.T) {
 		// carry months to years
 		{Period{0, 129, 0, 0, 0, 0}, Period{10, 9, 0, 0, 0, 0}, true},
 
-		// full ripple - two cases
+		// full ripple up - two cases
 		{Period{0, 121, 305, 239, 591, 601}, Period{10, 1, 305, 249, 1, 1}, true},
 		{Period{0, 119, 300, 239, 591, 601}, Period{10, 9, 5, 9, 1, 1}, false},
 
-		// full ripple - negative cases
+		// full ripple up - negative cases
 		{Period{0, -121, -305, -239, -591, -601}, Period{-10, -1, -305, -249, -1, -1}, true},
 		{Period{0, -119, -300, -239, -591, -601}, Period{-10, -9, -5, -9, -1, -1}, false},
+
+		//TODO fix ripple-down normalisation
+		//// carry minutes to seconds
+		//{Period{0, 0, 0, 0, 5, 0}, Period{0, 0, 0, 0, 0, 30}, true},
+		//{Period{0, 0, 0, 0, -5, 0}, Period{0, 0, 0, 0, 0, -30}, true},
+		//
+		//// carry hours to minutes
+		//{Period{0, 0, 0, 5, 0, 0}, Period{0, 0, 0, 0, 30, 0}, true},
+		//{Period{0, 0, 0, -5, 0, 0}, Period{0, 0, 0, 0, -30, 0}, true},
+		//
+		//// carry yesr to months
+		//{Period{5, 0, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0}, true},
+		//{Period{-5, 0, 0, 0, 0, 0}, Period{0, -60, 0, 0, 0, 0}, true},
 	}
 	for i, c := range cases {
 		n := c.source.Normalise(c.precise)
@@ -680,7 +693,9 @@ func TestPeriodScale(t *testing.T) {
 	}{
 		{"P0D", 2, "P0D"},
 		{"P1D", 2, "P2D"},
+		{"P1D", 365, "P365D"},
 		{"P1M", 2, "P2M"},
+		{"P1M", 12, "P1Y"},
 		{"P1Y", 2, "P2Y"},
 		{"PT1H", 2, "PT2H"},
 		{"PT1M", 2, "PT2M"},
@@ -691,13 +706,15 @@ func TestPeriodScale(t *testing.T) {
 		{"PT1H", 0.5, "PT0.5H"},
 		{"PT1M", 0.5, "PT0.5M"},
 		{"PT1S", 0.5, "PT0.5S"},
+		//TODO large reductions don't work {"PT1H", 1/3600, "PT1S"},
 		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
 		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
 		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
 		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
 		{"PT1M", 60, "PT1H"},
 		{"PT1S", 60, "PT1M"},
-		{"PT1S", 36000, "PT10H"},
+		{"PT1S", 86400, "PT24H"},
+		{"PT1S", 86400000, "P1000D"},
 		{"P365.5D", 10, "P10Y2.5D"},
 	}
 	for i, c := range cases {
