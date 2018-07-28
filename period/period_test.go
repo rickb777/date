@@ -270,7 +270,10 @@ func TestPeriodApproxMonths(t *testing.T) {
 		{"P1D", 0},
 		{"P30D", 0},
 		{"P31D", 1},
+		{"P60D", 1},
+		{"P62D", 2},
 		{"P1M", 1},
+		{"P12M", 12},
 		{"P2M31D", 3},
 		{"P1Y", 12},
 		{"P2Y3M", 27},
@@ -501,59 +504,69 @@ func TestBetween(t *testing.T) {
 }
 
 func TestNormalise(t *testing.T) {
-	cases := []struct {
-		source, expected Period
-		precise          bool
-	}{
-		// zero cases
-		{New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0), true},
-		{New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0), false},
+	// zero cases
+	testNormalise(t, New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0))
 
-		// carry seconds to minutes
-		{Period{0, 0, 0, 0, 0, 699}, Period{0, 0, 0, 0, 10, 99}, true},
-		{Period{0, 0, 0, 0, 0, -699}, Period{0, 0, 0, 0, -10, -99}, true},
+	// carry seconds to minutes
+	testNormalise(t, Period{0, 0, 0, 0, 0, 699}, Period{0, 0, 0, 0, 10, 99}, Period{0, 0, 0, 0, 10, 99})
 
-		// carry minutes to hours
-		{Period{0, 0, 0, 0, 699, 0}, Period{0, 0, 0, 10, 99, 0}, true},
-		{Period{0, 0, 0, 0, -699, 0}, Period{0, 0, 0, -10, -99, 0}, true},
+	// carry minutes to seconds
+	testNormalise(t, Period{0, 0, 0, 0, 5, 0}, Period{0, 0, 0, 0, 0, 300}, Period{0, 0, 0, 0, 0, 300})
+	testNormalise(t, Period{0, 0, 0, 0, 1, 0}, Period{0, 0, 0, 0, 0, 60}, Period{0, 0, 0, 0, 0, 60})
+	testNormalise(t, Period{0, 0, 0, 0, 55, 0}, Period{0, 0, 0, 0, 50, 300}, Period{0, 0, 0, 0, 50, 300})
 
-		// carry hours to days - two cases
-		{Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 0, 249, 0, 0}, true},
-		{Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 10, 9, 0, 0}, false},
+	// carry minutes to hours
+	testNormalise(t, Period{0, 0, 0, 0, 699, 0}, Period{0, 0, 0, 10, 90, 540}, Period{0, 0, 0, 10, 90, 540})
 
-		// carry days to months - two cases
-		{Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0}, true},
-		{Period{0, 0, 323, 0, 0, 0}, Period{0, 10, 18, 0, 0, 0}, false},
+	// carry hours to minutes
+	testNormalise(t, Period{0, 0, 0, 5, 0, 0}, Period{0, 0, 0, 0, 300, 0}, Period{0, 0, 0, 0, 300, 0})
 
-		// carry months to years
-		{Period{0, 129, 0, 0, 0, 0}, Period{10, 9, 0, 0, 0, 0}, true},
+	// carry hours to days
+	testNormalise(t, Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 0, 240, 540, 0}, Period{0, 0, 0, 240, 540, 0})
+	testNormalise(t, Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 0, 240, 540, 0}, Period{0, 0, 0, 240, 540, 0})
+	testNormalise(t, Period{0, 0, 0, 369, 0, 0}, Period{0, 0, 0, 360, 540, 0}, Period{0, 0, 10, 120, 540, 0})
+	testNormalise(t, Period{0, 0, 0, 249, 0, 10}, Period{0, 0, 0, 240, 540, 10}, Period{0, 0, 0, 240, 540, 10})
 
-		// full ripple up - two cases
-		{Period{0, 121, 305, 239, 591, 601}, Period{10, 1, 305, 249, 1, 1}, true},
-		{Period{0, 119, 300, 239, 591, 601}, Period{10, 9, 5, 9, 1, 1}, false},
+	// carry months to years
+	testNormalise(t, Period{0, 125, 0, 0, 0, 0}, Period{0, 125, 0, 0, 0, 0}, Period{0, 125, 0, 0, 0, 0})
+	testNormalise(t, Period{0, 131, 0, 0, 0, 0}, Period{10, 11, 0, 0, 0, 0}, Period{10, 11, 0, 0, 0, 0})
 
-		// full ripple up - negative cases
-		{Period{0, -121, -305, -239, -591, -601}, Period{-10, -1, -305, -249, -1, -1}, true},
-		{Period{0, -119, -300, -239, -591, -601}, Period{-10, -9, -5, -9, -1, -1}, false},
+	// carry days to months
+	testNormalise(t, Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0})
 
-		//TODO fix ripple-down normalisation
-		//// carry minutes to seconds
-		//{Period{0, 0, 0, 0, 5, 0}, Period{0, 0, 0, 0, 0, 30}, true},
-		//{Period{0, 0, 0, 0, -5, 0}, Period{0, 0, 0, 0, 0, -30}, true},
-		//
-		//// carry hours to minutes
-		//{Period{0, 0, 0, 5, 0, 0}, Period{0, 0, 0, 0, 30, 0}, true},
-		//{Period{0, 0, 0, -5, 0, 0}, Period{0, 0, 0, 0, -30, 0}, true},
-		//
-		//// carry yesr to months
-		//{Period{5, 0, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0}, true},
-		//{Period{-5, 0, 0, 0, 0, 0}, Period{0, -60, 0, 0, 0, 0}, true},
+	// full ripple up - two cases
+	testNormalise(t, Period{0, 121, 305, 239, 591, 601}, Period{10, 0, 330, 360, 540, 61}, Period{10, 10, 40, 0, 540, 61})
+
+	// carry year to months
+	testNormalise(t, Period{5, 0, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0})
+}
+
+func testNormalise(t *testing.T, source, precise, approx Period) {
+	t.Helper()
+
+	testNormaliseBothSigns(t, source, precise, true)
+	testNormaliseBothSigns(t, source, approx, false)
+}
+
+func testNormaliseBothSigns(t *testing.T, source, expected Period, precise bool) {
+	t.Helper()
+
+	n1 := source.Normalise(precise)
+	if n1 != expected {
+		t.Errorf("%v.Normalise(%v) %s\n   gives %-22s %#v %s,\n    want %-22s %#v %s",
+			source, precise, source.DurationApprox(),
+			n1, n1, n1.DurationApprox(),
+			expected, expected, expected.DurationApprox())
 	}
-	for i, c := range cases {
-		n := c.source.Normalise(c.precise)
-		if n != c.expected {
-			t.Errorf("%3d: %v.Normalise(%v)\n   gives %-20s %#v,\n    want %-20s %#v", i, c.source, c.precise, n, n, c.expected, c.expected)
-		}
+
+	sneg := source.Negate()
+	eneg := expected.Negate()
+	n2 := sneg.Normalise(precise)
+	if n2 != eneg {
+		t.Errorf("%v.Normalise(%v) %s\n   gives %-22s %#v %s,\n    want %-22s %#v %s",
+			sneg, precise, sneg.DurationApprox(),
+			n2, n2, n2.DurationApprox(),
+			eneg, eneg, eneg.DurationApprox())
 	}
 }
 
@@ -595,6 +608,74 @@ func TestPeriodFormat(t *testing.T) {
 	}
 }
 
+func TestPeriodScale(t *testing.T) {
+	cases := []struct {
+		one    string
+		m      float32
+		expect string
+	}{
+		{"P0D", 2, "P0D"},
+		{"P1D", 2, "P2D"},
+		{"P1D", 0, "P0D"},
+		{"P1D", 365, "P365D"},
+		{"P1M", 2, "P2M"},
+		{"P1M", 12, "P1Y"},
+		//TODO {"P1Y3M", 1.0/15, "P1M"},
+		{"P1Y", 2, "P2Y"},
+		{"PT1H", 2, "PT2H"},
+		{"PT1M", 2, "PT2M"},
+		{"PT1S", 2, "PT2S"},
+		{"P1D", 0.5, "P0.5D"},
+		{"P1M", 0.5, "P0.5M"},
+		{"P1Y", 0.5, "P0.5Y"},
+		{"PT1H", 0.5, "PT0.5H"},
+		{"PT1H", 0.1, "PT6M"},
+		//TODO {"PT1H", 0.01, "PT36S"},
+		{"PT1M", 0.5, "PT0.5M"},
+		{"PT1S", 0.5, "PT0.5S"},
+		{"PT1H", 1.0 / 3600, "PT1S"},
+		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
+		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
+		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
+		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
+		{"PT1M", 60, "PT1H"},
+		{"PT1S", 60, "PT1M"},
+		{"PT1S", 86400, "PT24H"},
+		{"PT1S", 86400000, "P1000D"},
+		{"P365.5D", 10, "P10Y2.5D"},
+		//{"P365.5D", 0.1, "P36DT12H"},
+	}
+	for i, c := range cases {
+		s := MustParse(c.one).Scale(c.m)
+		if s != MustParse(c.expect) {
+			t.Errorf("%d: %s.Scale(%g) == %v, want %s", i, c.one, c.m, s, c.expect)
+		}
+	}
+}
+
+func TestPeriodAdd(t *testing.T) {
+	cases := []struct {
+		one, two string
+		expect   string
+	}{
+		{"P0D", "P0D", "P0D"},
+		{"P1D", "P1D", "P2D"},
+		{"P1M", "P1M", "P2M"},
+		{"P1Y", "P1Y", "P2Y"},
+		{"PT1H", "PT1H", "PT2H"},
+		{"PT1M", "PT1M", "PT2M"},
+		{"PT1S", "PT1S", "PT2S"},
+		{"P1Y2M3DT4H5M6S", "P6Y5M4DT3H2M1S", "P7Y7M7DT7H7M7S"},
+		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
+	}
+	for i, c := range cases {
+		s := MustParse(c.one).Add(MustParse(c.two))
+		if s != MustParse(c.expect) {
+			t.Errorf("%d: %s.Add(%s) == %v, want %s", i, c.one, c.two, s, c.expect)
+		}
+	}
+}
+
 func TestPeriodFormatWithoutWeeks(t *testing.T) {
 	cases := []struct {
 		period string
@@ -630,7 +711,7 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 	}
 }
 
-func TestPeriodOnlyYMD(t *testing.T) {
+func TestPeriodParseOnlyYMD(t *testing.T) {
 	cases := []struct {
 		one    string
 		expect string
@@ -646,7 +727,7 @@ func TestPeriodOnlyYMD(t *testing.T) {
 	}
 }
 
-func TestPeriodOnlyHMS(t *testing.T) {
+func TestPeriodParseOnlyHMS(t *testing.T) {
 	cases := []struct {
 		one    string
 		expect string
@@ -658,69 +739,6 @@ func TestPeriodOnlyHMS(t *testing.T) {
 		s := MustParse(c.one).OnlyHMS()
 		if s != MustParse(c.expect) {
 			t.Errorf("%d: %s.OnlyHMS() == %v, want %s", i, c.one, s, c.expect)
-		}
-	}
-}
-
-func TestPeriodAdd(t *testing.T) {
-	cases := []struct {
-		one, two string
-		expect   string
-	}{
-		{"P0D", "P0D", "P0D"},
-		{"P1D", "P1D", "P2D"},
-		{"P1M", "P1M", "P2M"},
-		{"P1Y", "P1Y", "P2Y"},
-		{"PT1H", "PT1H", "PT2H"},
-		{"PT1M", "PT1M", "PT2M"},
-		{"PT1S", "PT1S", "PT2S"},
-		{"P1Y2M3DT4H5M6S", "P6Y5M4DT3H2M1S", "P7Y7M7DT7H7M7S"},
-		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
-	}
-	for i, c := range cases {
-		s := MustParse(c.one).Add(MustParse(c.two))
-		if s != MustParse(c.expect) {
-			t.Errorf("%d: %s.Add(%s) == %v, want %s", i, c.one, c.two, s, c.expect)
-		}
-	}
-}
-
-func TestPeriodScale(t *testing.T) {
-	cases := []struct {
-		one    string
-		m      float32
-		expect string
-	}{
-		{"P0D", 2, "P0D"},
-		{"P1D", 2, "P2D"},
-		{"P1D", 365, "P365D"},
-		{"P1M", 2, "P2M"},
-		{"P1M", 12, "P1Y"},
-		{"P1Y", 2, "P2Y"},
-		{"PT1H", 2, "PT2H"},
-		{"PT1M", 2, "PT2M"},
-		{"PT1S", 2, "PT2S"},
-		{"P1D", 0.5, "P0.5D"},
-		{"P1M", 0.5, "P0.5M"},
-		{"P1Y", 0.5, "P0.5Y"},
-		{"PT1H", 0.5, "PT0.5H"},
-		{"PT1M", 0.5, "PT0.5M"},
-		{"PT1S", 0.5, "PT0.5S"},
-		//TODO large reductions don't work {"PT1H", 1/3600, "PT1S"},
-		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
-		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
-		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
-		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
-		{"PT1M", 60, "PT1H"},
-		{"PT1S", 60, "PT1M"},
-		{"PT1S", 86400, "PT24H"},
-		{"PT1S", 86400000, "P1000D"},
-		{"P365.5D", 10, "P10Y2.5D"},
-	}
-	for i, c := range cases {
-		s := MustParse(c.one).Scale(c.m)
-		if s != MustParse(c.expect) {
-			t.Errorf("%d: %s.Scale(%g) == %v, want %s", i, c.one, c.m, s, c.expect)
 		}
 	}
 }
