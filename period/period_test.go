@@ -239,6 +239,34 @@ func TestPeriodToDuration(t *testing.T) {
 	}
 }
 
+func TestIsNegative(t *testing.T) {
+	cases := []struct {
+		value    string
+		expected bool
+	}{
+		{"P0D", false},
+		{"PT1S", false},
+		{"-PT1S", true},
+		{"PT1M", false},
+		{"-PT1M", true},
+		{"PT1H", false},
+		{"-PT1H", true},
+		{"P1D", false},
+		{"-P1D", true},
+		{"P1M", false},
+		{"-P1M", true},
+		{"P1Y", false},
+		{"-P1Y", true},
+	}
+	for i, c := range cases {
+		p := MustParse(c.value)
+		got := p.IsNegative()
+		if got != c.expected {
+			t.Errorf("%d: %v.IsNegative() == %v, want %v", i, p, got, c.expected)
+		}
+	}
+}
+
 func TestPeriodApproxDays(t *testing.T) {
 	cases := []struct {
 		value      string
@@ -389,57 +417,48 @@ func TestNewYMD(t *testing.T) {
 }
 
 func TestNewOf(t *testing.T) {
+	// HMS tests
+	testNewOf(t, 100*time.Millisecond, Period{0, 0, 0, 0, 0, 1}, true)
+	testNewOf(t, time.Second, Period{0, 0, 0, 0, 0, 10}, true)
+	testNewOf(t, time.Minute, Period{0, 0, 0, 0, 10, 0}, true)
+	testNewOf(t, time.Hour, Period{0, 0, 0, 10, 0, 0}, true)
+	testNewOf(t, time.Hour+time.Minute+time.Second, Period{0, 0, 0, 10, 10, 10}, true)
+	testNewOf(t, 24*time.Hour+time.Minute+time.Second, Period{0, 0, 0, 240, 10, 10}, true)
+	testNewOf(t, 3276*time.Hour+59*time.Minute+59*time.Second, Period{0, 0, 0, 32760, 590, 590}, true)
+
+	// YMD tests: must be over 3276 hours (approx 4.5 months), otherwise HMS will take care of it
+	// first rollover: 3276 hours
+	testNewOf(t, 3288*time.Hour, Period{0, 0, 1370, 0, 0, 0}, false)
+	testNewOf(t, 3289*time.Hour, Period{0, 0, 1370, 10, 0, 0}, false)
+	testNewOf(t, 3277*time.Hour, Period{0, 0, 1360, 130, 0, 0}, false)
+
+	// second rollover: 3276 days
+	testNewOf(t, 3277*oneDay, Period{80, 110, 200, 0, 0, 0}, false)
+	testNewOf(t, 3277*oneDay+time.Hour+time.Minute+time.Second, Period{80, 110, 200, 10, 0, 0}, false)
+	testNewOf(t, 36525*oneDay, Period{1000, 0, 0, 0, 0, 0}, false)
+}
+
+func testNewOf(t *testing.T, source time.Duration, expected Period, precise bool) {
+	t.Helper()
+	testNewOf1(t, source, expected, precise)
+	testNewOf1(t, -source, expected.Negate(), precise)
+}
+
+func testNewOf1(t *testing.T, source time.Duration, expected Period, precise bool) {
+	t.Helper()
 	ms := time.Millisecond
 
-	cases := []struct {
-		source   time.Duration
-		expected Period
-		precise  bool
-	}{
-		// HMS tests
-		{100 * time.Millisecond, Period{0, 0, 0, 0, 0, 1}, true},
-		{time.Second, Period{0, 0, 0, 0, 0, 10}, true},
-		{time.Minute, Period{0, 0, 0, 0, 10, 0}, true},
-		{time.Hour, Period{0, 0, 0, 10, 0, 0}, true},
-		{time.Hour + time.Minute + time.Second, Period{0, 0, 0, 10, 10, 10}, true},
-		{24*time.Hour + time.Minute + time.Second, Period{0, 0, 0, 240, 10, 10}, true},
-		{3276*time.Hour + 59*time.Minute + 59*time.Second, Period{0, 0, 0, 32760, 590, 590}, true},
-
-		// YMD tests: must be over 3276 hours (approx 4.5 months), otherwise HMS will take care of it
-		// first rollover: 3276 hours
-		{3288 * time.Hour, Period{0, 0, 1370, 0, 0, 0}, false},
-		{3289 * time.Hour, Period{0, 0, 1370, 10, 0, 0}, false},
-		{3277 * time.Hour, Period{0, 0, 1360, 130, 0, 0}, false},
-
-		// second rollover: 3276 days
-		{3277 * oneDay, Period{80, 110, 200, 0, 0, 0}, false},
-		{3277*oneDay + time.Hour + time.Minute + time.Second, Period{80, 110, 200, 10, 0, 0}, false},
-		{36525 * oneDay, Period{1000, 0, 0, 0, 0, 0}, false},
-
-		// negative cases too
-		{-100 * time.Millisecond, Period{0, 0, 0, 0, 0, -1}, true},
-		{-time.Second, Period{0, 0, 0, 0, 0, -10}, true},
-		{-time.Minute, Period{0, 0, 0, 0, -10, 0}, true},
-		{-time.Hour, Period{0, 0, 0, -10, 0, 0}, true},
-		{-time.Hour - time.Minute - time.Second, Period{0, 0, 0, -10, -10, -10}, true},
-		{-oneDay, Period{0, 0, 0, -240, 0, 0}, true},
-		{-305 * oneDay, Period{0, 0, -3050, 0, 0, 0}, false},
-		{-36525 * oneDay, Period{-1000, 0, 0, 0, 0, 0}, false},
+	n, p := NewOf(source)
+	rev, _ := expected.Duration()
+	if n != expected {
+		t.Errorf("NewOf(%s) (%dms)\n    gives %-20s %#v,\n     want %-20s (%dms)", source, source/ms, n, n, expected, rev/ms)
 	}
-
-	for i, c := range cases {
-		n, p := NewOf(c.source)
-		rev, _ := c.expected.Duration()
-		if n != c.expected {
-			t.Errorf("%d: NewOf(%s) (%dms)\n    gives %-20s %#v,\n     want %-20s (%dms)", i, c.source, c.source/ms, n, n, c.expected, rev/ms)
-		}
-		if p != c.precise {
-			t.Errorf("%d: NewOf(%s) (%dms)\n    gives %v,\n     want %v for %v (%dms)", i, c.source, c.source/ms, p, c.precise, c.expected, rev/ms)
-		}
-		//if rev != c.source {
-		//	t.Logf("%d: NewOf(%s) input %dms differs from expected %dms", i, c.source, c.source/ms, rev/ms)
-		//}
+	if p != precise {
+		t.Errorf("NewOf(%s) (%dms)\n    gives %v,\n     want %v for %v (%dms)", source, source/ms, p, precise, expected, rev/ms)
 	}
+	//if rev != source {
+	//	t.Logf("%d: NewOf(%s) input %dms differs from expected %dms", i, source, source/ms, rev/ms)
+	//}
 }
 
 func TestBetween(t *testing.T) {

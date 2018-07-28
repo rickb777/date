@@ -204,10 +204,11 @@ func (period Period) IsZero() bool {
 	return period == Period{}
 }
 
-// IsNegative returns true if any field is negative. By design, this implies that
-// all the fields are negative.
+// IsNegative returns true if any field is negative. By design, this also implies that
+// all the fields are negative or zero.
 func (period Period) IsNegative() bool {
-	return period.years < 0 || period.months < 0 || period.days < 0
+	return period.years < 0 || period.months < 0 || period.days < 0 ||
+		period.hours < 0 || period.minutes < 0 || period.seconds < 0
 }
 
 // OnlyYMD returns a new Period with only the year, month and day fields. The hour,
