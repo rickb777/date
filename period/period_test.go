@@ -229,12 +229,16 @@ func TestPeriodToDuration(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		s, prec := p.Duration()
-		if s != c.duration {
-			t.Errorf("%d: Duration() == %s %v, want %s for %s", i, s, prec, c.duration, c.value)
+		d1, prec := p.Duration()
+		if d1 != c.duration {
+			t.Errorf("%d: Duration() == %s %v, want %s for %s", i, d1, prec, c.duration, c.value)
 		}
 		if prec != c.precise {
-			t.Errorf("%d: Duration() == %s %v, want %v for %s", i, s, prec, c.precise, c.value)
+			t.Errorf("%d: Duration() == %s %v, want %v for %s", i, d1, prec, c.precise, c.value)
+		}
+		d2 := p.DurationApprox()
+		if c.precise && d2 != c.duration {
+			t.Errorf("%d: DurationApprox() == %s %v, want %s for %s", i, d2, prec, c.duration, c.value)
 		}
 	}
 }
@@ -546,6 +550,9 @@ func TestNormalise(t *testing.T) {
 	testNormalise(t, Period{0, 0, 0, 369, 0, 0}, Period{0, 0, 0, 360, 540, 0}, Period{0, 0, 10, 120, 540, 0})
 	testNormalise(t, Period{0, 0, 0, 249, 0, 10}, Period{0, 0, 0, 240, 540, 10}, Period{0, 0, 0, 240, 540, 10})
 
+	// carry days to hours
+	testNormalise(t, Period{0, 0, 5, 30, 0, 0}, Period{0, 0, 0, 150, 00, 0}, Period{0, 0, 0, 150, 0, 0})
+
 	// carry months to years
 	testNormalise(t, Period{0, 125, 0, 0, 0, 0}, Period{0, 125, 0, 0, 0, 0}, Period{0, 125, 0, 0, 0, 0})
 	testNormalise(t, Period{0, 131, 0, 0, 0, 0}, Period{10, 11, 0, 0, 0, 0}, Period{10, 11, 0, 0, 0, 0})
@@ -553,11 +560,16 @@ func TestNormalise(t *testing.T) {
 	// carry days to months
 	testNormalise(t, Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0})
 
-	// full ripple up - two cases
+	// carry months to days
+	testNormalise(t, Period{0, 5, 203, 0, 0, 0}, Period{0, 0, 355, 0, 0, 0}, Period{0, 10, 50, 0, 0, 0})
+
+	// full ripple up
 	testNormalise(t, Period{0, 121, 305, 239, 591, 601}, Period{10, 0, 330, 360, 540, 61}, Period{10, 10, 40, 0, 540, 61})
 
-	// carry year to months
+	// carry years to months
 	testNormalise(t, Period{5, 0, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0})
+	testNormalise(t, Period{5, 25, 0, 0, 0, 0}, Period{0, 85, 0, 0, 0, 0}, Period{0, 85, 0, 0, 0, 0})
+	testNormalise(t, Period{5, 20, 10, 0, 0, 0}, Period{0, 80, 10, 0, 0, 0}, Period{0, 80, 10, 0, 0, 0})
 }
 
 func testNormalise(t *testing.T, source, precise, approx Period) {

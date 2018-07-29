@@ -13,10 +13,10 @@ const daysPerYearE4 int64 = 3652425   // 365.2425 days by the Gregorian rule
 const daysPerMonthE4 int64 = 304375   // 30.4375 days per month
 const daysPerMonthE6 int64 = 30436875 // 30.436875 days per month
 
-const oneE4 = 10000
-const oneE5 = 100000
-const oneE6 = 1000000
-const oneE7 = 10000000
+const oneE4 int64 = 10000
+const oneE5 int64 = 100000
+const oneE6 int64 = 1000000
+const oneE7 int64 = 10000000
 
 const hundredMs = 100 * time.Millisecond
 
@@ -645,7 +645,7 @@ func (p *period64) moveFractionToRight() *period64 {
 
 	y10 := p.years % 10
 	if y10 != 0 && (p.months != 0 || p.days != 0 || p.hours != 0 || p.minutes != 0 || p.seconds != 0) {
-		p.months += y10 * 24
+		p.months += y10 * 12
 		p.years = (p.years / 10) * 10
 	}
 
