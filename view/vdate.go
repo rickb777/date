@@ -58,6 +58,9 @@ func (v VDate) IsOdd() bool {
 
 // String formats the date in basic ISO8601 format YYYY-MM-DD.
 func (v VDate) String() string {
+	if v.d.IsZero() {
+		return ""
+	}
 	return v.d.String()
 }
 

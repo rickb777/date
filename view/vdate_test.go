@@ -28,6 +28,23 @@ func TestBasicFormatting(t *testing.T) {
 	is(t, d.Year(), "2016")
 }
 
+func TestZeroFormatting(t *testing.T) {
+	d := NewVDate(date.Date{})
+	is(t, d.String(), "")
+	is(t, d.Format(), "01/01/1970")
+	is(t, d.WithFormat(MDYFormat).Format(), "01/01/1970")
+	is(t, d.Mon(), "Thu")
+	is(t, d.Monday(), "Thursday")
+	is(t, d.Day2(), "1")
+	is(t, d.Day02(), "01")
+	is(t, d.Day2nd(), "1st")
+	is(t, d.Month1(), "1")
+	is(t, d.Month01(), "01")
+	is(t, d.Jan(), "Jan")
+	is(t, d.January(), "January")
+	is(t, d.Year(), "1970")
+}
+
 func TestDate(t *testing.T) {
 	d := date.New(2016, 2, 7)
 	vd := NewVDate(d)
