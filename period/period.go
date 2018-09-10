@@ -195,7 +195,6 @@ func daysDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, hundredth int
 		day = d2 - d1
 	}
 
-	fmt.Printf("B) %d, %d %d %d %d\n", day, hour, min, sec, hundredth)
 	return
 }
 
