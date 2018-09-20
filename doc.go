@@ -9,15 +9,15 @@
 //
 // Subpackages provide:
 //
-// * `DateRange` which expresses a period between two dates.
+// * `clock.Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
 //
-// * `TimeSpan` which expresses a duration of time between two instants.
+// * `period.Period` which expresses a period corresponding to the ISO-8601 form (e.g. "PT30S").
 //
-// * `Period` which expresses a period corresponding to the ISO-8601 form (e.g. "PT30S").
+// * `timespan.DateRange` which expresses a period between two dates.
 //
-// * `Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
+// * `timespan.TimeSpan` which expresses a duration of time between two instants.
 //
-// * `View` which wraps `Date` for use in templates etc.
+// * `view.VDate` which wraps `Date` for use in templates etc.
 //
 // Credits
 //

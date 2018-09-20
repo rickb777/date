@@ -14,11 +14,11 @@ and convenient for calendrical calculations and date parsing and formatting
 
 It also provides
 
- * `DateRange` which expresses a period between two dates.
- * `TimeSpan` which expresses a duration of time between two instants.
- * `Period` which expresses a period corresponding to the ISO-8601 form (e.g. PT1H)
- * `Clock` which expresses a wall-clock style hours-minutes-seconds.
- * `VDate` which wraps a Date to make it easy to use in Go templates and similar view tiers.
+ * `clock.Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
+ * `period.Period` which expresses a period corresponding to the ISO-8601 form (e.g. "PT30S").
+ * `timespan.DateRange` which expresses a period between two dates.
+ * `timespan.TimeSpan` which expresses a duration of time between two instants.
+ * `view.VDate` which wraps `Date` for use in templates etc.
 
 See [package documentation](https://godoc.org/github.com/rickb777/date) for
 full documentation and examples.
