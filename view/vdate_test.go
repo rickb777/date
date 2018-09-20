@@ -32,7 +32,7 @@ func TestZeroFormatting(t *testing.T) {
 	d := NewVDate(date.Date{})
 	is(t, d.String(), "")
 	is(t, d.Format(), "01/01/1970")
-	is(t, d.WithFormat(MDYFormat).Format(), "01/01/1970")
+	is(t, d.WithFormat(ISOFormat).Format(), "1970-01-01")
 	is(t, d.Mon(), "Thu")
 	is(t, d.Monday(), "Thursday")
 	is(t, d.Day2(), "1")

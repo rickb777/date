@@ -14,6 +14,27 @@ var oneDay = 24 * time.Hour
 var oneMonthApprox = 2629746 * time.Second // 30.436875 days
 var oneYearApprox = 31556952 * time.Second // 365.2425 days
 
+func TestParseErrors(t *testing.T) {
+	cases := []struct {
+		value    string
+		expected string
+	}{
+		{"", "cannot parse a blank string as a period"},
+		{"XY", "expected 'P' period mark at the start: XY"},
+		{"PxY", "expected a number before the 'Y' marker: PxY"},
+		{"PxW", "expected a number before the 'W' marker: PxW"},
+		{"PxD", "expected a number before the 'D' marker: PxD"},
+		{"PTxH", "expected a number before the 'H' marker: PTxH"},
+		{"PTxS", "expected a number before the 'S' marker: PTxS"},
+	}
+	for i, c := range cases {
+		_, err := Parse(c.value)
+		if err.Error() != c.expected {
+			t.Errorf("%d: Parse(%q) == %#v, want (%#v)", i, c.value, err.Error(), c.expected)
+		}
+	}
+}
+
 func TestParsePeriod(t *testing.T) {
 	cases := []struct {
 		value  string
@@ -48,18 +69,7 @@ func TestParsePeriod(t *testing.T) {
 	for i, c := range cases {
 		d := MustParse(c.value)
 		if d != c.period {
-			t.Errorf("%d: MustParsePeriod(%v) == %#v, want (%#v)", i, c.value, d, c.period)
-		}
-	}
-
-	badCases := []string{
-		"13M",
-		"P",
-	}
-	for i, c := range badCases {
-		d, err := Parse(c)
-		if err == nil {
-			t.Errorf("%d: ParsePeriod(%v) == %v", i, c, d)
+			t.Errorf("%d: MustParse(%v) == %#v, want (%#v)", i, c.value, d, c.period)
 		}
 	}
 }

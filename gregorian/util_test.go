@@ -10,6 +10,7 @@ func TestIsLeap(t *testing.T) {
 		year     int
 		expected bool
 	}{
+		{0, true}, // year zero is not defined under some conventions but is in ISO8601
 		{2000, true},
 		{2400, true},
 		{2001, false},
@@ -74,4 +75,3 @@ func TestDaysIn(t *testing.T) {
 		}
 	}
 }
-

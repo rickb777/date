@@ -13,9 +13,11 @@
 //
 // * `TimeSpan` which expresses a duration of time between two instants.
 //
-// * `Period` which expresses a period corresponding to the ISO-8601 form.
+// * `Period` which expresses a period corresponding to the ISO-8601 form (e.g. "PT30S").
 //
-// * `Clock` which expresses a wall-clock style hours-minutes-seconds.
+// * `Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
+//
+// * `View` which wraps `Date` for use in templates etc.
 //
 // Credits
 //

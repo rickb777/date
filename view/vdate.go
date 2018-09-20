@@ -15,6 +15,8 @@ const (
 	DMYFormat = "02/01/2006"
 	// MDYFormat is a typical American representation.
 	MDYFormat = "01/02/2006"
+	// ISOFormat is ISO-8601 YYYY-MM-DD.
+	ISOFormat = "2006-02-01"
 	// DefaultFormat is used by Format() unless a different format is set.
 	DefaultFormat = DMYFormat
 )

@@ -59,17 +59,17 @@ func Parse(period string) (Period, error) {
 
 		result.hours, st = parseField(st, 'H')
 		if st.err != nil {
-			return Period{}, st.err
+			return Period{}, fmt.Errorf("expected a number before the 'H' marker: %s", period)
 		}
 
 		result.minutes, st = parseField(st, 'M')
 		if st.err != nil {
-			return Period{}, st.err
+			return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
 		}
 
 		result.seconds, st = parseField(st, 'S')
 		if st.err != nil {
-			return Period{}, st.err
+			return Period{}, fmt.Errorf("expected a number before the 'S' marker: %s", period)
 		}
 
 		st.pcopy = pcopy[:t]
@@ -77,22 +77,22 @@ func Parse(period string) (Period, error) {
 
 	result.years, st = parseField(st, 'Y')
 	if st.err != nil {
-		return Period{}, st.err
+		return Period{}, fmt.Errorf("expected a number before the 'Y' marker: %s", period)
 	}
 
 	result.months, st = parseField(st, 'M')
 	if st.err != nil {
-		return Period{}, st.err
+		return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
 	}
 
 	weeks, st := parseField(st, 'W')
 	if st.err != nil {
-		return Period{}, st.err
+		return Period{}, fmt.Errorf("expected a number before the 'W' marker: %s", period)
 	}
 
 	days, st := parseField(st, 'D')
 	if st.err != nil {
-		return Period{}, st.err
+		return Period{}, fmt.Errorf("expected a number before the 'D' marker: %s", period)
 	}
 
 	result.days = weeks*7 + days
@@ -148,6 +148,5 @@ func parseDecimalFixedPoint(s, original string) (int16, error) {
 	}
 
 	n, e := strconv.ParseInt(s, 10, 16)
-	//fmt.Printf("ParseInt(%s) = %d -- from %s in %s %d\n", s, n, was, original, dec)
 	return int16(n), e
 }
