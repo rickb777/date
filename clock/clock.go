@@ -20,6 +20,10 @@ import (
 // negative values. However, for such lengths of time, a fixed 24 hours per day
 // is assumed and a modulo operation Mod24 is provided to discard whole multiples of 24 hours.
 //
+// Clock is a type of integer (actually int32), so values can be compared and sorted as
+// per other integers. The constants Second, Minute, Hour and Day can be added and subtracted
+// with obvious outcomes.
+//
 // See https://en.wikipedia.org/wiki/ISO_8601#Times
 type Clock int32
 
