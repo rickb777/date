@@ -6,9 +6,10 @@ package view
 
 import (
 	"encoding/json"
-	"github.com/rickb777/date"
 	"testing"
 	"time"
+
+	"github.com/rickb777/date"
 )
 
 func TestBasicFormatting(t *testing.T) {

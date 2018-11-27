@@ -5,9 +5,10 @@
 package period
 
 import (
-	"github.com/rickb777/plural"
 	"testing"
 	"time"
+
+	"github.com/rickb777/plural"
 )
 
 var oneDay = 24 * time.Hour
@@ -210,6 +211,54 @@ func TestPeriodFloatComponents(t *testing.T) {
 	}
 }
 
+func TestPeriodAddToTime(t *testing.T) {
+	const ms = 1000000
+	const sec = 1000 * ms
+	const min = 60 * sec
+	const hr = 60 * min
+
+	// A conveniently round number (14 July 2017 @ 2:40am UTC)
+	var t0 = time.Unix(1500000000, 0)
+
+	cases := []struct {
+		value   string
+		result  time.Time
+		precise bool
+	}{
+		{"P0D", t0, true},
+		{"PT1S", t0.Add(sec), true},
+		{"PT0.1S", t0.Add(100 * ms), true},
+		{"-PT0.1S", t0.Add(-100 * ms), true},
+		{"PT3276S", t0.Add(3276 * sec), true},
+		{"PT1M", t0.Add(60 * sec), true},
+		{"PT0.1M", t0.Add(6 * sec), true},
+		{"PT3276M", t0.Add(3276 * min), true},
+		{"PT1H", t0.Add(hr), true},
+		{"PT0.1H", t0.Add(6 * min), true},
+		{"PT3276H", t0.Add(3276 * hr), true},
+		{"P1D", t0.Add(24 * hr), false},
+		{"P0.1D", t0.Add(144 * min), false},
+		{"P3276D", t0.Add(3276 * 24 * hr), false},
+		{"P1M", t0.Add(oneMonthApprox), false},
+		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
+		{"P3276M", t0.Add(3276 * oneMonthApprox), false},
+		{"P1Y", t0.Add(oneYearApprox), false},
+		{"-P1Y", t0.Add(-oneYearApprox), false},
+		{"P3276Y", t0.Add(3276 * oneYearApprox), false},   // near the upper limit of range
+		{"-P3276Y", t0.Add(-3276 * oneYearApprox), false}, // near the lower limit of range
+	}
+	for i, c := range cases {
+		p := MustParse(c.value)
+		t1, prec := p.AddTo(t0)
+		if t1 != c.result {
+			t.Errorf("%d: AddTo(t) == %s %v, want %s for %s", i, t1, prec, c.result, c.value)
+		}
+		if prec != c.precise {
+			t.Errorf("%d: Duration() == %s %v, want %v for %s", i, t1, prec, c.precise, c.value)
+		}
+	}
+}
+
 func TestPeriodToDuration(t *testing.T) {
 	cases := []struct {
 		value    string
@@ -219,6 +268,7 @@ func TestPeriodToDuration(t *testing.T) {
 		{"P0D", time.Duration(0), true},
 		{"PT1S", 1 * time.Second, true},
 		{"PT0.1S", 100 * time.Millisecond, true},
+		{"-PT0.1S", -100 * time.Millisecond, true},
 		{"PT3276S", 3276 * time.Second, true},
 		{"PT1M", 60 * time.Second, true},
 		{"PT0.1M", 6 * time.Second, true},
@@ -253,30 +303,37 @@ func TestPeriodToDuration(t *testing.T) {
 	}
 }
 
-func TestIsNegative(t *testing.T) {
+func TestSignPotisitveNegative(t *testing.T) {
 	cases := []struct {
 		value    string
-		expected bool
+		positive bool
+		negative bool
+		sign     int
 	}{
-		{"P0D", false},
-		{"PT1S", false},
-		{"-PT1S", true},
-		{"PT1M", false},
-		{"-PT1M", true},
-		{"PT1H", false},
-		{"-PT1H", true},
-		{"P1D", false},
-		{"-P1D", true},
-		{"P1M", false},
-		{"-P1M", true},
-		{"P1Y", false},
-		{"-P1Y", true},
+		{"P0D", false, false, 0},
+		{"PT1S", true, false, 1},
+		{"-PT1S", false, true, -1},
+		{"PT1M", true, false, 1},
+		{"-PT1M", false, true, -1},
+		{"PT1H", true, false, 1},
+		{"-PT1H", false, true, -1},
+		{"P1D", true, false, 1},
+		{"-P1D", false, true, -1},
+		{"P1M", true, false, 1},
+		{"-P1M", false, true, -1},
+		{"P1Y", true, false, 1},
+		{"-P1Y", false, true, -1},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		got := p.IsNegative()
-		if got != c.expected {
-			t.Errorf("%d: %v.IsNegative() == %v, want %v", i, p, got, c.expected)
+		if p.IsPositive() != c.positive {
+			t.Errorf("%d: %v.IsPositive() == %v, want %v", i, p, p.IsPositive(), c.positive)
+		}
+		if p.IsNegative() != c.negative {
+			t.Errorf("%d: %v.IsNegative() == %v, want %v", i, p, p.IsNegative(), c.negative)
+		}
+		if p.Sign() != c.sign {
+			t.Errorf("%d: %v.Sign() == %d, want %d", i, p, p.Sign(), c.sign)
 		}
 	}
 }

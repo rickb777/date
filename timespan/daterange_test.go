@@ -6,11 +6,12 @@ package timespan
 
 import (
 	"fmt"
-	. "github.com/rickb777/date"
-	"github.com/rickb777/date/period"
 	"strings"
 	"testing"
 	"time"
+
+	. "github.com/rickb777/date"
+	"github.com/rickb777/date/period"
 )
 
 var d0320 = New(2015, time.March, 20)

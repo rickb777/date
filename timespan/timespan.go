@@ -6,10 +6,11 @@ package timespan
 
 import (
 	"fmt"
-	"github.com/rickb777/date"
-	"github.com/rickb777/date/period"
 	"strings"
 	"time"
+
+	"github.com/rickb777/date"
+	"github.com/rickb777/date/period"
 )
 
 // TimestampFormat is a simple format for date & time, "2006-01-02 15:04:05".

@@ -6,9 +6,10 @@ package timespan
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/period"
-	"time"
 )
 
 const minusOneNano time.Duration = -1

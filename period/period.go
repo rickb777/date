@@ -86,7 +86,7 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
 // Any time duration that spans more than ± 3276 hours will be approximated by assuming that there
-// are 24 hours per day, 30.4375 per month and 365.25 days per year.
+// are 24 hours per day, 30.4375 per month and 365.2425 days per year.
 func NewOf(duration time.Duration) (p Period, precise bool) {
 	var sign int16 = 1
 	d := duration
@@ -203,11 +203,29 @@ func (period Period) IsZero() bool {
 	return period == Period{}
 }
 
+// IsPositive returns true if any field is greater than zero. By design, this also implies that
+// all the other fields are greater than or equal to zero.
+func (period Period) IsPositive() bool {
+	return period.years > 0 || period.months > 0 || period.days > 0 ||
+		period.hours > 0 || period.minutes > 0 || period.seconds > 0
+}
+
 // IsNegative returns true if any field is negative. By design, this also implies that
-// all the fields are negative or zero.
+// all the other fields are negative or zero.
 func (period Period) IsNegative() bool {
 	return period.years < 0 || period.months < 0 || period.days < 0 ||
 		period.hours < 0 || period.minutes < 0 || period.seconds < 0
+}
+
+// Sign returns +1 for positive periods and -1 for negative periods. If the period is zero, it returns zero.
+func (period Period) Sign() int {
+	if period.IsZero() {
+		return 0
+	}
+	if period.IsNegative() {
+		return -1
+	}
+	return 1
 }
 
 // OnlyYMD returns a new Period with only the year, month and day fields. The hour,
@@ -279,14 +297,6 @@ func (period Period) Scale(factor float32) Period {
 	ss := int64(float32(period.seconds) * factor)
 
 	return (&period64{y, m, d, hh, mm, ss, false}).normalise64(true).toPeriod()
-}
-
-// Sign returns +1 for positive periods and -1 for negative periods.
-func (period Period) Sign() int {
-	if period.years < 0 || period.months < 0 || period.days < 0 || period.hours < 0 || period.minutes < 0 || period.seconds < 0 {
-		return -1
-	}
-	return 1
 }
 
 // Years gets the whole number of years in the period.
@@ -385,11 +395,28 @@ func (period Period) SecondsFloat() float32 {
 	return float32(period.seconds) / 10
 }
 
+// AddTo adds the period to a time, returning the result.
+// A flag is also returned that is true when the conversion was precise and false otherwise.
+//
+// When the period specifies hours, minutes and seconds only, the result is precise.
+// Also, when the period specifies whole years, months and days (i.e. without fractions), the
+// result is precise. However, when years, months or days contains fractions, the result
+// is only an approximation (it assumes that all days are 24 hours and every year is 365.2425 days).
+func (period Period) AddTo(t time.Time) (time.Time, bool) {
+	d, precise := period.Duration()
+	if !precise {
+		return t.Add(d), false
+	}
+
+	stE3 := totalSecondsE3(period)
+	return t.AddDate(period.Years(), period.Months(), period.Days()).Add(stE3 * time.Millisecond), true
+}
+
 // DurationApprox converts a period to the equivalent duration in nanoseconds.
 // When the period specifies hours, minutes and seconds only, the result is precise.
 // however, when the period specifies years, months and days, it is impossible to be precise
 // because the result may depend on knowing date and timezone information, so the duration
-// is estimated on the basis of a year being 365.25 days and a month being
+// is estimated on the basis of a year being 365.2425 days and a month being
 // 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) DurationApprox() time.Duration {
 	d, _ := period.Duration()
@@ -398,20 +425,26 @@ func (period Period) DurationApprox() time.Duration {
 
 // Duration converts a period to the equivalent duration in nanoseconds.
 // A flag is also returned that is true when the conversion was precise and false otherwise.
+//
 // When the period specifies hours, minutes and seconds only, the result is precise.
 // however, when the period specifies years, months and days, it is impossible to be precise
 // because the result may depend on knowing date and timezone information, so the duration
-// is estimated on the basis of a year being 365.25 days and a month being
+// is estimated on the basis of a year being 365.2425 days and a month being
 // 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
 	tdE6 := time.Duration(totalDaysApproxE7(period) * 8640)
+	stE3 := totalSecondsE3(period)
+	return tdE6*time.Microsecond + stE3*time.Millisecond, tdE6 == 0
+}
+
+func totalSecondsE3(period Period) time.Duration {
+	// remember that the fields are all fixed-point 1E1
+	// and these are divided by 1E1
 	hhE3 := time.Duration(period.hours) * 360000
 	mmE3 := time.Duration(period.minutes) * 6000
 	ssE3 := time.Duration(period.seconds) * 100
-	//fmt.Printf("y %d, m %d, d %d, hh %d, mm %d, ss %d\n", ydE6, mdE6, ddE6, hhE3, mmE3, ssE3)
-	stE3 := hhE3 + mmE3 + ssE3
-	return tdE6*time.Microsecond + stE3*time.Millisecond, tdE6 == 0
+	return hhE3 + mmE3 + ssE3
 }
 
 func totalDaysApproxE7(period Period) int64 {
@@ -423,7 +456,7 @@ func totalDaysApproxE7(period Period) int64 {
 }
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
-// a year is 365.25 days and a month is 1/12 of that. Whole multiples of 24 hours are also included
+// a year is 365.2425 days and a month is 1/12 of that. Whole multiples of 24 hours are also included
 // in the calculation.
 func (period Period) TotalDaysApprox() int {
 	pn := period.Normalise(false)
@@ -433,7 +466,7 @@ func (period Period) TotalDaysApprox() int {
 }
 
 // TotalMonthsApprox gets the approximate total number of months in the period. The days component
-// is included by approximately assumes a year is 365.25 days and a month is 1/12 of that.
+// is included by approximation, assuming a year is 365.2425 days and a month is 1/12 of that.
 // Whole multiples of 24 hours are also included in the calculation.
 func (period Period) TotalMonthsApprox() int {
 	pn := period.Normalise(false)

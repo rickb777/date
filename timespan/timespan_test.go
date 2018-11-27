@@ -5,9 +5,10 @@
 package timespan
 
 import (
-	"github.com/rickb777/date"
 	"testing"
 	"time"
+
+	"github.com/rickb777/date"
 )
 
 const zero time.Duration = 0
@@ -186,7 +187,7 @@ func TestTSMarshalText(t *testing.T) {
 		exp      string
 	}{
 		{t0, time.Hour, "20150214T101314Z/PT1H"},
-		{t1, 2*time.Hour, "20150627T101315Z/PT2H"},
+		{t1, 2 * time.Hour, "20150627T101315Z/PT2H"},
 		{t0.In(berlin), time.Minute, "20150214T111314Z/PT1M"}, // UTC+1
 		{t1.In(berlin), time.Second, "20150627T121315Z/PT1S"}, // UTC+2
 	}

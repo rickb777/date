@@ -9,11 +9,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/rickb777/date"
-	"github.com/rickb777/date/clock"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/rickb777/date"
+	"github.com/rickb777/date/clock"
 )
 
 func printPair(a string, b interface{}) {

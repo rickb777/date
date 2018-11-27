@@ -7,8 +7,9 @@ package period
 import (
 	"bytes"
 	"fmt"
-	"github.com/rickb777/plural"
 	"strings"
+
+	"github.com/rickb777/plural"
 )
 
 // Format converts the period to human-readable form using the default localisation.
