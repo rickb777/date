@@ -225,6 +225,7 @@ func TestPeriodAddToTime(t *testing.T) {
 		result  time.Time
 		precise bool
 	}{
+		// precise cases
 		{"P0D", t0, true},
 		{"PT1S", t0.Add(sec), true},
 		{"PT0.1S", t0.Add(100 * ms), true},
@@ -236,16 +237,20 @@ func TestPeriodAddToTime(t *testing.T) {
 		{"PT1H", t0.Add(hr), true},
 		{"PT0.1H", t0.Add(6 * min), true},
 		{"PT3276H", t0.Add(3276 * hr), true},
-		{"P1D", t0.Add(24 * hr), false},
+		{"P1D", t0.AddDate(0, 0, 1), true},
+		{"P3276D", t0.AddDate(0, 0, 3276), true},
+		{"P1M", t0.AddDate(0, 1, 0), true},
+		{"P3276M", t0.AddDate(0, 3276, 0), true},
+		{"P1Y", t0.AddDate(1, 0, 0), true},
+		{"-P1Y", t0.AddDate(-1, 0, 0), true},
+		{"P3276Y", t0.AddDate(3276, 0, 0), true},   // near the upper limit of range
+		{"-P3276Y", t0.AddDate(-3276, 0, 0), true}, // near the lower limit of range
+		// approximate cases
 		{"P0.1D", t0.Add(144 * min), false},
-		{"P3276D", t0.Add(3276 * 24 * hr), false},
-		{"P1M", t0.Add(oneMonthApprox), false},
+		{"-P0.1D", t0.Add(-144 * min), false},
 		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
-		{"P3276M", t0.Add(3276 * oneMonthApprox), false},
-		{"P1Y", t0.Add(oneYearApprox), false},
-		{"-P1Y", t0.Add(-oneYearApprox), false},
-		{"P3276Y", t0.Add(3276 * oneYearApprox), false},   // near the upper limit of range
-		{"-P3276Y", t0.Add(-3276 * oneYearApprox), false}, // near the lower limit of range
+		{"P0.1Y", t0.Add(oneYearApprox / 10), false},
+		{"-P0.1Y0.1M0.1D", t0.Add(-(oneYearApprox / 10) - (oneMonthApprox / 10) - (144 * min)), false},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
@@ -254,7 +259,7 @@ func TestPeriodAddToTime(t *testing.T) {
 			t.Errorf("%d: AddTo(t) == %s %v, want %s for %s", i, t1, prec, c.result, c.value)
 		}
 		if prec != c.precise {
-			t.Errorf("%d: Duration() == %s %v, want %v for %s", i, t1, prec, c.precise, c.value)
+			t.Errorf("%d: AddTo(t) == %s %v, want %v for %s", i, t1, prec, c.precise, c.value)
 		}
 	}
 }

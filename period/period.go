@@ -403,13 +403,19 @@ func (period Period) SecondsFloat() float32 {
 // result is precise. However, when years, months or days contains fractions, the result
 // is only an approximation (it assumes that all days are 24 hours and every year is 365.2425 days).
 func (period Period) AddTo(t time.Time) (time.Time, bool) {
-	d, precise := period.Duration()
-	if !precise {
-		return t.Add(d), false
+	wholeYears := (period.years % 10) == 0
+	wholeMonths := (period.months % 10) == 0
+	wholeDays := (period.days % 10) == 0
+
+	if wholeYears && wholeMonths && wholeDays {
+		// in this case, time.AddDate provides an exact solution
+		stE3 := totalSecondsE3(period)
+		t1 := t.AddDate(int(period.years/10), int(period.months/10), int(period.days/10))
+		return t1.Add(stE3 * time.Millisecond), true
 	}
 
-	stE3 := totalSecondsE3(period)
-	return t.AddDate(period.Years(), period.Months(), period.Days()).Add(stE3 * time.Millisecond), true
+	d, precise := period.Duration()
+	return t.Add(d), precise
 }
 
 // DurationApprox converts a period to the equivalent duration in nanoseconds.
