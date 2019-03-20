@@ -18,3 +18,5 @@ for d in clock period timespan view; do
   go tool cover -func=$d.out
   [ -z "$COVERALLS_TOKEN" ] || goveralls -coverprofile=$d.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 done
+
+go install ./datetool

@@ -9,57 +9,90 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-	"strings"
-
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/clock"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+	"os"
+	"strconv"
 )
 
-func printPair(a string, b interface{}) {
-	fmt.Printf("%-12s %12v\n", a, b)
+func usage() {
+	fmt.Printf("Usage: %s [-t] number | date | time\n\n", os.Args[0])
+	fmt.Printf(" -t:    terse output\n")
+	fmt.Printf(" date:  [+-]yyyy/mm/dd | yyyy.mm.dd | dd/mm/yyyy | dd.mm.yyyy\n")
+	fmt.Printf(" time:  e.g. 11:15:20 | 2:45pm | 1:15:10.101\n")
+	os.Exit(0)
 }
 
-func printOneDate(s string, d date.Date, err error) {
-	if err != nil {
-		printPair(s, err.Error())
+var titled = false
+var terse = false
+var success = false
+var printer = message.NewPrinter(language.English)
+
+func sprintf(num interface{}) string {
+	if terse {
+		return fmt.Sprintf("%d", num)
 	} else {
-		printPair(s, d.Sub(date.Date{}))
+		return printer.Sprintf("%d", num)
 	}
 }
 
-func printOneClock(s string, c clock.Clock, err error) {
-	if err != nil {
-		printPair(s, err.Error())
-	} else {
-		printPair(s, int32(c))
+func title() {
+	if !terse && !titled {
+		titled = true
+		fmt.Printf("%-15s %-15s %-15s %s\n", "input", "number", "date", "clock")
+		fmt.Printf("%-15s %-15s %-15s %s\n", "-----", "------", "----", "-----")
 	}
 }
 
 func printArg(arg string) {
-	d := date.Date{}
+
+	i, err := strconv.ParseInt(arg, 10, 64)
+	if err == nil {
+		title()
+		d := date.NewOfDays(date.PeriodOfDays(i))
+		c := clock.Clock(i)
+		fmt.Printf("%-15s %-15s %-15s %s\n", arg, sprintf(i), d, c)
+		return
+	}
 
 	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
-		printPair(arg, d.Sub(date.Date{}))
-	} else if strings.Index(arg, ":") == 2 {
-		c, err := clock.Parse(arg)
-		printOneClock(arg, c, err)
-	} else {
-		i, err := strconv.Atoi(arg)
-		if err == nil {
-			d = d.Add(date.PeriodOfDays(i))
-			fmt.Printf("%-12s %12s  %s\n", arg, d, clock.Clock(i))
-		} else {
-			printPair(arg, err)
-		}
+		title()
+		fmt.Printf("%-15s %-15s %s\n", arg, sprintf(d.DaysSinceEpoch()), d)
+		success = true
+	}
+
+	c, err := clock.Parse(arg)
+	if err == nil {
+		title()
+		fmt.Printf("%-15s %-15s %-15s %s\n", arg, sprintf(c), "", c)
+		success = true
 	}
 }
 
 func main() {
 	argsWithoutProg := os.Args[1:]
+	if len(argsWithoutProg) == 0 {
+		usage()
+	}
+
+	if len(argsWithoutProg) > 0 && argsWithoutProg[0] == "-t" {
+		terse = true
+		argsWithoutProg = argsWithoutProg[1:]
+	}
+
 	for _, arg := range argsWithoutProg {
 		printArg(arg)
+	}
+
+	if !success {
+		usage()
+	}
+
+	if titled {
+		fmt.Printf("\n# dates are counted using days since 1st Jan 1970\n")
+		fmt.Printf("# clock operates via milliseconds since midnight\n")
 	}
 }
