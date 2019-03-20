@@ -54,6 +54,7 @@ func printArg(arg string) {
 		d := date.NewOfDays(date.PeriodOfDays(i))
 		c := clock.Clock(i)
 		fmt.Printf("%-15s %-15s %-15s %s\n", arg, sprintf(i), d, c)
+		success = true
 		return
 	}
 
