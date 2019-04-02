@@ -41,8 +41,8 @@ func sprintf(num interface{}) string {
 func title() {
 	if !terse && !titled {
 		titled = true
-		fmt.Printf("%-15s %-15s %-15s %s\n", "input", "number", "date", "clock")
-		fmt.Printf("%-15s %-15s %-15s %s\n", "-----", "------", "----", "-----")
+		fmt.Printf("%-15s %-15s %-15s %s\n", "input", "number", "clock", "date")
+		fmt.Printf("%-15s %-15s %-15s %s\n", "-----", "------", "-----", "----")
 	}
 }
 
@@ -53,7 +53,7 @@ func printArg(arg string) {
 		title()
 		d := date.NewOfDays(date.PeriodOfDays(i))
 		c := clock.Clock(i)
-		fmt.Printf("%-15s %-15s %-15s %s\n", arg, sprintf(i), d, c)
+		fmt.Printf("%-15s %-15s %-15s %-12s %s\n", arg, sprintf(i), c, d, d.Weekday())
 		success = true
 		return
 	}
@@ -61,14 +61,14 @@ func printArg(arg string) {
 	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
 		title()
-		fmt.Printf("%-15s %-15s %s\n", arg, sprintf(d.DaysSinceEpoch()), d)
+		fmt.Printf("%-15s %-15s %15s %-12s %s\n", arg, sprintf(d.DaysSinceEpoch()), "", d, d.Weekday())
 		success = true
 	}
 
 	c, err := clock.Parse(arg)
 	if err == nil {
 		title()
-		fmt.Printf("%-15s %-15s %-15s %s\n", arg, sprintf(c), "", c)
+		fmt.Printf("%-15s %-15s %s\n", arg, sprintf(c), c)
 		success = true
 	}
 }
@@ -93,7 +93,7 @@ func main() {
 	}
 
 	if titled {
-		fmt.Printf("\n# dates are counted using days since 1st Jan 1970\n")
+		fmt.Printf("\n# dates are counted using days since Thursday 1st Jan 1970\n")
 		fmt.Printf("# clock operates via milliseconds since midnight\n")
 	}
 }
