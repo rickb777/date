@@ -13,7 +13,8 @@ import (
 
 // These methods allow Date and PeriodOfDays to be fields stored in an
 // SQL database by implementing the database/sql/driver interfaces.
-// The underlying column type is simply an integer.
+// The underlying column type can be an integer (period of days since the epoch),
+// a string, or a DATE.
 
 // Scan parses some value. It implements sql.Scanner,
 // https://golang.org/pkg/database/sql/#Scanner
@@ -29,24 +30,31 @@ func (d *Date) Scan(value interface{}) (err error) {
 }
 
 func (d *Date) scanAny(value interface{}) (err error) {
-	var n int64
 	err = nil
-	switch value.(type) {
+	switch v := value.(type) {
 	case int64:
-		*d = Date{PeriodOfDays(value.(int64))}
+		*d = Date{PeriodOfDays(v)}
 	case []byte:
-		n, err = strconv.ParseInt(string(value.([]byte)), 10, 64)
-		*d = Date{PeriodOfDays(n)}
+		return d.scanString(string(v))
 	case string:
-		n, err = strconv.ParseInt(value.(string), 10, 64)
-		*d = Date{PeriodOfDays(n)}
+		return d.scanString(v)
 	case time.Time:
-		*d = NewAt(value.(time.Time))
+		*d = NewAt(v)
 	default:
 		err = fmt.Errorf("%T %+v is not a meaningful date", value, value)
 	}
 
-	return
+	return err
+}
+
+func (d *Date) scanString(value string) (err error) {
+	n, err := strconv.ParseInt(value, 10, 64)
+	if err == nil {
+		*d = Date{PeriodOfDays(n)}
+		return nil
+	}
+	*d, err = AutoParse(value)
+	return err
 }
 
 func (d *Date) scanInt(value interface{}) (err error) {
@@ -62,9 +70,21 @@ func (d *Date) scanInt(value interface{}) (err error) {
 
 // Value converts the value to an int64. It implements driver.Valuer,
 // https://golang.org/pkg/database/sql/driver/#Valuer
-func (d Date) Value() (driver.Value, error) {
+func (d Date) ConvertValue(v interface{}) (driver.Value, error) {
+	switch v.(type) {
+	case string, []byte:
+		return d.String(), nil
+	case time.Time:
+		return d.UTC(), nil
+	}
 	return int64(d.day), nil
 }
+
+// Value converts the value to an int64. It implements driver.Valuer,
+// https://golang.org/pkg/database/sql/driver/#Valuer
+//func (d Date) Value() (driver.Value, error) {
+//	return int64(d.day), nil
+//}
 
 // DisableTextStorage reduces the Scan method so that only integers are handled.
 // Normally, database types int64, []byte, string and time.Time are supported.
