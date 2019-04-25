@@ -23,9 +23,6 @@ func (d *Date) Scan(value interface{}) (err error) {
 		return nil
 	}
 
-	if DisableTextStorage {
-		return d.scanInt(value)
-	}
 	return d.scanAny(value)
 }
 
@@ -57,37 +54,50 @@ func (d *Date) scanString(value string) (err error) {
 	return err
 }
 
-func (d *Date) scanInt(value interface{}) (err error) {
-	err = nil
-	switch value.(type) {
-	case int64:
-		*d = Date{PeriodOfDays(value.(int64))}
-	default:
-		err = fmt.Errorf("%T %+v is not a meaningful date", value, value)
-	}
-	return
-}
-
 // Value converts the value to an int64. It implements driver.Valuer,
 // https://golang.org/pkg/database/sql/driver/#Valuer
-func (d Date) ConvertValue(v interface{}) (driver.Value, error) {
-	switch v.(type) {
-	case string, []byte:
-		return d.String(), nil
-	case time.Time:
-		return d.UTC(), nil
-	}
+func (d Date) Value() (driver.Value, error) {
 	return int64(d.day), nil
 }
 
+//-------------------------------------------------------------------------------------------------
+
+// DateString alters Date to make database storage use a string column, or
+// a similar derived column such as SQL DATE. (Otherwise, Date is stored as
+// an integer).
+type DateString Date
+
+// Date provides a simple fluent type conversion to the underlying type.
+func (d DateString) Date() Date {
+	return Date(d)
+}
+
+// DateString provides a simple fluent type conversion from the underlying type.
+func (d Date) DateString() DateString {
+	return DateString(d)
+}
+
+// Scan parses some value. It implements sql.Scanner,
+// https://golang.org/pkg/database/sql/#Scanner
+func (d *DateString) Scan(value interface{}) (err error) {
+	if value == nil {
+		return nil
+	}
+	return (*Date)(d).Scan(value)
+}
+
 // Value converts the value to an int64. It implements driver.Valuer,
 // https://golang.org/pkg/database/sql/driver/#Valuer
-//func (d Date) Value() (driver.Value, error) {
-//	return int64(d.day), nil
-//}
+func (d DateString) Value() (driver.Value, error) {
+	return d.Date().String(), nil
+}
+
+//-------------------------------------------------------------------------------------------------
 
 // DisableTextStorage reduces the Scan method so that only integers are handled.
 // Normally, database types int64, []byte, string and time.Time are supported.
 // When set true, only int64 is supported; this mode allows optimisation of SQL
 // result processing and would only be used during development.
+//
+// Deprecated: this is no longer used.
 var DisableTextStorage = false
