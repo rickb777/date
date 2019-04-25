@@ -147,6 +147,6 @@ func parseDecimalFixedPoint(s, original string) (int16, error) {
 		s = s + "0"
 	}
 
-	n, e := strconv.ParseInt(s, 10, 16)
+	n, e := strconv.ParseInt(s, 10, 32)
 	return int16(n), e
 }
