@@ -660,7 +660,8 @@ func (p *period64) rippleUp(precise bool) *period64 {
 	p.hours = p.hours + (p.minutes/600)*10
 	p.minutes = p.minutes % 600
 
-	if !precise || p.hours > 32670-(32670/60)-(32670/3600) {
+	// 32670-(32670/60)-(32670/3600) = 32760 - 546 - 9.1 = 32204.9
+	if !precise || p.hours > 32204 {
 		p.days += (p.hours / 240) * 10
 		p.hours = p.hours % 240
 	}

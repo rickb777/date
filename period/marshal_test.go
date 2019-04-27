@@ -51,8 +51,8 @@ func TestPeriodJSONMarshalling(t *testing.T) {
 		value Period
 		want  string
 	}{
-		{New(-1111, -123, -3, -11, -59, -59), `"-P1111Y123M3DT11H59M59S"`},
-		{New(-1, -12, -31, -5, -4, -20), `"-P1Y12M31DT5H4M20S"`},
+		{New(-1111, -4, -3, -11, -59, -59), `"-P1111Y4M3DT11H59M59S"`},
+		{New(-1, -10, -31, -5, -4, -20), `"-P1Y10M31DT5H4M20S"`},
 		{New(0, 0, 0, 0, 0, 0), `"P0D"`},
 		{New(0, 0, 0, 0, 0, 1), `"PT1S"`},
 		{New(0, 0, 0, 0, 1, 0), `"PT1M"`},
@@ -84,8 +84,8 @@ func TestPeriodTextMarshalling(t *testing.T) {
 		value Period
 		want  string
 	}{
-		{New(-1111, -123, -3, -11, -59, -59), "-P1111Y123M3DT11H59M59S"},
-		{New(-1, -12, -31, -5, -4, -20), "-P1Y12M31DT5H4M20S"},
+		{New(-1111, -4, -3, -11, -59, -59), "-P1111Y4M3DT11H59M59S"},
+		{New(-1, -9, -31, -5, -4, -20), "-P1Y9M31DT5H4M20S"},
 		{New(0, 0, 0, 0, 0, 0), "P0D"},
 		{New(0, 0, 0, 0, 0, 1), "PT1S"},
 		{New(0, 0, 0, 0, 1, 0), "PT1M"},

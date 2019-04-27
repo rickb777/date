@@ -36,10 +36,10 @@ func Parse(period string) (Period, error) {
 		return Period{}, nil
 	}
 
+	result := period64{}
 	pcopy := period
-	negate := false
 	if pcopy[0] == '-' {
-		negate = true
+		result.neg = true
 		pcopy = pcopy[1:]
 	} else if pcopy[0] == '+' {
 		pcopy = pcopy[1:]
@@ -49,8 +49,6 @@ func Parse(period string) (Period, error) {
 		return Period{}, fmt.Errorf("expected 'P' period mark at the start: %s", period)
 	}
 	pcopy = pcopy[1:]
-
-	result := Period{}
 
 	st := parseState{period, pcopy, false, nil}
 	t := strings.IndexByte(pcopy, 'T')
@@ -101,10 +99,8 @@ func Parse(period string) (Period, error) {
 	if !st.ok {
 		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
 	}
-	if negate {
-		return result.Negate(), nil
-	}
-	return result, nil
+
+	return result.normalise64(true).toPeriod(), nil
 }
 
 type parseState struct {
@@ -113,9 +109,9 @@ type parseState struct {
 	err           error
 }
 
-func parseField(st parseState, mark byte) (int16, parseState) {
+func parseField(st parseState, mark byte) (int64, parseState) {
 	//fmt.Printf("%c %#v\n", mark, st)
-	r := int16(0)
+	r := int64(0)
 	m := strings.IndexByte(st.pcopy, mark)
 	if m > 0 {
 		r, st.err = parseDecimalFixedPoint(st.pcopy[:m], st.period)
@@ -129,7 +125,7 @@ func parseField(st parseState, mark byte) (int16, parseState) {
 }
 
 // Fixed-point three decimal places
-func parseDecimalFixedPoint(s, original string) (int16, error) {
+func parseDecimalFixedPoint(s, original string) (int64, error) {
 	//was := s
 	dec := strings.IndexByte(s, '.')
 	if dec < 0 {
@@ -147,6 +143,5 @@ func parseDecimalFixedPoint(s, original string) (int16, error) {
 		s = s + "0"
 	}
 
-	n, e := strconv.ParseInt(s, 10, 32)
-	return int16(n), e
+	return strconv.ParseInt(s, 10, 64)
 }

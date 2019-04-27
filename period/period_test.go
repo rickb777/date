@@ -66,6 +66,19 @@ func TestParsePeriod(t *testing.T) {
 		{"P1Y2.5M", Period{10, 25, 0, 0, 0, 0}},
 		{"P1Y2.15M", Period{10, 21, 0, 0, 0, 0}},
 		{"P1Y2.125M", Period{10, 21, 0, 0, 0, 0}},
+		{"P3276.7Y", Period{32767, 0, 0, 0, 0, 0}},
+		{"-P3276.7Y", Period{-32767, 0, 0, 0, 0, 0}},
+		// largest possible number of seconds normalised only in hours, mins, sec
+		{"PT11592000S", Period{0, 0, 0, 32200, 0, 0}},
+		{"-PT11592000S", Period{0, 0, 0, -32200, 0, 0}},
+		{"PT11595599S", Period{0, 0, 0, 32200, 590, 590}},
+		// largest possible number of seconds normalised only in days, hours, mins, sec
+		{"PT283046400S", Period{0, 0, 32760, 0, 0, 0}},
+		{"-PT283046400S", Period{0, 0, -32760, 0, 0, 0}},
+		{"PT283132799S", Period{0, 0, 32760, 230, 590, 590}},
+		// largest possible number of months
+		{"P39312M", Period{32760, 0, 0, 0, 0, 0}},
+		{"-P39312M", Period{-32760, 0, 0, 0, 0, 0}},
 	}
 	for i, c := range cases {
 		d := MustParse(c.value)
@@ -218,7 +231,7 @@ func TestPeriodAddToTime(t *testing.T) {
 	const hr = 60 * min
 
 	// A conveniently round number (14 July 2017 @ 2:40am UTC)
-	var t0 = time.Unix(1500000000, 0)
+	var t0 = time.Unix(1500000000, 0).UTC()
 
 	cases := []struct {
 		value   string
@@ -250,16 +263,17 @@ func TestPeriodAddToTime(t *testing.T) {
 		{"-P0.1D", t0.Add(-144 * min), false},
 		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
 		{"P0.1Y", t0.Add(oneYearApprox / 10), false},
-		{"-P0.1Y0.1M0.1D", t0.Add(-(oneYearApprox / 10) - (oneMonthApprox / 10) - (144 * min)), false},
+		// after normalisation, this period is one month and 9.2 days
+		{"-P0.1Y0.1M0.1D", t0.Add(-oneMonthApprox - (13248 * min)), false},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
 		t1, prec := p.AddTo(t0)
-		if t1 != c.result {
-			t.Errorf("%d: AddTo(t) == %s %v, want %s for %s", i, t1, prec, c.result, c.value)
+		if !t1.Equal(c.result) {
+			t.Errorf("%d: %s.AddTo(t) == %s %v, want %s", i, c.value, t1, prec, c.result)
 		}
 		if prec != c.precise {
-			t.Errorf("%d: AddTo(t) == %s %v, want %v for %s", i, t1, prec, c.precise, c.value)
+			t.Errorf("%d: %s.AddTo(t) == %s %v, want %v", i, c.value, t1, prec, c.precise)
 		}
 	}
 }
@@ -280,7 +294,9 @@ func TestPeriodToDuration(t *testing.T) {
 		{"PT3276M", 3276 * time.Minute, true},
 		{"PT1H", 3600 * time.Second, true},
 		{"PT0.1H", 360 * time.Second, true},
-		{"PT3276H", 3276 * time.Hour, true},
+		{"PT3220H", 3220 * time.Hour, true},
+		{"PT3221H", 3221 * time.Hour, false}, // threshold of normalisation wrapping
+		// days, months and years conversions are never precise
 		{"P1D", 24 * time.Hour, false},
 		{"P0.1D", 144 * time.Minute, false},
 		{"P3276D", 3276 * 24 * time.Hour, false},
