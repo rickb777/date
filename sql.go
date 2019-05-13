@@ -68,8 +68,8 @@ func (d Date) Value() (driver.Value, error) {
 type DateString Date
 
 // Date provides a simple fluent type conversion to the underlying type.
-func (d DateString) Date() Date {
-	return Date(d)
+func (ds DateString) Date() Date {
+	return Date(ds)
 }
 
 // DateString provides a simple fluent type conversion from the underlying type.
@@ -79,17 +79,17 @@ func (d Date) DateString() DateString {
 
 // Scan parses some value. It implements sql.Scanner,
 // https://golang.org/pkg/database/sql/#Scanner
-func (d *DateString) Scan(value interface{}) (err error) {
+func (ds *DateString) Scan(value interface{}) (err error) {
 	if value == nil {
 		return nil
 	}
-	return (*Date)(d).Scan(value)
+	return (*Date)(ds).Scan(value)
 }
 
 // Value converts the value to an int64. It implements driver.Valuer,
 // https://golang.org/pkg/database/sql/driver/#Valuer
-func (d DateString) Value() (driver.Value, error) {
-	return d.Date().String(), nil
+func (ds DateString) Value() (driver.Value, error) {
+	return ds.Date().String(), nil
 }
 
 //-------------------------------------------------------------------------------------------------

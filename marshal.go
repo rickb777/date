@@ -33,6 +33,16 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (ds DateString) MarshalBinary() ([]byte, error) {
+	return Date(ds).MarshalBinary()
+}
+
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+func (ds *DateString) UnmarshalBinary(data []byte) error {
+	return (*Date)(ds).UnmarshalBinary(data)
+}
+
 // MarshalText implements the encoding.TextMarshaler interface.
 // The date is given in ISO 8601 extended format (e.g. "2006-01-02").
 // If the year of the date falls outside the [0,9999] range, this format
@@ -54,4 +64,23 @@ func (d *Date) UnmarshalText(data []byte) (err error) {
 		d.day = u.day
 	}
 	return err
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+// The date is given in ISO 8601 extended format (e.g. "2006-01-02").
+// If the year of the date falls outside the [0,9999] range, this format
+// produces an expanded year representation with possibly extra year digits
+// beyond the prescribed four-digit minimum and with a + or - sign prefix
+// (e.g. , "+12345-06-07", "-0987-06-05").
+func (ds DateString) MarshalText() ([]byte, error) {
+	return Date(ds).MarshalText()
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+// The date is expected to be in ISO 8601 extended format
+// (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
+// the year must use at least 4 digits and if outside the [0,9999] range
+// must be prefixed with a + or - sign.
+func (ds *DateString) UnmarshalText(data []byte) (err error) {
+	return (*Date)(ds).UnmarshalText(data)
 }

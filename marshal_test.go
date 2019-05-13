@@ -13,9 +13,6 @@ import (
 )
 
 func TestGobEncoding(t *testing.T) {
-	var b bytes.Buffer
-	encoder := gob.NewEncoder(&b)
-	decoder := gob.NewDecoder(&b)
 	cases := []Date{
 		New(-11111, time.February, 3),
 		New(-1, time.December, 31),
@@ -26,6 +23,10 @@ func TestGobEncoding(t *testing.T) {
 		New(12345, time.June, 7),
 	}
 	for _, c := range cases {
+		var b bytes.Buffer
+		encoder := gob.NewEncoder(&b)
+		decoder := gob.NewDecoder(&b)
+
 		var d Date
 		err := encoder.Encode(&c)
 		if err != nil {
@@ -36,6 +37,19 @@ func TestGobEncoding(t *testing.T) {
 				t.Errorf("Gob(%v) decode error %v", c, err)
 			} else if d != c {
 				t.Errorf("Gob(%v) decode got %v", c, d)
+			}
+		}
+
+		ds := c.DateString()
+		err = encoder.Encode(&ds)
+		if err != nil {
+			t.Errorf("Gob(%v) encode error %v", c, err)
+		} else {
+			err = decoder.Decode(&ds)
+			if err != nil {
+				t.Errorf("Gob(%v) decode error %v", c, err)
+			} else if ds != c.DateString() {
+				t.Errorf("Gob(%v) decode got %v", c, ds)
 			}
 		}
 	}
@@ -56,17 +70,32 @@ func TestDateJSONMarshalling(t *testing.T) {
 	}
 	for _, c := range cases {
 		var d Date
-		bb, err := json.Marshal(c.value)
+		bb1, err := json.Marshal(c.value)
 		if err != nil {
 			t.Errorf("JSON(%v) marshal error %v", c, err)
-		} else if string(bb) != c.want {
-			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bb), c.want)
+		} else if string(bb1) != c.want {
+			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bb1), c.want)
 		} else {
-			err = json.Unmarshal(bb, &d)
+			err = json.Unmarshal(bb1, &d)
 			if err != nil {
 				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
 			} else if d != c.value {
 				t.Errorf("JSON(%v) unmarshal got %v", c.value, d)
+			}
+		}
+
+		var ds DateString
+		bb2, err := json.Marshal(c.value.DateString())
+		if err != nil {
+			t.Errorf("JSON(%v) marshal error %v", c, err)
+		} else if string(bb2) != c.want {
+			t.Errorf("JSON(%v) == %v, want %v", c.value.DateString(), string(bb2), c.want)
+		} else {
+			err = json.Unmarshal(bb2, &ds)
+			if err != nil {
+				t.Errorf("JSON(%v) unmarshal error %v", c.value.DateString(), err)
+			} else if ds != c.value.DateString() {
+				t.Errorf("JSON(%v) unmarshal got %v", c.value.DateString(), ds)
 			}
 		}
 	}
@@ -87,17 +116,32 @@ func TestDateTextMarshalling(t *testing.T) {
 	}
 	for _, c := range cases {
 		var d Date
-		bb, err := c.value.MarshalText()
+		bb1, err := c.value.MarshalText()
 		if err != nil {
 			t.Errorf("Text(%v) marshal error %v", c, err)
-		} else if string(bb) != c.want {
-			t.Errorf("Text(%v) == %v, want %v", c.value, string(bb), c.want)
+		} else if string(bb1) != c.want {
+			t.Errorf("Text(%v) == %v, want %v", c.value, string(bb1), c.want)
 		} else {
-			err = d.UnmarshalText(bb)
+			err = d.UnmarshalText(bb1)
 			if err != nil {
 				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
 			} else if d != c.value {
 				t.Errorf("Text(%v) unmarshal got %v", c.value, d)
+			}
+		}
+
+		var ds DateString
+		bb2, err := c.value.DateString().MarshalText()
+		if err != nil {
+			t.Errorf("Text(%v) marshal error %v", c, err)
+		} else if string(bb2) != c.want {
+			t.Errorf("Text(%v) == %v, want %v", c.value, string(bb2), c.want)
+		} else {
+			err = ds.UnmarshalText(bb2)
+			if err != nil {
+				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
+			} else if ds != c.value.DateString() {
+				t.Errorf("Text(%v) unmarshal got %v", c.value, ds)
 			}
 		}
 	}
@@ -116,16 +160,29 @@ func TestDateBinaryMarshalling(t *testing.T) {
 		{New(12345, time.June, 7)},
 	}
 	for _, c := range cases {
-		bb, err := c.value.MarshalBinary()
+		bb1, err := c.value.MarshalBinary()
 		if err != nil {
 			t.Errorf("Binary(%v) marshal error %v", c, err)
 		} else {
 			var d Date
-			err = d.UnmarshalBinary(bb)
+			err = d.UnmarshalBinary(bb1)
 			if err != nil {
 				t.Errorf("Binary(%v) unmarshal error %v", c.value, err)
 			} else if d != c.value {
 				t.Errorf("Binary(%v) unmarshal got %v", c.value, d)
+			}
+		}
+
+		bb2, err := c.value.MarshalBinary()
+		if err != nil {
+			t.Errorf("Binary(%v) marshal error %v", c, err)
+		} else {
+			var ds DateString
+			err = ds.UnmarshalBinary(bb2)
+			if err != nil {
+				t.Errorf("Binary(%v) unmarshal error %v", c.value, err)
+			} else if ds != c.value.DateString() {
+				t.Errorf("Binary(%v) unmarshal got %v", c.value, ds)
 			}
 		}
 	}
