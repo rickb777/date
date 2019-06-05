@@ -9,12 +9,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/rickb777/date"
 	"github.com/rickb777/date/clock"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"os"
-	"strconv"
 )
 
 func usage() {

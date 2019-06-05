@@ -249,9 +249,9 @@ func ParseRFC5545InLocation(text string, loc *time.Location) (TimeSpan, error) {
 	}
 
 	if rest[0] == 'P' {
-		pe, err := period.Parse(rest)
-		if err != nil {
-			return TimeSpan{}, fmt.Errorf("cannot parse period in %q: %s", text, err.Error())
+		pe, e2 := period.Parse(rest)
+		if e2 != nil {
+			return TimeSpan{}, fmt.Errorf("cannot parse period in %q: %s", text, e2.Error())
 		}
 
 		du, precise := pe.Duration()
