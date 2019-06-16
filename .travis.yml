@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - tip
+  - 1.12.6
 
 install:
   - go get -t -v ./...
