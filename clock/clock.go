@@ -83,6 +83,7 @@ func (c Clock) DurationSinceMidnight() time.Duration {
 
 // Add returns a new Clock offset from this clock specified hour, minute, second and millisecond.
 // The parameters can be negative.
+//
 // If required, use Mod24() to correct any overflow or underflow.
 func (c Clock) Add(h, m, s, ms int) Clock {
 	hx := Clock(h) * Hour
@@ -93,7 +94,10 @@ func (c Clock) Add(h, m, s, ms int) Clock {
 
 // AddDuration returns a new Clock offset from this clock by a duration.
 // The parameters can be negative.
+//
 // If required, use Mod24() to correct any overflow or underflow.
+//
+// AddDuration is also useful for adding period.Period values.
 func (c Clock) AddDuration(d time.Duration) Clock {
 	return c + Clock(d/time.Millisecond)
 }

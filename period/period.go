@@ -313,12 +313,18 @@ func (period Period) YearsFloat() float32 {
 
 // Months gets the whole number of months in the period.
 // The result is the number of months and does not include any other field.
+//
+// Note that after normalisation, whole multiple of 12 months are added to
+// the number of years, so the number of months will be reduced correspondingly.
 func (period Period) Months() int {
 	return int(period.MonthsFloat())
 }
 
 // MonthsFloat gets the number of months in the period.
 // The result is the number of months and does not include any other field.
+//
+// Note that after normalisation, whole multiple of 12 months are added to
+// the number of years, so the number of months will be reduced correspondingly.
 func (period Period) MonthsFloat() float32 {
 	return float32(period.months) / 10
 }
@@ -338,6 +344,9 @@ func (period Period) DaysFloat() float32 {
 // Weeks calculates the number of whole weeks from the number of days. If the result
 // would contain a fraction, it is truncated.
 // The result is the number of weeks and does not include any other field.
+//
+// Note that weeks are synthetic: they are internally represented using days.
+// See ModuloDays(), which returns the number of days excluding whole weeks.
 func (period Period) Weeks() int {
 	return int(period.days) / 70
 }
@@ -373,24 +382,36 @@ func (period Period) HoursFloat() float32 {
 
 // Minutes gets the whole number of minutes in the period.
 // The result is the number of minutes and does not include any other field.
+//
+// Note that after normalisation, whole multiple of 60 minutes are added to
+// the number of hours, so the number of minutes will be reduced correspondingly.
 func (period Period) Minutes() int {
 	return int(period.MinutesFloat())
 }
 
 // MinutesFloat gets the number of minutes in the period.
 // The result is the number of minutes and does not include any other field.
+//
+// Note that after normalisation, whole multiple of 60 minutes are added to
+// the number of hours, so the number of minutes will be reduced correspondingly.
 func (period Period) MinutesFloat() float32 {
 	return float32(period.minutes) / 10
 }
 
 // Seconds gets the whole number of seconds in the period.
 // The result is the number of seconds and does not include any other field.
+//
+// Note that after normalisation, whole multiple of 60 seconds are added to
+// the number of minutes, so the number of seconds will be reduced correspondingly.
 func (period Period) Seconds() int {
 	return int(period.SecondsFloat())
 }
 
 // SecondsFloat gets the number of seconds in the period.
 // The result is the number of seconds and does not include any other field.
+//
+// Note that after normalisation, whole multiple of 60 seconds are added to
+// the number of minutes, so the number of seconds will be reduced correspondingly.
 func (period Period) SecondsFloat() float32 {
 	return float32(period.seconds) / 10
 }
@@ -496,6 +517,8 @@ func (period Period) TotalMonthsApprox() int {
 // Additionally, in imprecise mode:
 // Multiples of 24 hours become days.
 // Multiples of approx. 30.4 days become months.
+//
+// Note that leap seconds are disregarded: every minute is assumed to have 60 seconds.
 func (period Period) Normalise(precise bool) Period {
 	const limit = 32670 - (32670 / 60)
 

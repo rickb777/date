@@ -24,6 +24,11 @@ func MustParse(value string) Period {
 //
 // In addition, a plus or minus sign can precede the period, e.g. "-P10D"
 //
+// The value is normalised, e.g. multiple of 12 months become years so "P24M"
+// is the same as "P2Y". However, this is done without loss of precision, so
+// for example whole numbers of days do not contribute to the months tally
+// because the number of days per month is variable.
+//
 // The zero value can be represented in several ways: all of the following
 // are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
 // The canonical zero is "P0D".
