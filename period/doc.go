@@ -23,7 +23,7 @@
 //
 // * "PT3H" is three hours.
 //
-// * "PT20M" is twnety minutes.
+// * "PT20M" is twenty minutes.
 //
 // * "PT30S" is thirty seconds.
 //
@@ -34,7 +34,7 @@
 // * "P2DT12H" is 2 days and 12 hours.
 //
 // Also, decimal fractions are supported to one decimal place. To comply with
-// the standard, only the last non-zero component is allowed to have a fraction).
+// the standard, only the last non-zero component is allowed to have a fraction.
 // For example
 //
 // * "P2.5Y" is 2.5 years.
