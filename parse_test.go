@@ -16,7 +16,7 @@ func TestAutoParse(t *testing.T) {
 		month time.Month
 		day   int
 	}{
-		{"31/12/1969", 1969, time.December, 31},
+		{" 31/12/1969 ", 1969, time.December, 31},
 		{"1969/12/31", 1969, time.December, 31},
 		{"1969.12.31", 1969, time.December, 31},
 		{"1969-12-31", 1969, time.December, 31},
@@ -30,12 +30,12 @@ func TestAutoParse(t *testing.T) {
 		{"2004-03-01", 2004, time.March, 1},
 		{"0000-01-01", 0, time.January, 1},
 		{"+0001-02-03", 1, time.February, 3},
-		{"+00019-03-04", 19, time.March, 4},
+		{" +00019-03-04 ", 19, time.March, 4},
 		{"0100-04-05", 100, time.April, 5},
 		{"2000-05-06", 2000, time.May, 6},
 		{"+5000000-08-09", 5000000, time.August, 9},
 		{"-0001-09-11", -1, time.September, 11},
-		{"-0019-10-12", -19, time.October, 12},
+		{" -0019-10-12 ", -19, time.October, 12},
 		{"-00100-11-13", -100, time.November, 13},
 		{"-02000-12-14", -2000, time.December, 14},
 		{"-30000-02-15", -30000, time.February, 15},
@@ -44,6 +44,7 @@ func TestAutoParse(t *testing.T) {
 		{"12340506", 1234, time.May, 6},
 		{"+12340506", 1234, time.May, 6},
 		{"-00191012", -19, time.October, 12},
+		{" -00191012 ", -19, time.October, 12},
 	}
 	for _, c := range cases {
 		d := MustAutoParse(c.value)
@@ -69,6 +70,9 @@ func TestAutoParse(t *testing.T) {
 		"+10-11-12",
 		"+100-02-03",
 		"-123-05-06",
+		"--",
+		"",
+		"  ",
 	}
 	for _, c := range badCases {
 		d, err := AutoParse(c)

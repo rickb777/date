@@ -5,6 +5,7 @@
 package date
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -33,12 +34,18 @@ func MustAutoParse(value string) Date {
 //
 // * dd/mm/yyyy | dd.mm.yyyy (or any similar pattern)
 //
+// * surrounding whitespace is ignored
+//
 func AutoParse(value string) (Date, error) {
 	abs := strings.TrimSpace(value)
+	if len(abs) == 0 {
+		return Date{}, errors.New("Date.AutoParse: cannot parse a blank string")
+	}
+
 	sign := ""
-	if value[0] == '+' || value[0] == '-' {
-		abs = value[1:]
-		sign = value[:1]
+	if abs[0] == '+' || abs[0] == '-' {
+		sign = abs[:1]
+		abs = abs[1:]
 	}
 
 	if len(abs) >= 10 {
@@ -97,7 +104,7 @@ func MustParseISO(value string) Date {
 // Background: https://en.wikipedia.org/wiki/ISO_8601#Dates
 func ParseISO(value string) (Date, error) {
 	if len(value) < 8 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s: incorrect length", value)
+		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
 	}
 
 	abs := value
@@ -119,12 +126,12 @@ func ParseISO(value string) (Date, error) {
 		fd1 = 6
 		fd2 = 8
 	} else if abs[fm2] != '-' {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s: incorrect syntax", value)
+		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax", value)
 	}
 	//fmt.Printf("%s %d %d %d %d %d\n", value, dash1, fm1, fm2, fd1, fd2)
 
 	if len(abs) != fd2 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %s: incorrect length", value)
+		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
 	}
 
 	year, err := parseField(value, abs[:dash1], "year", 4, -1)
@@ -153,11 +160,11 @@ func ParseISO(value string) (Date, error) {
 
 func parseField(value, field, name string, minLength, requiredLength int) (int, error) {
 	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %s: invalid %s", value, name)
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: invalid %s", value, name)
 	}
 	number, err := strconv.Atoi(field)
 	if err != nil {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %s: invalid %s", value, name)
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: invalid %s", value, name)
 	}
 	return number, nil
 }
