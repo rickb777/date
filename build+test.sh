@@ -1,5 +1,5 @@
 #!/bin/bash -e
-cd $(dirname $0)
+cd "$(dirname $0)"
 PATH=$HOME/go/bin:$PATH
 unset GOPATH
 export GO111MODULE=on
@@ -12,7 +12,7 @@ function v
 }
 
 if ! type -p goveralls; then
-  v go get github.com/mattn/goveralls
+  v go install github.com/mattn/goveralls
 fi
 
 #if ! type -p shadow; then
@@ -20,7 +20,7 @@ fi
 #fi
 
 if ! type -p goreturns; then
-  v go get github.com/sqs/goreturns
+  v go install github.com/sqs/goreturns
 fi
 
 echo date...

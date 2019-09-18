@@ -2,14 +2,14 @@
 # Developer tool to run the tests and obtain HTML coverage reports.
 
 DIR=$PWD
-DOT=$(dirname $0)
+DOT="$(dirname $0)"
 cd $DOT
 TOP=$PWD
 
 # install Goveralls if absent
 if ! type -p goveralls; then
-  echo go get github.com/mattn/goveralls
-  go get github.com/mattn/goveralls
+  echo go install github.com/mattn/goveralls
+  go install github.com/mattn/goveralls
 fi
 
 mkdir -p reports
