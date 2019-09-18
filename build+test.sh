@@ -15,9 +15,9 @@ if ! type -p goveralls; then
   v go install github.com/mattn/goveralls
 fi
 
-#if ! type -p shadow; then
-#  v go get golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
-#fi
+if ! type -p shadow; then
+  v go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
+fi
 
 if ! type -p goreturns; then
   v go install github.com/sqs/goreturns
@@ -39,7 +39,6 @@ v goreturns -l -w *.go */*.go
 
 v go vet ./...
 
-# shadow check fails in Travis
-#v go vet -vettool=$(type -p shadow) ./...
+v shadow ./...
 
 v go install ./datetool
