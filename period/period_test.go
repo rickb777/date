@@ -55,6 +55,7 @@ func TestParsePeriod(t *testing.T) {
 		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
 		{"PT30M", Period{0, 0, 0, 0, 300, 0}},
 		{"PT25S", Period{0, 0, 0, 0, 0, 250}},
+		{"PT30M67.6S", Period{0, 0, 0, 0, 310, 76}},
 		{"P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
 		{"+P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
 		{"-P3Y6M5W4DT12H40M5S", Period{-30, -60, -390, -120, -400, -50}},
@@ -522,14 +523,17 @@ func TestNewOf(t *testing.T) {
 	testNewOf(t, time.Hour+time.Minute+time.Second, Period{0, 0, 0, 10, 10, 10}, true)
 	testNewOf(t, 24*time.Hour+time.Minute+time.Second, Period{0, 0, 0, 240, 10, 10}, true)
 	testNewOf(t, 3276*time.Hour+59*time.Minute+59*time.Second, Period{0, 0, 0, 32760, 590, 590}, true)
+	testNewOf(t, 30*time.Minute+67*time.Second+600*time.Millisecond, Period{0, 0, 0, 0, 310, 76}, true)
 
 	// YMD tests: must be over 3276 hours (approx 4.5 months), otherwise HMS will take care of it
-	// first rollover: 3276 hours
+	// first rollover: >3276 hours
+	testNewOf(t, 3277*time.Hour, Period{0, 0, 1360, 130, 0, 0}, false)
 	testNewOf(t, 3288*time.Hour, Period{0, 0, 1370, 0, 0, 0}, false)
 	testNewOf(t, 3289*time.Hour, Period{0, 0, 1370, 10, 0, 0}, false)
-	testNewOf(t, 3277*time.Hour, Period{0, 0, 1360, 130, 0, 0}, false)
+	testNewOf(t, 24*3276*time.Hour, Period{0, 0, 32760, 0, 0, 0}, false)
 
-	// second rollover: 3276 days
+	// second rollover: >3276 days
+	testNewOf(t, 24*3277*time.Hour, Period{80, 110, 200, 0, 0, 0}, false)
 	testNewOf(t, 3277*oneDay, Period{80, 110, 200, 0, 0, 0}, false)
 	testNewOf(t, 3277*oneDay+time.Hour+time.Minute+time.Second, Period{80, 110, 200, 10, 0, 0}, false)
 	testNewOf(t, 36525*oneDay, Period{1000, 0, 0, 0, 0, 0}, false)
