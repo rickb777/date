@@ -75,6 +75,10 @@ func Parse(period string) (Period, error) {
 			return Period{}, fmt.Errorf("expected a number before the 'S' marker: %s", period)
 		}
 
+		if len(st.pcopy) != 0 {
+			return Period{}, fmt.Errorf("unexpected remaining components %s: %s", st.pcopy, period)
+		}
+
 		st.pcopy = pcopy[:t]
 	}
 
@@ -82,12 +86,10 @@ func Parse(period string) (Period, error) {
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'Y' marker: %s", period)
 	}
-
 	result.months, st = parseField(st, 'M')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
 	}
-
 	weeks, st := parseField(st, 'W')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'W' marker: %s", period)
@@ -96,6 +98,10 @@ func Parse(period string) (Period, error) {
 	days, st := parseField(st, 'D')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'D' marker: %s", period)
+	}
+
+	if len(st.pcopy) != 0 {
+		return Period{}, fmt.Errorf("unexpected remaining components %s: %s", st.pcopy, period)
 	}
 
 	result.days = weeks*7 + days

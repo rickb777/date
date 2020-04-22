@@ -119,7 +119,7 @@ func TestInvalidPeriodText(t *testing.T) {
 	}{
 		{``, `cannot parse a blank string as a period`},
 		{`not-a-period`, `expected 'P' period mark at the start: not-a-period`},
-		{`P000`, `expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: P000`},
+		{`P000`, `unexpected remaining components 000: P000`},
 	}
 	for _, c := range cases {
 		var p Period

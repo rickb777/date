@@ -27,6 +27,9 @@ func TestParseErrors(t *testing.T) {
 		{"PxD", "expected a number before the 'D' marker: PxD"},
 		{"PTxH", "expected a number before the 'H' marker: PTxH"},
 		{"PTxS", "expected a number before the 'S' marker: PTxS"},
+		{"P1HT1M", "unexpected remaining components 1H: P1HT1M"},
+		{"PT1Y", "unexpected remaining components 1Y: PT1Y"},
+		{"P1S", "unexpected remaining components 1S: P1S"},
 	}
 	for i, c := range cases {
 		_, err := Parse(c.value)
