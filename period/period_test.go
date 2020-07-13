@@ -5,9 +5,11 @@
 package period
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	. "github.com/onsi/gomega"
 	"github.com/rickb777/plural"
 )
 
@@ -16,6 +18,8 @@ var oneMonthApprox = 2629746 * time.Second // 30.436875 days
 var oneYearApprox = 31556952 * time.Second // 365.2425 days
 
 func TestParseErrors(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value    string
 		expected string
@@ -33,20 +37,22 @@ func TestParseErrors(t *testing.T) {
 	}
 	for i, c := range cases {
 		_, err := Parse(c.value)
-		if err.Error() != c.expected {
-			t.Errorf("%d: Parse(%q) == %#v, want (%#v)", i, c.value, err.Error(), c.expected)
-		}
+		g.Expect(err.Error()).To(Equal(c.expected), info(i, c.value))
 	}
 }
 
 func TestParsePeriodWithNormalise(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value  string
 		period Period
 	}{
+		// zeroes
 		{"P0", Period{}},
 		{"P0Y", Period{}},
 		{"P0M", Period{}},
+		{"P0W", Period{}},
 		{"P0D", Period{}},
 		{"PT0H", Period{}},
 		{"PT0M", Period{}},
@@ -85,17 +91,15 @@ func TestParsePeriodWithNormalise(t *testing.T) {
 		{"-P39312M", Period{-32760, 0, 0, 0, 0, 0}},
 	}
 	for i, c := range cases {
-		d, err := Parse(c.value)
-		if err != nil {
-			panic(err)
-		}
-		if d != c.period {
-			t.Errorf("%d: MustParse(%v) == %#v, want (%#v)", i, c.value, d, c.period)
-		}
+		p, err := Parse(c.value)
+		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
+		g.Expect(p).To(Equal(c.period), info(i, c.value))
 	}
 }
 
 func TestParsePeriodWithoutNormalise(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value     string
 		normalise bool
@@ -104,17 +108,15 @@ func TestParsePeriodWithoutNormalise(t *testing.T) {
 		{"P1Y14M35DT48H125M800S", false, Period{10, 140, 350, 480, 1250, 8000}},
 	}
 	for i, c := range cases {
-		d, err := ParseWithNormalise(c.value, c.normalise)
-		if err != nil {
-			panic(err)
-		}
-		if d != c.period {
-			t.Errorf("%d: MustParse(%v) == %#v, want (%#v)", i, c.value, d, c.period)
-		}
+		p, err := ParseWithNormalise(c.value, c.normalise)
+		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
+		g.Expect(p).To(Equal(c.period), info(i, c.value))
 	}
 }
 
 func TestPeriodString(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value  string
 		period Period
@@ -139,13 +141,13 @@ func TestPeriodString(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := c.period.String()
-		if s != c.value {
-			t.Errorf("%d: String() == %s, want %s for %+v", i, s, c.value, c.period)
-		}
+		g.Expect(s).To(Equal(c.value), info(i, c.value))
 	}
 }
 
 func TestPeriodIntComponents(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value                      string
 		y, m, w, d, dx, hh, mm, ss int
@@ -170,34 +172,20 @@ func TestPeriodIntComponents(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		if p.Years() != c.y {
-			t.Errorf("%d: %s.Years() == %d, want %d", i, c.value, p.Years(), c.y)
-		}
-		if p.Months() != c.m {
-			t.Errorf("%d: %s.Months() == %d, want %d", i, c.value, p.Months(), c.m)
-		}
-		if p.Weeks() != c.w {
-			t.Errorf("%d: %s.Weeks() == %d, want %d", i, c.value, p.Weeks(), c.w)
-		}
-		if p.Days() != c.d {
-			t.Errorf("%d: %s.Days() == %d, want %d", i, c.value, p.Days(), c.d)
-		}
-		if p.ModuloDays() != c.dx {
-			t.Errorf("%d: %s.ModuloDays() == %d, want %d", i, c.value, p.ModuloDays(), c.dx)
-		}
-		if p.Hours() != c.hh {
-			t.Errorf("%d: %s.Hours() == %d, want %d", i, c.value, p.Hours(), c.hh)
-		}
-		if p.Minutes() != c.mm {
-			t.Errorf("%d: %s.Minutes() == %d, want %d", i, c.value, p.Minutes(), c.mm)
-		}
-		if p.Seconds() != c.ss {
-			t.Errorf("%d: %s.Seconds() == %d, want %d", i, c.value, p.Seconds(), c.ss)
-		}
+		g.Expect(p.Years()).To(Equal(c.y), info(i, c.value))
+		g.Expect(p.Months()).To(Equal(c.m), info(i, c.value))
+		g.Expect(p.Weeks()).To(Equal(c.w), info(i, c.value))
+		g.Expect(p.Days()).To(Equal(c.d), info(i, c.value))
+		g.Expect(p.ModuloDays()).To(Equal(c.dx), info(i, c.value))
+		g.Expect(p.Hours()).To(Equal(c.hh), info(i, c.value))
+		g.Expect(p.Minutes()).To(Equal(c.mm), info(i, c.value))
+		g.Expect(p.Seconds()).To(Equal(c.ss), info(i, c.value))
 	}
 }
 
 func TestPeriodFloatComponents(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value                      string
 		y, m, w, d, dx, hh, mm, ss float32
@@ -231,31 +219,19 @@ func TestPeriodFloatComponents(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		if p.YearsFloat() != c.y {
-			t.Errorf("%d: %s.YearsFloat() == %g, want %g", i, c.value, p.YearsFloat(), c.y)
-		}
-		if p.MonthsFloat() != c.m {
-			t.Errorf("%d: %s.MonthsFloat() == %g, want %g", i, c.value, p.MonthsFloat(), c.m)
-		}
-		if p.WeeksFloat() != c.w {
-			t.Errorf("%d: %s.WeeksFloat() == %g, want %g", i, c.value, p.WeeksFloat(), c.w)
-		}
-		if p.DaysFloat() != c.d {
-			t.Errorf("%d: %s.DaysFloat() == %g, want %g", i, c.value, p.DaysFloat(), c.d)
-		}
-		if p.HoursFloat() != c.hh {
-			t.Errorf("%d: %s.HoursFloat() == %g, want %g", i, c.value, p.HoursFloat(), c.hh)
-		}
-		if p.MinutesFloat() != c.mm {
-			t.Errorf("%d: %s.MinutesFloat() == %g, want %g", i, c.value, p.MinutesFloat(), c.mm)
-		}
-		if p.SecondsFloat() != c.ss {
-			t.Errorf("%d: %s.SecondsFloat() == %g, want %g", i, c.value, p.SecondsFloat(), c.ss)
-		}
+		g.Expect(p.YearsFloat()).To(Equal(c.y), info(i, c.value))
+		g.Expect(p.MonthsFloat()).To(Equal(c.m), info(i, c.value))
+		g.Expect(p.WeeksFloat()).To(Equal(c.w), info(i, c.value))
+		g.Expect(p.DaysFloat()).To(Equal(c.d), info(i, c.value))
+		g.Expect(p.HoursFloat()).To(Equal(c.hh), info(i, c.value))
+		g.Expect(p.MinutesFloat()).To(Equal(c.mm), info(i, c.value))
+		g.Expect(p.SecondsFloat()).To(Equal(c.ss), info(i, c.value))
 	}
 }
 
 func TestPeriodAddToTime(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	const ms = 1000000
 	const sec = 1000 * ms
 	const min = 60 * sec
@@ -300,16 +276,14 @@ func TestPeriodAddToTime(t *testing.T) {
 	for i, c := range cases {
 		p := MustParse(c.value)
 		t1, prec := p.AddTo(t0)
-		if !t1.Equal(c.result) {
-			t.Errorf("%d: %s.AddTo(t) == %s %v, want %s", i, c.value, t1, prec, c.result)
-		}
-		if prec != c.precise {
-			t.Errorf("%d: %s.AddTo(t) == %s %v, want %v", i, c.value, t1, prec, c.precise)
-		}
+		g.Expect(t1).To(Equal(c.result), info(i, c.value))
+		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
 	}
 }
 
 func TestPeriodToDuration(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value    string
 		duration time.Duration
@@ -342,20 +316,18 @@ func TestPeriodToDuration(t *testing.T) {
 	for i, c := range cases {
 		p := MustParse(c.value)
 		d1, prec := p.Duration()
-		if d1 != c.duration {
-			t.Errorf("%d: Duration() == %s %v, want %s for %s", i, d1, prec, c.duration, c.value)
-		}
-		if prec != c.precise {
-			t.Errorf("%d: Duration() == %s %v, want %v for %s", i, d1, prec, c.precise, c.value)
-		}
+		g.Expect(d1).To(Equal(c.duration), info(i, c.value))
+		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
 		d2 := p.DurationApprox()
-		if c.precise && d2 != c.duration {
-			t.Errorf("%d: DurationApprox() == %s %v, want %s for %s", i, d2, prec, c.duration, c.value)
+		if c.precise {
+			g.Expect(d2).To(Equal(c.duration), info(i, c.value))
 		}
 	}
 }
 
 func TestSignPotisitveNegative(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value    string
 		positive bool
@@ -378,19 +350,15 @@ func TestSignPotisitveNegative(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		if p.IsPositive() != c.positive {
-			t.Errorf("%d: %v.IsPositive() == %v, want %v", i, p, p.IsPositive(), c.positive)
-		}
-		if p.IsNegative() != c.negative {
-			t.Errorf("%d: %v.IsNegative() == %v, want %v", i, p, p.IsNegative(), c.negative)
-		}
-		if p.Sign() != c.sign {
-			t.Errorf("%d: %v.Sign() == %d, want %d", i, p, p.Sign(), c.sign)
-		}
+		g.Expect(p.IsPositive()).To(Equal(c.positive), info(i, c.value))
+		g.Expect(p.IsNegative()).To(Equal(c.negative), info(i, c.value))
+		g.Expect(p.Sign()).To(Equal(c.sign), info(i, c.value))
 	}
 }
 
 func TestPeriodApproxDays(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value      string
 		approxDays int
@@ -406,13 +374,13 @@ func TestPeriodApproxDays(t *testing.T) {
 	for i, c := range cases {
 		p := MustParse(c.value)
 		td := p.TotalDaysApprox()
-		if td != c.approxDays {
-			t.Errorf("%d: %v.TotalDaysApprox() == %v, want %v", i, p, td, c.approxDays)
-		}
+		g.Expect(td).To(Equal(c.approxDays), info(i, c.value))
 	}
 }
 
 func TestPeriodApproxMonths(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value        string
 		approxMonths int
@@ -435,13 +403,13 @@ func TestPeriodApproxMonths(t *testing.T) {
 	for i, c := range cases {
 		p := MustParse(c.value)
 		td := p.TotalMonthsApprox()
-		if td != c.approxMonths {
-			t.Errorf("%d: %v.TotalMonthsApprox() == %v, want %v", i, p, td, c.approxMonths)
-		}
+		g.Expect(td).To(Equal(c.approxMonths), info(i, c.value))
 	}
 }
 
 func TestNewPeriod(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		years, months, days, hours, minutes, seconds int
 		period                                       Period
@@ -463,22 +431,16 @@ func TestNewPeriod(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
-		if p != c.period {
-			t.Errorf("%d: %d,%d,%d gives %#v, want %#v", i, c.years, c.months, c.days, p, c.period)
-		}
-		if p.Years() != c.years {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Years(), c.years)
-		}
-		if p.Months() != c.months {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Months(), c.months)
-		}
-		if p.Days() != c.days {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Days(), c.days)
-		}
+		g.Expect(p).To(Equal(c.period), info(i, c.period))
+		g.Expect(p.Years()).To(Equal(c.years), info(i, c.period))
+		g.Expect(p.Months()).To(Equal(c.months), info(i, c.period))
+		g.Expect(p.Days()).To(Equal(c.days), info(i, c.period))
 	}
 }
 
 func TestNewHMS(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		hours, minutes, seconds int
 		period                  Period
@@ -493,22 +455,16 @@ func TestNewHMS(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := NewHMS(c.hours, c.minutes, c.seconds)
-		if p != c.period {
-			t.Errorf("%d: gives %#v, want %#v", i, p, c.period)
-		}
-		if p.Hours() != c.hours {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Years(), c.hours)
-		}
-		if p.Minutes() != c.minutes {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Months(), c.minutes)
-		}
-		if p.Seconds() != c.seconds {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Days(), c.seconds)
-		}
+		g.Expect(p).To(Equal(c.period), info(i, c.period))
+		g.Expect(p.Hours()).To(Equal(c.hours), info(i, c.period))
+		g.Expect(p.Minutes()).To(Equal(c.minutes), info(i, c.period))
+		g.Expect(p.Seconds()).To(Equal(c.seconds), info(i, c.period))
 	}
 }
 
 func TestNewYMD(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		years, months, days int
 		period              Period
@@ -524,18 +480,10 @@ func TestNewYMD(t *testing.T) {
 	}
 	for i, c := range cases {
 		p := NewYMD(c.years, c.months, c.days)
-		if p != c.period {
-			t.Errorf("%d: %d,%d,%d gives %#v, want %#v", i, c.years, c.months, c.days, p, c.period)
-		}
-		if p.Years() != c.years {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Years(), c.years)
-		}
-		if p.Months() != c.months {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Months(), c.months)
-		}
-		if p.Days() != c.days {
-			t.Errorf("%d: %#v, got %d want %d", i, p, p.Days(), c.days)
-		}
+		g.Expect(p).To(Equal(c.period), info(i, c.period))
+		g.Expect(p.Years()).To(Equal(c.years), info(i, c.period))
+		g.Expect(p.Months()).To(Equal(c.months), info(i, c.period))
+		g.Expect(p.Days()).To(Equal(c.days), info(i, c.period))
 	}
 }
 
@@ -572,22 +520,18 @@ func testNewOf(t *testing.T, source time.Duration, expected Period, precise bool
 
 func testNewOf1(t *testing.T, source time.Duration, expected Period, precise bool) {
 	t.Helper()
-	ms := time.Millisecond
+	g := NewGomegaWithT(t)
 
 	n, p := NewOf(source)
 	rev, _ := expected.Duration()
-	if n != expected {
-		t.Errorf("NewOf(%s) (%dms)\n    gives %-20s %#v,\n     want %-20s (%dms)", source, source/ms, n, n, expected, rev/ms)
-	}
-	if p != precise {
-		t.Errorf("NewOf(%s) (%dms)\n    gives %v,\n     want %v for %v (%dms)", source, source/ms, p, precise, expected, rev/ms)
-	}
-	//if rev != source {
-	//	t.Logf("%d: NewOf(%s) input %dms differs from expected %dms", i, source, source/ms, rev/ms)
-	//}
+	info := fmt.Sprintf("%v %+v %v %v", source, expected, precise, rev)
+	g.Expect(n).To(Equal(expected), info)
+	g.Expect(p).To(Equal(precise), info)
+	//g.Expect(rev).To(Equal(source), info)
 }
 
 func TestBetween(t *testing.T) {
+	g := NewGomegaWithT(t)
 	now := time.Now()
 
 	cases := []struct {
@@ -642,9 +586,7 @@ func TestBetween(t *testing.T) {
 	}
 	for i, c := range cases {
 		n := Between(c.a, c.b)
-		if n != c.expected {
-			t.Errorf("%d: Between(%v, %v)\n  gives %-20s %#v,\n   want %-20s %#v", i, c.a, c.b, n, n, c.expected, c.expected)
-		}
+		g.Expect(n).To(Equal(c.expected), info(i, c.expected))
 	}
 }
 
@@ -702,6 +644,7 @@ func testNormalise(t *testing.T, source, precise, approx Period) {
 }
 
 func testNormaliseBothSigns(t *testing.T, source, expected Period, precise bool) {
+	g := NewGomegaWithT(t)
 	t.Helper()
 
 	n1 := source.Normalise(precise)
@@ -715,15 +658,12 @@ func testNormaliseBothSigns(t *testing.T, source, expected Period, precise bool)
 	sneg := source.Negate()
 	eneg := expected.Negate()
 	n2 := sneg.Normalise(precise)
-	if n2 != eneg {
-		t.Errorf("%v.Normalise(%v) %s\n   gives %-22s %#v %s,\n    want %-22s %#v %s",
-			sneg, precise, sneg.DurationApprox(),
-			n2, n2, n2.DurationApprox(),
-			eneg, eneg, eneg.DurationApprox())
-	}
+	g.Expect(n2).To(Equal(eneg))
 }
 
 func TestPeriodFormat(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		period string
 		expect string
@@ -755,13 +695,13 @@ func TestPeriodFormat(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := MustParse(c.period).Format()
-		if s != c.expect {
-			t.Errorf("%d: Format() == %s, want %s for %+v", i, s, c.expect, c.period)
-		}
+		g.Expect(s).To(Equal(c.expect), info(i, c.expect))
 	}
 }
 
 func TestPeriodScale(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		one    string
 		m      float32
@@ -800,13 +740,13 @@ func TestPeriodScale(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := MustParse(c.one).Scale(c.m)
-		if s != MustParse(c.expect) {
-			t.Errorf("%d: %s.Scale(%g) == %v, want %s", i, c.one, c.m, s, c.expect)
-		}
+		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
 	}
 }
 
 func TestPeriodAdd(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		one, two string
 		expect   string
@@ -823,13 +763,13 @@ func TestPeriodAdd(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := MustParse(c.one).Add(MustParse(c.two))
-		if s != MustParse(c.expect) {
-			t.Errorf("%d: %s.Add(%s) == %v, want %s", i, c.one, c.two, s, c.expect)
-		}
+		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
 	}
 }
 
 func TestPeriodFormatWithoutWeeks(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		period string
 		expect string
@@ -858,13 +798,13 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 	for i, c := range cases {
 		s := MustParse(c.period).FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames,
 			PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
-		if s != c.expect {
-			t.Errorf("%d: Format() == %s, want %s for %+v", i, s, c.expect, c.period)
-		}
+		g.Expect(s).To(Equal(c.expect), info(i, c.expect))
 	}
 }
 
 func TestPeriodParseOnlyYMD(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		one    string
 		expect string
@@ -874,13 +814,13 @@ func TestPeriodParseOnlyYMD(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := MustParse(c.one).OnlyYMD()
-		if s != MustParse(c.expect) {
-			t.Errorf("%d: %s.OnlyYMD() == %v, want %s", i, c.one, s, c.expect)
-		}
+		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
 	}
 }
 
 func TestPeriodParseOnlyHMS(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		one    string
 		expect string
@@ -890,9 +830,7 @@ func TestPeriodParseOnlyHMS(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := MustParse(c.one).OnlyHMS()
-		if s != MustParse(c.expect) {
-			t.Errorf("%d: %s.OnlyHMS() == %v, want %s", i, c.one, s, c.expect)
-		}
+		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
 	}
 }
 
@@ -908,4 +846,8 @@ var london *time.Location // UTC + 1 hour during summer
 
 func init() {
 	london, _ = time.LoadLocation("Europe/London")
+}
+
+func info(i int, m interface{}) string {
+	return fmt.Sprintf("%d %v", i, m)
 }
