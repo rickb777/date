@@ -33,6 +33,24 @@ func MustParse(value string) Period {
 // are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
 // The canonical zero is "P0D".
 func Parse(period string) (Period, error) {
+	return ParseWithNormalise(period, true)
+}
+
+// ParseWithNormalise parses strings that specify periods using ISO-8601 rules
+// with an option to specify whether to normalise parsed period components.
+//
+// In addition, a plus or minus sign can precede the period, e.g. "-P10D"
+
+// The returned value is only normalised when normalise is set to `true`, and
+// normalisation will convert e.g. multiple of 12 months into years so "P24M"
+// is the same as "P2Y". However, this is done without loss of precision, so
+// for example whole numbers of days do not contribute to the months tally
+// because the number of days per month is variable.
+//
+// The zero value can be represented in several ways: all of the following
+// are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
+// The canonical zero is "P0D".
+func ParseWithNormalise(period string, normalise bool) (Period, error) {
 	if period == "" {
 		return Period{}, fmt.Errorf("cannot parse a blank string as a period")
 	}
@@ -111,7 +129,11 @@ func Parse(period string) (Period, error) {
 		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
 	}
 
-	return result.normalise64(true).toPeriod(), nil
+	if normalise {
+		return result.normalise64(true).toPeriod(), nil
+	}
+
+	return result.toPeriod(), nil
 }
 
 type parseState struct {
