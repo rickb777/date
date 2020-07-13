@@ -41,50 +41,66 @@ func TestParseErrors(t *testing.T) {
 
 func TestParsePeriodWithNormalise(t *testing.T) {
 	cases := []struct {
+		value  string
+		period Period
+	}{
+		{"P0", Period{}},
+		{"P0Y", Period{}},
+		{"P0M", Period{}},
+		{"P0D", Period{}},
+		{"PT0H", Period{}},
+		{"PT0M", Period{}},
+		{"PT0S", Period{}},
+		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
+		{"P6M", Period{0, 60, 0, 0, 0, 0}},
+		{"P5W", Period{0, 0, 350, 0, 0, 0}},
+		{"P4D", Period{0, 0, 40, 0, 0, 0}},
+		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
+		{"PT30M", Period{0, 0, 0, 0, 300, 0}},
+		{"PT25S", Period{0, 0, 0, 0, 0, 250}},
+		{"PT30M67.6S", Period{0, 0, 0, 0, 310, 76}},
+		{"P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
+		{"+P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
+		{"-P3Y6M5W4DT12H40M5S", Period{-30, -60, -390, -120, -400, -50}},
+		{"P2.Y", Period{20, 0, 0, 0, 0, 0}},
+		{"P2.5Y", Period{25, 0, 0, 0, 0, 0}},
+		{"P2.15Y", Period{21, 0, 0, 0, 0, 0}},
+		{"P2.125Y", Period{21, 0, 0, 0, 0, 0}},
+		{"P1Y2.M", Period{10, 20, 0, 0, 0, 0}},
+		{"P1Y2.5M", Period{10, 25, 0, 0, 0, 0}},
+		{"P1Y2.15M", Period{10, 21, 0, 0, 0, 0}},
+		{"P1Y2.125M", Period{10, 21, 0, 0, 0, 0}},
+		{"P3276.7Y", Period{32767, 0, 0, 0, 0, 0}},
+		{"-P3276.7Y", Period{-32767, 0, 0, 0, 0, 0}},
+		// largest possible number of seconds normalised only in hours, mins, sec
+		{"PT11592000S", Period{0, 0, 0, 32200, 0, 0}},
+		{"-PT11592000S", Period{0, 0, 0, -32200, 0, 0}},
+		{"PT11595599S", Period{0, 0, 0, 32200, 590, 590}},
+		// largest possible number of seconds normalised only in days, hours, mins, sec
+		{"PT283046400S", Period{0, 0, 32760, 0, 0, 0}},
+		{"-PT283046400S", Period{0, 0, -32760, 0, 0, 0}},
+		{"PT283132799S", Period{0, 0, 32760, 230, 590, 590}},
+		// largest possible number of months
+		{"P39312M", Period{32760, 0, 0, 0, 0, 0}},
+		{"-P39312M", Period{-32760, 0, 0, 0, 0, 0}},
+	}
+	for i, c := range cases {
+		d, err := Parse(c.value)
+		if err != nil {
+			panic(err)
+		}
+		if d != c.period {
+			t.Errorf("%d: MustParse(%v) == %#v, want (%#v)", i, c.value, d, c.period)
+		}
+	}
+}
+
+func TestParsePeriodWithoutNormalise(t *testing.T) {
+	cases := []struct {
 		value     string
 		normalise bool
 		period    Period
 	}{
-		{"P0", true, Period{}},
-		{"P0Y", true, Period{}},
-		{"P0M", true, Period{}},
-		{"P0D", true, Period{}},
-		{"PT0H", true, Period{}},
-		{"PT0M", true, Period{}},
-		{"PT0S", true, Period{}},
-		{"P3Y", true, Period{30, 0, 0, 0, 0, 0}},
-		{"P6M", true, Period{0, 60, 0, 0, 0, 0}},
-		{"P5W", true, Period{0, 0, 350, 0, 0, 0}},
-		{"P4D", true, Period{0, 0, 40, 0, 0, 0}},
-		{"PT12H", true, Period{0, 0, 0, 120, 0, 0}},
-		{"PT30M", true, Period{0, 0, 0, 0, 300, 0}},
-		{"PT25S", true, Period{0, 0, 0, 0, 0, 250}},
-		{"PT30M67.6S", true, Period{0, 0, 0, 0, 310, 76}},
-		{"P3Y6M5W4DT12H40M5S", true, Period{30, 60, 390, 120, 400, 50}},
-		{"+P3Y6M5W4DT12H40M5S", true, Period{30, 60, 390, 120, 400, 50}},
-		{"-P3Y6M5W4DT12H40M5S", true, Period{-30, -60, -390, -120, -400, -50}},
-		{"P2.Y", true, Period{20, 0, 0, 0, 0, 0}},
-		{"P2.5Y", true, Period{25, 0, 0, 0, 0, 0}},
-		{"P2.15Y", true, Period{21, 0, 0, 0, 0, 0}},
-		{"P2.125Y", true, Period{21, 0, 0, 0, 0, 0}},
-		{"P1Y2.M", true, Period{10, 20, 0, 0, 0, 0}},
-		{"P1Y2.5M", true, Period{10, 25, 0, 0, 0, 0}},
-		{"P1Y2.15M", true, Period{10, 21, 0, 0, 0, 0}},
-		{"P1Y2.125M", true, Period{10, 21, 0, 0, 0, 0}},
-		{"P3276.7Y", true, Period{32767, 0, 0, 0, 0, 0}},
-		{"-P3276.7Y", true, Period{-32767, 0, 0, 0, 0, 0}},
-		// largest possible number of seconds normalised only in hours, mins, sec
-		{"PT11592000S", true, Period{0, 0, 0, 32200, 0, 0}},
-		{"-PT11592000S", true, Period{0, 0, 0, -32200, 0, 0}},
-		{"PT11595599S", true, Period{0, 0, 0, 32200, 590, 590}},
-		// largest possible number of seconds normalised only in days, hours, mins, sec
-		{"PT283046400S", true, Period{0, 0, 32760, 0, 0, 0}},
-		{"-PT283046400S", true, Period{0, 0, -32760, 0, 0, 0}},
-		{"PT283132799S", true, Period{0, 0, 32760, 230, 590, 590}},
-		// largest possible number of months
-		{"P39312M", true, Period{32760, 0, 0, 0, 0, 0}},
-		{"-P39312M", true, Period{-32760, 0, 0, 0, 0, 0}},
-		// without normalisation
 		{"P1Y14M35DT48H125M800S", false, Period{10, 140, 350, 480, 1250, 8000}},
 	}
 	for i, c := range cases {
