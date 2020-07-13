@@ -41,10 +41,10 @@ func Parse(period string) (Period, error) {
 		return Period{}, nil
 	}
 
-	result := period64{}
+	neg := false
 	pcopy := period
 	if pcopy[0] == '-' {
-		result.neg = true
+		neg = true
 		pcopy = pcopy[1:]
 	} else if pcopy[0] == '+' {
 		pcopy = pcopy[1:]
@@ -55,63 +55,69 @@ func Parse(period string) (Period, error) {
 	}
 	pcopy = pcopy[1:]
 
+	var years, months, weeks, days, hours, minutes, seconds, clock int64
 	st := parseState{period, pcopy, false, nil}
 	t := strings.IndexByte(pcopy, 'T')
 	if t >= 0 {
 		st.pcopy = pcopy[t+1:]
 
-		result.hours, st = parseField(st, 'H')
+		hours, st = parseField(st, 'H')
 		if st.err != nil {
 			return Period{}, fmt.Errorf("expected a number before the 'H' marker: %s", period)
 		}
 
-		result.minutes, st = parseField(st, 'M')
+		minutes, st = parseField(st, 'M')
 		if st.err != nil {
 			return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
 		}
 
-		result.seconds, st = parseField(st, 'S')
+		seconds, st = parseField(st, 'S')
 		if st.err != nil {
 			return Period{}, fmt.Errorf("expected a number before the 'S' marker: %s", period)
 		}
 
-		if len(st.pcopy) != 0 {
-			return Period{}, fmt.Errorf("unexpected remaining components %s: %s", st.pcopy, period)
-		}
-
+		clock = (hours * 3600) + (minutes * 60) + seconds
 		st.pcopy = pcopy[:t]
 	}
 
-	result.years, st = parseField(st, 'Y')
+	years, st = parseField(st, 'Y')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'Y' marker: %s", period)
 	}
-	result.months, st = parseField(st, 'M')
+
+	months, st = parseField(st, 'M')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
 	}
-	weeks, st := parseField(st, 'W')
+
+	months += years * 12
+
+	weeks, st = parseField(st, 'W')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'W' marker: %s", period)
 	}
 
-	days, st := parseField(st, 'D')
+	days, st = parseField(st, 'D')
 	if st.err != nil {
 		return Period{}, fmt.Errorf("expected a number before the 'D' marker: %s", period)
 	}
 
-	if len(st.pcopy) != 0 {
-		return Period{}, fmt.Errorf("unexpected remaining components %s: %s", st.pcopy, period)
-	}
-
-	result.days = weeks*7 + days
-	//fmt.Printf("%#v\n", st)
+	days += weeks * 7
 
 	if !st.ok {
 		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
 	}
 
-	return result.normalise64(true).toPeriod(), nil
+	if neg {
+		months = -months
+		days = -days
+		clock = -clock
+	}
+	return Period{
+		mmonths:  int(months),
+		mdays:    int(days),
+		mseconds: int(clock),
+	}, nil
 }
 
 type parseState struct {
@@ -145,13 +151,17 @@ func parseDecimalFixedPoint(s, original string) (int64, error) {
 
 	if dec >= 0 {
 		dp := len(s) - dec
-		if dp > 1 {
-			s = s[:dec] + s[dec+1:dec+2]
+		if dp > 3 {
+			s = s[:dec] + s[dec+1:dec+4]
+		} else if dp > 2 {
+			s = s[:dec] + s[dec+1:dec+3] + "0"
+		} else if dp > 1 {
+			s = s[:dec] + s[dec+1:dec+2] + "00"
 		} else {
-			s = s[:dec] + s[dec+1:] + "0"
+			s = s[:dec] + s[dec+1:] + "000"
 		}
 	} else {
-		s = s + "0"
+		s = s + "000"
 	}
 
 	return strconv.ParseInt(s, 10, 64)

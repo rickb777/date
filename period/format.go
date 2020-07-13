@@ -7,9 +7,8 @@ package period
 import (
 	"bytes"
 	"fmt"
-	"strings"
-
 	"github.com/rickb777/plural"
+	"strings"
 )
 
 // Format converts the period to human-readable form using the default localisation.
@@ -22,27 +21,29 @@ func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, day
 	period = period.Abs()
 
 	parts := make([]string, 0)
-	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat10(period.years)))
-	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat10(period.months)))
+	years, months := period.unpackYM()
+	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat1(years)))
+	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat1000(months)))
 
-	if period.days > 0 || (period.IsZero()) {
+	if period.mdays > 0 || (period.IsZero()) {
 		if len(weekNames) > 0 {
-			weeks := period.days / 70
-			mdays := period.days % 70
+			weeks := period.mdays / 7000
+			mdays := period.mdays % 7000
 			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, mdays)
 			if weeks > 0 {
 				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
 			}
 			if mdays > 0 || weeks == 0 {
-				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat10(mdays)))
+				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat1000(mdays)))
 			}
 		} else {
-			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat10(period.days)))
+			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat1000(period.mdays)))
 		}
 	}
-	parts = appendNonBlank(parts, hourNames.FormatFloat(absFloat10(period.hours)))
-	parts = appendNonBlank(parts, minNames.FormatFloat(absFloat10(period.minutes)))
-	parts = appendNonBlank(parts, secNames.FormatFloat(absFloat10(period.seconds)))
+
+	parts = appendNonBlank(parts, hourNames.FormatFloat(absFloat1(period.mseconds/3600000)))
+	parts = appendNonBlank(parts, minNames.FormatFloat(absFloat1((period.mseconds%3600000)/60000)))
+	parts = appendNonBlank(parts, secNames.FormatFloat(absFloat1000(period.mseconds%60000)))
 
 	return strings.Join(parts, ", ")
 }
@@ -86,43 +87,69 @@ func (period Period) String() string {
 	buf := &bytes.Buffer{}
 	if period.Sign() < 0 {
 		buf.WriteByte('-')
+		period = period.Negate()
 	}
 
 	buf.WriteByte('P')
 
-	if period.years != 0 {
-		fmt.Fprintf(buf, "%gY", absFloat10(period.years))
-	}
-	if period.months != 0 {
-		fmt.Fprintf(buf, "%gM", absFloat10(period.months))
-	}
-	if period.days != 0 {
-		if period.days%70 == 0 {
-			fmt.Fprintf(buf, "%gW", absFloat10(period.days/7))
-		} else {
-			fmt.Fprintf(buf, "%gD", absFloat10(period.days))
+	if period.mmonths != 0 {
+		years, months := period.unpackYM()
+		if years != 0 {
+			fmt.Fprintf(buf, "%dY", years)
+		}
+		if months != 0 {
+			fmt.Fprintf(buf, "%gM", absFloat1000(months))
 		}
 	}
-	if period.hours != 0 || period.minutes != 0 || period.seconds != 0 {
+
+	if period.mdays != 0 {
+		if period.mdays%7000 == 0 {
+			fmt.Fprintf(buf, "%gW", absFloat1000(period.mdays/7))
+		} else {
+			fmt.Fprintf(buf, "%gD", absFloat1000(period.mdays))
+		}
+	}
+
+	if period.mseconds != 0 {
+		hours, minutes, seconds := period.unpackHMS()
 		buf.WriteByte('T')
-	}
-	if period.hours != 0 {
-		fmt.Fprintf(buf, "%gH", absFloat10(period.hours))
-	}
-	if period.minutes != 0 {
-		fmt.Fprintf(buf, "%gM", absFloat10(period.minutes))
-	}
-	if period.seconds != 0 {
-		fmt.Fprintf(buf, "%gS", absFloat10(period.seconds))
+		if hours != 0 {
+			fmt.Fprintf(buf, "%dH", hours)
+		}
+		if minutes != 0 {
+			fmt.Fprintf(buf, "%dM", minutes)
+		}
+		if seconds != 0 {
+			fmt.Fprintf(buf, "%gS", absFloat1000(seconds))
+		}
 	}
 
 	return buf.String()
 }
 
-func absFloat10(v int16) float32 {
-	f := float32(v) / 10
+func (period Period) unpackYM() (int, int) {
+	years := period.mmonths / 12000
+	months := period.mmonths - (years * 12000)
+	return years, months
+}
+
+func (period Period) unpackHMS() (int, int, int) {
+	hours := period.mseconds / 3600000
+	seconds := period.mseconds - hours*3600000
+
+	minutes := seconds / 60000
+	seconds -= minutes * 60000
+	return hours, minutes, seconds
+}
+
+func absFloat1(v int) float32 {
+	f := float32(v)
 	if v < 0 {
 		return -f
 	}
 	return f
+}
+
+func absFloat1000(v int) float32 {
+	return absFloat1(v) / 1000
 }
