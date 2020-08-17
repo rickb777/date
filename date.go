@@ -35,13 +35,19 @@ const ZeroDays PeriodOfDays = 0
 //
 // Date values can be compared using the Before, After, and Equal methods
 // as well as the == and != operators.
-// The Sub method subtracts two dates, returning the number of days between
-// them.
-// The Add method adds a Date and a number of days, producing a Date.
 //
-// The zero value of type Date is Thursday, January 1, 1970 (called 'the epoch').
-// As this date is unlikely to come up in practice, the IsZero method gives
-// a simple way of detecting a date that has not been initialized explicitly.
+// The Sub method subtracts two dates, returning the number of days between
+// them. The Add method adds a Date and a number of days, producing a Date.
+//
+// The zero value of type Date is Thursday, January 1, 1970 (called 'the
+// epoch'), based on Unix convention. As this date is unlikely to come up in
+// practice, the IsZero method gives a simple way of detecting a date that
+// has not been initialized explicitly.
+//
+// The first official date of the Gregorian calendar was Friday, October 15th
+// 1582, quite unrelated to the epoch used here. The Date type does not
+// distinguish between official Gregorian dates and earlier proleptic dates,
+// which can also be represented when needed.
 //
 type Date struct {
 	day PeriodOfDays // day gives the number of days elapsed since date zero.
