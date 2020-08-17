@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package gregorian provides utility functions for the Gregorian calendar calculations.
-// The Gregorian calendar was officially introduced in October 1582 so, strictly speaking,
+// The Gregorian calendar was officially introduced on 15th October 1582 so, strictly speaking,
 // it only applies after that date. Some countries did not switch to the Gregorian calendar
 // for many years after (such as Great Britain in 1782).
 //

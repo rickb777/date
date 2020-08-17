@@ -41,7 +41,7 @@ func TestParseErrors(t *testing.T) {
 	}
 }
 
-func TestParsePeriod(t *testing.T) {
+func TestParsePeriodWithNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -115,6 +115,23 @@ func TestParsePeriod(t *testing.T) {
 	}
 	for i, c := range cases {
 		p, err := Parse(c.value)
+		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
+		g.Expect(p).To(Equal(c.period), info(i, c.value))
+	}
+}
+
+func TestParsePeriodWithoutNormalise(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		value     string
+		normalise bool
+		period    Period
+	}{
+		{"P1Y14M35DT48H125M800S", false, Period{10, 140, 350, 480, 1250, 8000}},
+	}
+	for i, c := range cases {
+		p, err := ParseWithNormalise(c.value, c.normalise)
 		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
 		g.Expect(p).To(Equal(c.period), info(i, c.value))
 	}
@@ -322,6 +339,8 @@ func TestPeriodAddToTime(t *testing.T) {
 }
 
 func TestPeriodToDuration(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value    string
 		duration time.Duration
@@ -347,24 +366,15 @@ func TestPeriodToDuration(t *testing.T) {
 		{"P0.001Y", oneYearApprox / 1000, false},
 		{"P106751.991D", 9223372022400 * time.Millisecond, false}, // duration just less than 2^63-1
 	}
-	for _, c := range cases {
-		doTestPeriodToDuration(t, c.value, c.duration, c.precise)
-		doTestPeriodToDuration(t, "-"+c.value, -c.duration, c.precise)
-	}
-}
-
-func doTestPeriodToDuration(t *testing.T, value string, duration time.Duration, precise bool) {
-	g := NewGomegaWithT(t)
-	t.Helper()
-
-	p := MustParse(value)
-	d1, prec := p.Duration()
-	g.Expect(d1).To(Equal(duration), value)
-	g.Expect(prec).To(Equal(precise), value)
-
-	d2 := p.DurationApprox()
-	if precise {
-		g.Expect(d2).To(Equal(duration), value)
+	for i, c := range cases {
+		p := MustParse(c.value)
+		d1, prec := p.Duration()
+		g.Expect(d1).To(Equal(c.duration), info(i, c.value))
+		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
+		d2 := p.DurationApprox()
+		if c.precise {
+			g.Expect(d2).To(Equal(c.duration), info(i, c.value))
+		}
 	}
 }
 
