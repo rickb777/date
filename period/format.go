@@ -5,7 +5,6 @@
 package period
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/rickb777/plural"
 	"strings"
@@ -22,28 +21,28 @@ func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, day
 
 	parts := make([]string, 0)
 	years, months := period.unpackYM()
-	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat1(years)))
-	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat1000(months)))
+	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat1i32(years)))
+	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat100i32(months)))
 
-	if period.mdays > 0 || (period.IsZero()) {
+	if period.centiDays > 0 || (period.IsZero()) {
 		if len(weekNames) > 0 {
-			weeks := period.mdays / 7000
-			mdays := period.mdays % 7000
-			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, mdays)
+			weeks := period.centiDays / 700
+			mdays := period.centiDays % 700
+			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, centiDays)
 			if weeks > 0 {
 				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
 			}
 			if mdays > 0 || weeks == 0 {
-				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat1000(mdays)))
+				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat100i32(mdays)))
 			}
 		} else {
-			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat1000(period.mdays)))
+			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat100i32(period.centiDays)))
 		}
 	}
 
-	parts = appendNonBlank(parts, hourNames.FormatFloat(absFloat1(period.mseconds/3600000)))
-	parts = appendNonBlank(parts, minNames.FormatFloat(absFloat1((period.mseconds%3600000)/60000)))
-	parts = appendNonBlank(parts, secNames.FormatFloat(absFloat1000(period.mseconds%60000)))
+	parts = appendNonBlank(parts, hourNames.FormatFloat(absFloat1i32(period.centiSeconds/360000)))
+	parts = appendNonBlank(parts, minNames.FormatFloat(absFloat1i32((period.centiSeconds%360000)/6000)))
+	parts = appendNonBlank(parts, secNames.FormatFloat(absFloat100i32(period.centiSeconds%6000)))
 
 	return strings.Join(parts, ", ")
 }
@@ -80,11 +79,15 @@ var PeriodSecondNames = plural.FromZero("", "%v second", "%v seconds")
 
 // String converts the period to ISO-8601 form.
 func (period Period) String() string {
+	return period.showAs
+}
+
+func (period Period) toString() string {
 	if period.IsZero() {
 		return "P0D"
 	}
 
-	buf := &bytes.Buffer{}
+	buf := &strings.Builder{}
 	if period.Sign() < 0 {
 		buf.WriteByte('-')
 		period = period.Negate()
@@ -92,25 +95,25 @@ func (period Period) String() string {
 
 	buf.WriteByte('P')
 
-	if period.mmonths != 0 {
+	if period.centiMonths != 0 {
 		years, months := period.unpackYM()
 		if years != 0 {
 			fmt.Fprintf(buf, "%dY", years)
 		}
 		if months != 0 {
-			fmt.Fprintf(buf, "%gM", absFloat1000(months))
+			fmt.Fprintf(buf, "%gM", absFloat100i32(months))
 		}
 	}
 
-	if period.mdays != 0 {
-		if period.mdays%7000 == 0 {
-			fmt.Fprintf(buf, "%gW", absFloat1000(period.mdays/7))
+	if period.centiDays != 0 {
+		if period.centiDays%700 == 0 {
+			fmt.Fprintf(buf, "%gW", absFloat100i32(period.centiDays/7))
 		} else {
-			fmt.Fprintf(buf, "%gD", absFloat1000(period.mdays))
+			fmt.Fprintf(buf, "%gD", absFloat100i32(period.centiDays))
 		}
 	}
 
-	if period.mseconds != 0 {
+	if period.centiSeconds != 0 {
 		hours, minutes, seconds := period.unpackHMS()
 		buf.WriteByte('T')
 		if hours != 0 {
@@ -120,29 +123,29 @@ func (period Period) String() string {
 			fmt.Fprintf(buf, "%dM", minutes)
 		}
 		if seconds != 0 {
-			fmt.Fprintf(buf, "%gS", absFloat1000(seconds))
+			fmt.Fprintf(buf, "%gS", absFloat100i32(seconds))
 		}
 	}
 
 	return buf.String()
 }
 
-func (period Period) unpackYM() (int, int) {
-	years := period.mmonths / 12000
-	months := period.mmonths - (years * 12000)
+func (period Period) unpackYM() (int32, int32) {
+	years := period.centiMonths / 1200
+	months := period.centiMonths - (years * 1200)
 	return years, months
 }
 
-func (period Period) unpackHMS() (int, int, int) {
-	hours := period.mseconds / 3600000
-	seconds := period.mseconds - hours*3600000
+func (period Period) unpackHMS() (int32, int32, int32) {
+	hours := period.centiSeconds / 360000
+	seconds := period.centiSeconds - hours*360000
 
-	minutes := seconds / 60000
-	seconds -= minutes * 60000
+	minutes := seconds / 6000
+	seconds -= minutes * 6000
 	return hours, minutes, seconds
 }
 
-func absFloat1(v int) float32 {
+func absFloat1i32(v int32) float32 {
 	f := float32(v)
 	if v < 0 {
 		return -f
@@ -150,6 +153,6 @@ func absFloat1(v int) float32 {
 	return f
 }
 
-func absFloat1000(v int) float32 {
-	return absFloat1(v) / 1000
+func absFloat100i32(v int32) float32 {
+	return absFloat1i32(v) / 100
 }
