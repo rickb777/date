@@ -279,20 +279,34 @@ func (period Period) Add(that Period) Period {
 }
 
 // Scale a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
-// and change the sign if negative. The result is normalised.
+// and change the sign if negative. The result is normalised, but integer overflows are silently
+// ignored.
 //
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
 // decimal place; each field is only int16.
 //
 // Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
 func (period Period) Scale(factor float32) Period {
+	result, _ := period.ScaleWithOverflowCheck(factor)
+	return result
+}
+
+// ScaleWithOverflowCheck a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
+// and change the sign if negative. The result is normalised. An error is returned if integer overflow
+// happened.
+//
+// Bear in mind that the internal representation is limited by fixed-point arithmetic with one
+// decimal place; each field is only int16.
+//
+// Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
+func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
 	ap, neg := period.absNeg()
 
 	if -0.5 < factor && factor < 0.5 {
 		d, pr1 := ap.Duration()
 		mul := float64(d) * float64(factor)
 		p2, pr2 := NewOf(time.Duration(mul))
-		return p2.Normalise(pr1 && pr2)
+		return p2.Normalise(pr1 && pr2), nil
 	}
 
 	y := int64(float32(ap.years) * factor)
@@ -302,9 +316,8 @@ func (period Period) Scale(factor float32) Period {
 	mm := int64(float32(ap.minutes) * factor)
 	ss := int64(float32(ap.seconds) * factor)
 
-	result, _ := (&period64{y, m, d, hh, mm, ss, neg}).normalise64(true).toPeriod()
-	// TODO handle the possible overflow error
-	return result
+	p64 := &period64{years: y, months: m, days: d, hours: hh, minutes: mm, seconds: ss, neg: neg}
+	return p64.normalise64(true).toPeriod()
 }
 
 func absInt16(v int16) int16 {
@@ -537,11 +550,11 @@ func (period Period) TotalMonthsApprox() int {
 //
 // Note that leap seconds are disregarded: every minute is assumed to have 60 seconds.
 func (period Period) Normalise(precise bool) Period {
-	n, _ := normalise(period, precise)
+	n, _ := normalise(period, "", precise)
 	return n
 }
 
-func normalise(period Period, precise bool) (Period, error) {
+func normalise(period Period, input string, precise bool) (Period, error) {
 	const limit = 32670 - (32670 / 60)
 
 	// can we use a quicker algorithm for HHMMSS with int16 arithmetic?
@@ -560,7 +573,7 @@ func normalise(period Period, precise bool) (Period, error) {
 	}
 
 	// do things the no-nonsense way using int64 arithmetic
-	return period.toPeriod64().normalise64(precise).toPeriod()
+	return period.toPeriod64(input).normalise64(precise).toPeriod()
 }
 
 func (period Period) normaliseHHMMSS(precise bool) Period {

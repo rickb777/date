@@ -79,7 +79,7 @@ var PeriodSecondNames = plural.FromZero("", "%v second", "%v seconds")
 
 // String converts the period to ISO-8601 form.
 func (period Period) String() string {
-	return period.toPeriod64().String()
+	return period.toPeriod64("").String()
 }
 
 func (p64 period64) String() string {

@@ -24,33 +24,46 @@ func TestParseErrors(t *testing.T) {
 		value     string
 		normalise bool
 		expected  string
+		expvalue  string
 	}{
-		{"", false, "cannot parse a blank string as a period"},
-		{"XY", false, "expected 'P' period mark at the start: XY"},
-		{"PxY", false, "expected a number before the 'Y' marker: PxY"},
-		{"PxW", false, "expected a number before the 'W' marker: PxW"},
-		{"PxD", false, "expected a number before the 'D' marker: PxD"},
-		{"PTxH", false, "expected a number before the 'H' marker: PTxH"},
-		{"PTxM", false, "expected a number before the 'M' marker: PTxM"},
-		{"PTxS", false, "expected a number before the 'S' marker: PTxS"},
-		{"P1HT1M", false, "unexpected remaining components 1H: P1HT1M"},
-		{"PT1Y", false, "unexpected remaining components 1Y: PT1Y"},
-		{"P1S", false, "unexpected remaining components 1S: P1S"},
+		{"", false, "cannot parse a blank string as a period", ""},
+		{"XY", false, "expected 'P' period mark at the start: ", "XY"},
+		{"PxY", false, "expected a number before the 'Y' designator: ", "PxY"},
+		{"PxW", false, "expected a number before the 'W' designator: ", "PxW"},
+		{"PxD", false, "expected a number before the 'D' designator: ", "PxD"},
+		{"PTxH", false, "expected a number before the 'H' designator: ", "PTxH"},
+		{"PTxM", false, "expected a number before the 'M' designator: ", "PTxM"},
+		{"PTxS", false, "expected a number before the 'S' designator: ", "PTxS"},
+		{"P1HT1M", false, "unexpected remaining components 1H: ", "P1HT1M"},
+		{"PT1Y", false, "unexpected remaining components 1Y: ", "PT1Y"},
+		{"P1S", false, "unexpected remaining components 1S: ", "P1S"},
 		// integer overflow
-		//{"PT103412160000S", false, "integer overflow occurred in seconds: PT103412160000S"},
-		//{"PT43084443591S", false, "integer overflow occurred in seconds: PT43084443591S"},
-		//{"P32768Y", false, "integer overflow occurred in years: P32768Y"},
-		//{"P32768M", false, "integer overflow occurred in months: P32768M"},
-		//{"P32768D", false, "integer overflow occurred in days: P32768D"},
-		//{"PT32768H", false, "integer overflow occurred in hours: PT32768H"},
-		//{"PT32768M", false, "integer overflow occurred in minutes: PT32768M"},
-		//{"PT32768S", false, "integer overflow occurred in seconds: PT32768S"},
-		//{"PT32768H32768M32768S", false, "integer overflow occurred in hours,minutes,seconds: PT32768H32768M32768S"},
+		{"P32768Y", false, "integer overflow occurred in years: ", "P32768Y"},
+		{"P32768M", false, "integer overflow occurred in months: ", "P32768M"},
+		{"P32768D", false, "integer overflow occurred in days: ", "P32768D"},
+		{"PT32768H", false, "integer overflow occurred in hours: ", "PT32768H"},
+		{"PT32768M", false, "integer overflow occurred in minutes: ", "PT32768M"},
+		{"PT32768S", false, "integer overflow occurred in seconds: ", "PT32768S"},
+		{"PT32768H32768M32768S", false, "integer overflow occurred in hours,minutes,seconds: ", "PT32768H32768M32768S"},
+		{"PT103412160000S", false, "integer overflow occurred in seconds: ", "PT103412160000S"},
+		{"P39324M", true, "integer overflow occurred in years: ", "P39324M"},
+		{"P1196900D", true, "integer overflow occurred in years: ", "P1196900D"},
+		{"PT28725600H", true, "integer overflow occurred in years: ", "PT28725600H"},
+		{"PT1723536000M", true, "integer overflow occurred in years: ", "PT1723536000M"},
+		{"PT103412160000S", true, "integer overflow occurred in years: ", "PT103412160000S"},
 	}
 	for i, c := range cases {
-		_, err := ParseWithNormalise(c.value, c.normalise)
-		g.Expect(err).To(HaveOccurred(), info(i, c.value))
-		g.Expect(err.Error()).To(Equal(c.expected), info(i, c.value))
+		_, ep := ParseWithNormalise(c.value, c.normalise)
+		g.Expect(ep).To(HaveOccurred(), info(i, c.value))
+		g.Expect(ep.Error()).To(Equal(c.expected+c.expvalue), info(i, c.value))
+
+		_, en := ParseWithNormalise("-"+c.value, c.normalise)
+		g.Expect(en).To(HaveOccurred(), info(i, c.value))
+		if c.expvalue != "" {
+			g.Expect(en.Error()).To(Equal(c.expected+"-"+c.expvalue), info(i, c.value))
+		} else {
+			g.Expect(en.Error()).To(Equal(c.expected), info(i, c.value))
+		}
 	}
 }
 

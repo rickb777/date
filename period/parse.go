@@ -51,7 +51,7 @@ func Parse(period string) (Period, error) {
 // are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
 // The canonical zero is "P0D".
 func ParseWithNormalise(period string, normalise bool) (Period, error) {
-	if period == "" {
+	if period == "" || period == "-" || period == "+" {
 		return Period{}, fmt.Errorf("cannot parse a blank string as a period")
 	}
 
@@ -59,7 +59,7 @@ func ParseWithNormalise(period string, normalise bool) (Period, error) {
 		return Period{}, nil
 	}
 
-	result := period64{}
+	result := period64{input: period}
 	pcopy := period
 	if pcopy[0] == '-' {
 		result.neg = true

@@ -10,21 +10,23 @@ type period64 struct {
 	// always positive values
 	years, months, days, hours, minutes, seconds int64
 	// true if the period is negative
-	neg bool
+	neg   bool
+	input string
 }
 
-func (period Period) toPeriod64() *period64 {
+func (period Period) toPeriod64(input string) *period64 {
 	if period.IsNegative() {
 		return &period64{
-			int64(-period.years), int64(-period.months), int64(-period.days),
-			int64(-period.hours), int64(-period.minutes), int64(-period.seconds),
-			true,
+			years: int64(-period.years), months: int64(-period.months), days: int64(-period.days),
+			hours: int64(-period.hours), minutes: int64(-period.minutes), seconds: int64(-period.seconds),
+			neg:   true,
+			input: input,
 		}
 	}
 	return &period64{
-		int64(period.years), int64(period.months), int64(period.days),
-		int64(period.hours), int64(period.minutes), int64(period.seconds),
-		false,
+		years: int64(period.years), months: int64(period.months), days: int64(period.days),
+		hours: int64(period.hours), minutes: int64(period.minutes), seconds: int64(period.seconds),
+		input: input,
 	}
 }
 
@@ -50,7 +52,10 @@ func (p64 *period64) toPeriod() (Period, error) {
 	}
 
 	if len(f) > 0 {
-		return Period{}, fmt.Errorf("integer overflow occurred in %s: %s", strings.Join(f, ","), p64)
+		if p64.input == "" {
+			p64.input = p64.String()
+		}
+		return Period{}, fmt.Errorf("integer overflow occurred in %s: %s", strings.Join(f, ","), p64.input)
 	}
 
 	if p64.neg {
