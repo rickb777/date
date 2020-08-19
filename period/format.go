@@ -5,8 +5,8 @@
 package period
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rickb777/plural"
@@ -22,8 +22,8 @@ func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, day
 	period = period.Abs()
 
 	parts := make([]string, 0)
-	parts = appendNonBlank(parts, yearNames.FormatFloat(absFloat10(period.years)))
-	parts = appendNonBlank(parts, monthNames.FormatFloat(absFloat10(period.months)))
+	parts = appendNonBlank(parts, yearNames.FormatFloat(float10(period.years)))
+	parts = appendNonBlank(parts, monthNames.FormatFloat(float10(period.months)))
 
 	if period.days > 0 || (period.IsZero()) {
 		if len(weekNames) > 0 {
@@ -34,15 +34,15 @@ func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, day
 				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
 			}
 			if mdays > 0 || weeks == 0 {
-				parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat10(mdays)))
+				parts = appendNonBlank(parts, dayNames.FormatFloat(float10(mdays)))
 			}
 		} else {
-			parts = appendNonBlank(parts, dayNames.FormatFloat(absFloat10(period.days)))
+			parts = appendNonBlank(parts, dayNames.FormatFloat(float10(period.days)))
 		}
 	}
-	parts = appendNonBlank(parts, hourNames.FormatFloat(absFloat10(period.hours)))
-	parts = appendNonBlank(parts, minNames.FormatFloat(absFloat10(period.minutes)))
-	parts = appendNonBlank(parts, secNames.FormatFloat(absFloat10(period.seconds)))
+	parts = appendNonBlank(parts, hourNames.FormatFloat(float10(period.hours)))
+	parts = appendNonBlank(parts, minNames.FormatFloat(float10(period.minutes)))
+	parts = appendNonBlank(parts, secNames.FormatFloat(float10(period.seconds)))
 
 	return strings.Join(parts, ", ")
 }
@@ -79,50 +79,54 @@ var PeriodSecondNames = plural.FromZero("", "%v second", "%v seconds")
 
 // String converts the period to ISO-8601 form.
 func (period Period) String() string {
-	if period.IsZero() {
+	return period.toPeriod64().String()
+}
+
+func (p64 period64) String() string {
+	if p64 == (period64{}) {
 		return "P0D"
 	}
 
-	buf := &bytes.Buffer{}
-	if period.Sign() < 0 {
+	buf := &strings.Builder{}
+	if p64.neg {
 		buf.WriteByte('-')
 	}
 
 	buf.WriteByte('P')
 
-	if period.years != 0 {
-		fmt.Fprintf(buf, "%gY", absFloat10(period.years))
-	}
-	if period.months != 0 {
-		fmt.Fprintf(buf, "%gM", absFloat10(period.months))
-	}
-	if period.days != 0 {
-		if period.days%70 == 0 {
-			fmt.Fprintf(buf, "%gW", absFloat10(period.days/7))
+	writeField64(buf, p64.years, 'Y')
+	writeField64(buf, p64.months, 'M')
+
+	if p64.days != 0 {
+		if p64.days%70 == 0 {
+			writeField64(buf, p64.days/7, 'W')
 		} else {
-			fmt.Fprintf(buf, "%gD", absFloat10(period.days))
+			writeField64(buf, p64.days, 'D')
 		}
 	}
-	if period.hours != 0 || period.minutes != 0 || period.seconds != 0 {
+
+	if p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0 {
 		buf.WriteByte('T')
 	}
-	if period.hours != 0 {
-		fmt.Fprintf(buf, "%gH", absFloat10(period.hours))
-	}
-	if period.minutes != 0 {
-		fmt.Fprintf(buf, "%gM", absFloat10(period.minutes))
-	}
-	if period.seconds != 0 {
-		fmt.Fprintf(buf, "%gS", absFloat10(period.seconds))
-	}
+
+	writeField64(buf, p64.hours, 'H')
+	writeField64(buf, p64.minutes, 'M')
+	writeField64(buf, p64.seconds, 'S')
 
 	return buf.String()
 }
 
-func absFloat10(v int16) float32 {
-	f := float32(v) / 10
-	if v < 0 {
-		return -f
+func writeField64(w io.Writer, field int64, designator byte) {
+	if field != 0 {
+		if field%10 != 0 {
+			fmt.Fprintf(w, "%g", float32(field)/10)
+		} else {
+			fmt.Fprintf(w, "%d", field/10)
+		}
+		w.(io.ByteWriter).WriteByte(designator)
 	}
-	return f
+}
+
+func float10(v int16) float32 {
+	return float32(v) / 10
 }

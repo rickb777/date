@@ -80,17 +80,17 @@ func ParseWithNormalise(period string, normalise bool) (Period, error) {
 
 		result.hours, st = parseField(st, 'H')
 		if st.err != nil {
-			return Period{}, fmt.Errorf("expected a number before the 'H' marker: %s", period)
+			return Period{}, fmt.Errorf("expected a number before the 'H' designator: %s", period)
 		}
 
 		result.minutes, st = parseField(st, 'M')
 		if st.err != nil {
-			return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
+			return Period{}, fmt.Errorf("expected a number before the 'M' designator: %s", period)
 		}
 
 		result.seconds, st = parseField(st, 'S')
 		if st.err != nil {
-			return Period{}, fmt.Errorf("expected a number before the 'S' marker: %s", period)
+			return Period{}, fmt.Errorf("expected a number before the 'S' designator: %s", period)
 		}
 
 		if len(st.pcopy) != 0 {
@@ -102,20 +102,20 @@ func ParseWithNormalise(period string, normalise bool) (Period, error) {
 
 	result.years, st = parseField(st, 'Y')
 	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'Y' marker: %s", period)
+		return Period{}, fmt.Errorf("expected a number before the 'Y' designator: %s", period)
 	}
 	result.months, st = parseField(st, 'M')
 	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'M' marker: %s", period)
+		return Period{}, fmt.Errorf("expected a number before the 'M' designator: %s", period)
 	}
 	weeks, st := parseField(st, 'W')
 	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'W' marker: %s", period)
+		return Period{}, fmt.Errorf("expected a number before the 'W' designator: %s", period)
 	}
 
 	days, st := parseField(st, 'D')
 	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'D' marker: %s", period)
+		return Period{}, fmt.Errorf("expected a number before the 'D' designator: %s", period)
 	}
 
 	if len(st.pcopy) != 0 {
@@ -126,14 +126,14 @@ func ParseWithNormalise(period string, normalise bool) (Period, error) {
 	//fmt.Printf("%#v\n", st)
 
 	if !st.ok {
-		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' marker: %s", period)
+		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator: %s", period)
 	}
 
 	if normalise {
-		return result.normalise64(true).toPeriod(), nil
+		return result.normalise64(true).toPeriod()
 	}
 
-	return result.toPeriod(), nil
+	return result.toPeriod()
 }
 
 type parseState struct {

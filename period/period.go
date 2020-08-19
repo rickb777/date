@@ -14,7 +14,6 @@ const daysPerMonthE4 int64 = 304369   // 30.4369 days per month
 const daysPerMonthE6 int64 = 30436875 // 30.436875 days per month
 
 const oneE4 int64 = 10000
-const oneE5 int64 = 100000
 const oneE6 int64 = 1000000
 const oneE7 int64 = 10000000
 
@@ -171,9 +170,9 @@ func daysDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, hundredth int
 
 	day = int(duration / (24 * time.Hour))
 
-	hour = int(hh2 - hh1)
-	min = int(mm2 - mm1)
-	sec = int(ss2 - ss1)
+	hour = hh2 - hh1
+	min = mm2 - mm1
+	sec = ss2 - ss1
 	hundredth = (t2.Nanosecond() - t1.Nanosecond()) / 100000000
 
 	// Normalize negative values
@@ -248,15 +247,15 @@ func (period Period) OnlyHMS() Period {
 
 // Abs converts a negative period to a positive one.
 func (period Period) Abs() Period {
-	return Period{absInt16(period.years), absInt16(period.months), absInt16(period.days),
-		absInt16(period.hours), absInt16(period.minutes), absInt16(period.seconds)}
+	a, _ := period.absNeg()
+	return a
 }
 
-func absInt16(v int16) int16 {
-	if v < 0 {
-		return -v
+func (period Period) absNeg() (Period, bool) {
+	if period.IsNegative() {
+		return period.Negate(), true
 	}
-	return v
+	return period, false
 }
 
 // Negate changes the sign of the period.
@@ -287,22 +286,32 @@ func (period Period) Add(that Period) Period {
 //
 // Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
 func (period Period) Scale(factor float32) Period {
+	ap, neg := period.absNeg()
 
 	if -0.5 < factor && factor < 0.5 {
-		d, pr1 := period.Duration()
+		d, pr1 := ap.Duration()
 		mul := float64(d) * float64(factor)
 		p2, pr2 := NewOf(time.Duration(mul))
 		return p2.Normalise(pr1 && pr2)
 	}
 
-	y := int64(float32(period.years) * factor)
-	m := int64(float32(period.months) * factor)
-	d := int64(float32(period.days) * factor)
-	hh := int64(float32(period.hours) * factor)
-	mm := int64(float32(period.minutes) * factor)
-	ss := int64(float32(period.seconds) * factor)
+	y := int64(float32(ap.years) * factor)
+	m := int64(float32(ap.months) * factor)
+	d := int64(float32(ap.days) * factor)
+	hh := int64(float32(ap.hours) * factor)
+	mm := int64(float32(ap.minutes) * factor)
+	ss := int64(float32(ap.seconds) * factor)
 
-	return (&period64{y, m, d, hh, mm, ss, false}).normalise64(true).toPeriod()
+	result, _ := (&period64{y, m, d, hh, mm, ss, neg}).normalise64(true).toPeriod()
+	// TODO handle the possible overflow error
+	return result
+}
+
+func absInt16(v int16) int16 {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // Years gets the whole number of years in the period.
@@ -514,7 +523,8 @@ func (period Period) TotalMonthsApprox() int {
 //
 // Because the number of hours per day is imprecise (due to daylight savings etc), and because
 // the number of days per month is variable in the Gregorian calendar, there is a reluctance
-// to transfer time too or from the days element. To give control over this, there are two modes.
+// to transfer time to or from the days element, or to transfer days to or from the months
+// element. To give control over this, there are two modes.
 //
 // In precise mode:
 // Multiples of 60 seconds become minutes.
@@ -527,6 +537,11 @@ func (period Period) TotalMonthsApprox() int {
 //
 // Note that leap seconds are disregarded: every minute is assumed to have 60 seconds.
 func (period Period) Normalise(precise bool) Period {
+	n, _ := normalise(period, precise)
+	return n
+}
+
+func normalise(period Period, precise bool) (Period, error) {
 	const limit = 32670 - (32670 / 60)
 
 	// can we use a quicker algorithm for HHMMSS with int16 arithmetic?
@@ -534,14 +549,14 @@ func (period Period) Normalise(precise bool) Period {
 		(!precise || period.days == 0) &&
 		period.hours > -limit && period.hours < limit {
 
-		return period.normaliseHHMMSS(precise)
+		return period.normaliseHHMMSS(precise), nil
 	}
 
 	// can we use a quicker algorithm for YYMM with int16 arithmetic?
-	if (period.years != 0 || period.months != 0) && //period.months%10 == 0 &&
+	if (period.years != 0 || period.months != 0) &&
 		period.days == 0 && period.hours == 0 && period.minutes == 0 && period.seconds == 0 {
 
-		return period.normaliseYYMM()
+		return period.normaliseYYMM(), nil
 	}
 
 	// do things the no-nonsense way using int64 arithmetic
@@ -549,8 +564,7 @@ func (period Period) Normalise(precise bool) Period {
 }
 
 func (period Period) normaliseHHMMSS(precise bool) Period {
-	s := period.Sign()
-	ap := period.Abs()
+	ap, neg := period.absNeg()
 
 	// remember that the fields are all fixed-point 1E1
 	ap.minutes += (ap.seconds / 600) * 10
@@ -583,164 +597,31 @@ func (period Period) normaliseHHMMSS(precise bool) Period {
 		ap.minutes -= mm10
 	}
 
-	if s < 0 {
+	if neg {
 		return ap.Negate()
 	}
 	return ap
 }
 
 func (period Period) normaliseYYMM() Period {
-	s := period.Sign()
-	ap := period.Abs()
-
 	// remember that the fields are all fixed-point 1E1
-	if ap.months > 129 {
+	ap, neg := period.absNeg()
+
+	// bubble month to years
+	if ap.months > 129 { //TODO 119???
 		ap.years += (ap.months / 120) * 10
 		ap.months = ap.months % 120
 	}
 
+	// push year-fraction down
 	y10 := ap.years % 10
 	if y10 != 0 && (ap.years < 10 || ap.months != 0) {
 		ap.months += y10 * 12
 		ap.years -= y10
 	}
 
-	if s < 0 {
+	if neg {
 		return ap.Negate()
 	}
 	return ap
-}
-
-//-------------------------------------------------------------------------------------------------
-
-// used for stages in arithmetic
-type period64 struct {
-	years, months, days, hours, minutes, seconds int64
-	neg                                          bool
-}
-
-func (period Period) toPeriod64() *period64 {
-	return &period64{
-		int64(period.years), int64(period.months), int64(period.days),
-		int64(period.hours), int64(period.minutes), int64(period.seconds),
-		false,
-	}
-}
-
-func (p *period64) toPeriod() Period {
-	if p.neg {
-		return Period{
-			int16(-p.years), int16(-p.months), int16(-p.days),
-			int16(-p.hours), int16(-p.minutes), int16(-p.seconds),
-		}
-	}
-
-	return Period{
-		int16(p.years), int16(p.months), int16(p.days),
-		int16(p.hours), int16(p.minutes), int16(p.seconds),
-	}
-}
-
-func (p *period64) normalise64(precise bool) *period64 {
-	return p.abs().rippleUp(precise).moveFractionToRight()
-}
-
-func (p *period64) abs() *period64 {
-
-	if !p.neg {
-		if p.years < 0 {
-			p.years = -p.years
-			p.neg = true
-		}
-
-		if p.months < 0 {
-			p.months = -p.months
-			p.neg = true
-		}
-
-		if p.days < 0 {
-			p.days = -p.days
-			p.neg = true
-		}
-
-		if p.hours < 0 {
-			p.hours = -p.hours
-			p.neg = true
-		}
-
-		if p.minutes < 0 {
-			p.minutes = -p.minutes
-			p.neg = true
-		}
-
-		if p.seconds < 0 {
-			p.seconds = -p.seconds
-			p.neg = true
-		}
-	}
-	return p
-}
-
-func (p *period64) rippleUp(precise bool) *period64 {
-	// remember that the fields are all fixed-point 1E1
-
-	p.minutes = p.minutes + (p.seconds/600)*10
-	p.seconds = p.seconds % 600
-
-	p.hours = p.hours + (p.minutes/600)*10
-	p.minutes = p.minutes % 600
-
-	// 32670-(32670/60)-(32670/3600) = 32760 - 546 - 9.1 = 32204.9
-	if !precise || p.hours > 32204 {
-		p.days += (p.hours / 240) * 10
-		p.hours = p.hours % 240
-	}
-
-	if !precise || p.days > 32760 {
-		dE6 := p.days * oneE6
-		p.months += dE6 / daysPerMonthE6
-		p.days = (dE6 % daysPerMonthE6) / oneE6
-	}
-
-	p.years = p.years + (p.months/120)*10
-	p.months = p.months % 120
-
-	return p
-}
-
-// moveFractionToRight applies the rule that only the smallest field is permitted to have a decimal fraction.
-func (p *period64) moveFractionToRight() *period64 {
-	// remember that the fields are all fixed-point 1E1
-
-	y10 := p.years % 10
-	if y10 != 0 && (p.months != 0 || p.days != 0 || p.hours != 0 || p.minutes != 0 || p.seconds != 0) {
-		p.months += y10 * 12
-		p.years = (p.years / 10) * 10
-	}
-
-	m10 := p.months % 10
-	if m10 != 0 && (p.days != 0 || p.hours != 0 || p.minutes != 0 || p.seconds != 0) {
-		p.days += (m10 * daysPerMonthE6) / oneE6
-		p.months = (p.months / 10) * 10
-	}
-
-	d10 := p.days % 10
-	if d10 != 0 && (p.hours != 0 || p.minutes != 0 || p.seconds != 0) {
-		p.hours += d10 * 24
-		p.days = (p.days / 10) * 10
-	}
-
-	hh10 := p.hours % 10
-	if hh10 != 0 && (p.minutes != 0 || p.seconds != 0) {
-		p.minutes += hh10 * 60
-		p.hours = (p.hours / 10) * 10
-	}
-
-	mm10 := p.minutes % 10
-	if mm10 != 0 && p.seconds != 0 {
-		p.seconds += mm10 * 60
-		p.minutes = (p.minutes / 10) * 10
-	}
-
-	return p
 }
