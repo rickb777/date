@@ -21,22 +21,35 @@ func TestParseErrors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		value    string
-		expected string
+		value     string
+		normalise bool
+		expected  string
 	}{
-		{"", "cannot parse a blank string as a period"},
-		{"XY", "expected 'P' period mark at the start: XY"},
-		{"PxY", "expected a number before the 'Y' marker: PxY"},
-		{"PxW", "expected a number before the 'W' marker: PxW"},
-		{"PxD", "expected a number before the 'D' marker: PxD"},
-		{"PTxH", "expected a number before the 'H' marker: PTxH"},
-		{"PTxS", "expected a number before the 'S' marker: PTxS"},
-		{"P1HT1M", "unexpected remaining components 1H: P1HT1M"},
-		{"PT1Y", "unexpected remaining components 1Y: PT1Y"},
-		{"P1S", "unexpected remaining components 1S: P1S"},
+		{"", false, "cannot parse a blank string as a period"},
+		{"XY", false, "expected 'P' period mark at the start: XY"},
+		{"PxY", false, "expected a number before the 'Y' marker: PxY"},
+		{"PxW", false, "expected a number before the 'W' marker: PxW"},
+		{"PxD", false, "expected a number before the 'D' marker: PxD"},
+		{"PTxH", false, "expected a number before the 'H' marker: PTxH"},
+		{"PTxM", false, "expected a number before the 'M' marker: PTxM"},
+		{"PTxS", false, "expected a number before the 'S' marker: PTxS"},
+		{"P1HT1M", false, "unexpected remaining components 1H: P1HT1M"},
+		{"PT1Y", false, "unexpected remaining components 1Y: PT1Y"},
+		{"P1S", false, "unexpected remaining components 1S: P1S"},
+		// integer overflow
+		//{"PT103412160000S", false, "integer overflow occurred in seconds: PT103412160000S"},
+		//{"PT43084443591S", false, "integer overflow occurred in seconds: PT43084443591S"},
+		//{"P32768Y", false, "integer overflow occurred in years: P32768Y"},
+		//{"P32768M", false, "integer overflow occurred in months: P32768M"},
+		//{"P32768D", false, "integer overflow occurred in days: P32768D"},
+		//{"PT32768H", false, "integer overflow occurred in hours: PT32768H"},
+		//{"PT32768M", false, "integer overflow occurred in minutes: PT32768M"},
+		//{"PT32768S", false, "integer overflow occurred in seconds: PT32768S"},
+		//{"PT32768H32768M32768S", false, "integer overflow occurred in hours,minutes,seconds: PT32768H32768M32768S"},
 	}
 	for i, c := range cases {
-		_, err := Parse(c.value)
+		_, err := ParseWithNormalise(c.value, c.normalise)
+		g.Expect(err).To(HaveOccurred(), info(i, c.value))
 		g.Expect(err.Error()).To(Equal(c.expected), info(i, c.value))
 	}
 }
@@ -45,55 +58,34 @@ func TestParsePeriodWithNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		value  string
-		period Period
+		value    string
+		reversed string
+		period   Period
 	}{
-		// zeroes
-		{"P0", Period{}},
-		{"P0Y", Period{}},
-		{"P0M", Period{}},
-		{"P0W", Period{}},
-		{"P0D", Period{}},
-		{"PT0H", Period{}},
-		{"PT0M", Period{}},
-		{"PT0S", Period{}},
-		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
-		{"P6M", Period{0, 60, 0, 0, 0, 0}},
-		{"P5W", Period{0, 0, 350, 0, 0, 0}},
-		{"P4D", Period{0, 0, 40, 0, 0, 0}},
-		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
-		{"PT30M", Period{0, 0, 0, 0, 300, 0}},
-		{"PT25S", Period{0, 0, 0, 0, 0, 250}},
-		{"PT30M67.6S", Period{0, 0, 0, 0, 310, 76}},
-		{"P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
-		{"+P3Y6M5W4DT12H40M5S", Period{30, 60, 390, 120, 400, 50}},
-		{"-P3Y6M5W4DT12H40M5S", Period{-30, -60, -390, -120, -400, -50}},
-		{"P2.Y", Period{20, 0, 0, 0, 0, 0}},
-		{"P2.5Y", Period{25, 0, 0, 0, 0, 0}},
-		{"P2.15Y", Period{21, 0, 0, 0, 0, 0}},
-		{"P2.125Y", Period{21, 0, 0, 0, 0, 0}},
-		{"P1Y2.M", Period{10, 20, 0, 0, 0, 0}},
-		{"P1Y2.5M", Period{10, 25, 0, 0, 0, 0}},
-		{"P1Y2.15M", Period{10, 21, 0, 0, 0, 0}},
-		{"P1Y2.125M", Period{10, 21, 0, 0, 0, 0}},
-		{"P3276.7Y", Period{32767, 0, 0, 0, 0, 0}},
-		{"-P3276.7Y", Period{-32767, 0, 0, 0, 0, 0}},
+		// all rollovers
+		{"PT1234.5S", "PT20M34.5S", Period{minutes: 200, seconds: 345}},
+		{"PT1234.5M", "PT20H34.5M", Period{hours: 200, minutes: 345}},
+		{"PT12345.6H", "P514DT9.6H", Period{days: 5140, hours: 96}},
+		{"P3276.1D", "P8Y11M19.2D", Period{years: 80, months: 110, days: 192}},
+		{"P1234.5M", "P102Y10.5M", Period{years: 1020, months: 105}},
 		// largest possible number of seconds normalised only in hours, mins, sec
-		{"PT11592000S", Period{0, 0, 0, 32200, 0, 0}},
-		{"-PT11592000S", Period{0, 0, 0, -32200, 0, 0}},
-		{"PT11595599S", Period{0, 0, 0, 32200, 590, 590}},
+		{"PT11592000S", "PT3220H", Period{hours: 32200}},
+		{"-PT11592000S", "-PT3220H", Period{hours: -32200}},
+		{"PT11595599S", "PT3220H59M59S", Period{hours: 32200, minutes: 590, seconds: 590}},
 		// largest possible number of seconds normalised only in days, hours, mins, sec
-		{"PT283046400S", Period{0, 0, 32760, 0, 0, 0}},
-		{"-PT283046400S", Period{0, 0, -32760, 0, 0, 0}},
-		{"PT283132799S", Period{0, 0, 32760, 230, 590, 590}},
-		// largest possible number of months
-		{"P39312M", Period{32760, 0, 0, 0, 0, 0}},
-		{"-P39312M", Period{-32760, 0, 0, 0, 0, 0}},
+		{"PT283046400S", "P468W", Period{days: 32760}},
+		{"-PT283046400S", "-P468W", Period{days: -32760}},
+		{"PT43084443590S", "P1365Y3M2WT26H83M50S", Period{years: 13650, months: 30, days: 140, hours: 260, minutes: 830, seconds: 500}},
+		{"PT103412159999S", "P3276Y11M29DT37H83M59S", Period{years: 32760, months: 110, days: 290, hours: 370, minutes: 830, seconds: 590}},
+		{"PT283132799S", "P468WT23H59M59S", Period{days: 32760, hours: 230, minutes: 590, seconds: 590}},
+		// other examples are in TestNormalise
 	}
 	for i, c := range cases {
 		p, err := Parse(c.value)
 		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
 		g.Expect(p).To(Equal(c.period), info(i, c.value))
+		// reversal is expected not to be an identity
+		g.Expect(p.String()).To(Equal(c.reversed), info(i, c.value)+" reversed")
 	}
 }
 
@@ -101,16 +93,82 @@ func TestParsePeriodWithoutNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		value     string
-		normalise bool
-		period    Period
+		value    string
+		reversed string
+		period   Period
 	}{
-		{"P1Y14M35DT48H125M800S", false, Period{10, 140, 350, 480, 1250, 8000}},
+		// zero
+		{"P0D", "P0D", Period{}},
+		// special zero cases: parse is not identity when reversed
+		{"P0", "P0D", Period{}},
+		{"P0Y", "P0D", Period{}},
+		{"P0M", "P0D", Period{}},
+		{"P0W", "P0D", Period{}},
+		{"PT0H", "P0D", Period{}},
+		{"PT0M", "P0D", Period{}},
+		{"PT0S", "P0D", Period{}},
+		// ones
+		{"P1Y", "P1Y", Period{years: 10}},
+		{"P1M", "P1M", Period{months: 10}},
+		{"P1W", "P1W", Period{days: 70}},
+		{"P1D", "P1D", Period{days: 10}},
+		{"PT1H", "PT1H", Period{hours: 10}},
+		{"PT1M", "PT1M", Period{minutes: 10}},
+		{"PT1S", "PT1S", Period{seconds: 10}},
+		// smallest
+		{"P0.1Y", "P0.1Y", Period{years: 1}},
+		{"-P0.1Y", "-P0.1Y", Period{years: -1}},
+		{"P0.1M", "P0.1M", Period{months: 1}},
+		{"-P0.1M", "-P0.1M", Period{months: -1}},
+		{"P0.1D", "P0.1D", Period{days: 1}},
+		{"-P0.1D", "-P0.1D", Period{days: -1}},
+		{"PT0.1H", "PT0.1H", Period{hours: 1}},
+		{"-PT0.1H", "-PT0.1H", Period{hours: -1}},
+		{"PT0.1M", "PT0.1M", Period{minutes: 1}},
+		{"-PT0.1M", "-PT0.1M", Period{minutes: -1}},
+		{"PT0.1S", "PT0.1S", Period{seconds: 1}},
+		{"-PT0.1S", "-PT0.1S", Period{seconds: -1}},
+		// week special case: also not identity when reversed
+		{"P0.1W", "P0.7D", Period{days: 7}},
+		{"-P0.1W", "-P0.7D", Period{days: -7}},
+		// largest
+		{"PT3276.7S", "PT3276.7S", Period{seconds: 32767}},
+		{"PT3276.7M", "PT3276.7M", Period{minutes: 32767}},
+		{"PT3276.7H", "PT3276.7H", Period{hours: 32767}},
+		{"P3276.7D", "P3276.7D", Period{days: 32767}},
+		{"P3276.7M", "P3276.7M", Period{months: 32767}},
+		{"P3276.7Y", "P3276.7Y", Period{years: 32767}},
+
+		{"P3Y", "P3Y", Period{years: 30}},
+		{"P6M", "P6M", Period{months: 60}},
+		{"P5W", "P5W", Period{days: 350}},
+		{"P4D", "P4D", Period{days: 40}},
+		{"PT12H", "PT12H", Period{hours: 120}},
+		{"PT30M", "PT30M", Period{minutes: 300}},
+		{"PT25S", "PT25S", Period{seconds: 250}},
+		{"PT30M67.6S", "PT30M67.6S", Period{minutes: 300, seconds: 676}},
+		{"P2.Y", "P2Y", Period{years: 20}},
+		{"P2.5Y", "P2.5Y", Period{years: 25}},
+		{"P2.15Y", "P2.1Y", Period{years: 21}},
+		{"P2.125Y", "P2.1Y", Period{years: 21}},
+		{"P1Y2.M", "P1Y2M", Period{years: 10, months: 20}},
+		{"P1Y2.5M", "P1Y2.5M", Period{years: 10, months: 25}},
+		{"P1Y2.15M", "P1Y2.1M", Period{years: 10, months: 21}},
+		{"P1Y2.125M", "P1Y2.1M", Period{years: 10, months: 21}},
+		{"P3276.7Y", "P3276.7Y", Period{years: 32767}},
+		{"-P3276.7Y", "-P3276.7Y", Period{years: -32767}},
+		// others
+		{"P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 30, months: 60, days: 390, hours: 120, minutes: 400, seconds: 50}},
+		{"+P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 30, months: 60, days: 390, hours: 120, minutes: 400, seconds: 50}},
+		{"-P3Y6M5W4DT12H40M5S", "-P3Y6M39DT12H40M5S", Period{years: -30, months: -60, days: -390, hours: -120, minutes: -400, seconds: -50}},
+		{"P1Y14M35DT48H125M800S", "P1Y14M5WT48H125M800S", Period{years: 10, months: 140, days: 350, hours: 480, minutes: 1250, seconds: 8000}},
 	}
 	for i, c := range cases {
-		p, err := ParseWithNormalise(c.value, c.normalise)
+		p, err := ParseWithNormalise(c.value, false)
 		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
 		g.Expect(p).To(Equal(c.period), info(i, c.value))
+		// reversal is usually expected to be an identity
+		g.Expect(p.String()).To(Equal(c.reversed), info(i, c.value)+" reversed")
 	}
 }
 
@@ -122,22 +180,47 @@ func TestPeriodString(t *testing.T) {
 		period Period
 	}{
 		{"P0D", Period{}},
-		{"P3Y", Period{30, 0, 0, 0, 0, 0}},
-		{"-P3Y", Period{-30, 0, 0, 0, 0, 0}},
-		{"P6M", Period{0, 60, 0, 0, 0, 0}},
-		{"-P6M", Period{0, -60, 0, 0, 0, 0}},
-		{"P5W", Period{0, 0, 350, 0, 0, 0}},
-		{"-P5W", Period{0, 0, -350, 0, 0, 0}},
-		{"P4W", Period{0, 0, 280, 0, 0, 0}},
-		{"-P4W", Period{0, 0, -280, 0, 0, 0}},
-		{"P4D", Period{0, 0, 40, 0, 0, 0}},
-		{"-P4D", Period{0, 0, -40, 0, 0, 0}},
-		{"PT12H", Period{0, 0, 0, 120, 0, 0}},
-		{"PT30M", Period{0, 0, 0, 0, 300, 0}},
-		{"PT5S", Period{0, 0, 0, 0, 0, 50}},
-		{"P3Y6M39DT1H2M4S", Period{30, 60, 390, 10, 20, 40}},
-		{"-P3Y6M39DT1H2M4S", Period{-30, -60, -390, 10, 20, 40}},
-		{"P2.5Y", Period{25, 0, 0, 0, 0, 0}},
+		// ones
+		{"P1Y", Period{years: 10}},
+		{"P1M", Period{months: 10}},
+		{"P1W", Period{days: 70}},
+		{"P1D", Period{days: 10}},
+		{"PT1H", Period{hours: 10}},
+		{"PT1M", Period{minutes: 10}},
+		{"PT1S", Period{seconds: 10}},
+		// smallest
+		{"P0.1Y", Period{years: 1}},
+		{"P0.1M", Period{months: 1}},
+		{"P0.7D", Period{days: 7}},
+		{"P0.1D", Period{days: 1}},
+		{"PT0.1H", Period{hours: 1}},
+		{"PT0.1M", Period{minutes: 1}},
+		{"PT0.1S", Period{seconds: 1}},
+		// negative
+		{"-P0.1Y", Period{years: -1}},
+		{"-P0.1M", Period{months: -1}},
+		{"-P0.7D", Period{days: -7}},
+		{"-P0.1D", Period{days: -1}},
+		{"-PT0.1H", Period{hours: -1}},
+		{"-PT0.1M", Period{minutes: -1}},
+		{"-PT0.1S", Period{seconds: -1}},
+
+		{"P3Y", Period{years: 30}},
+		{"-P3Y", Period{years: -30}},
+		{"P6M", Period{months: 60}},
+		{"-P6M", Period{months: -60}},
+		{"P5W", Period{days: 350}},
+		{"-P5W", Period{days: -350}},
+		{"P4W", Period{days: 280}},
+		{"-P4W", Period{days: -280}},
+		{"P4D", Period{days: 40}},
+		{"-P4D", Period{days: -40}},
+		{"PT12H", Period{hours: 120}},
+		{"PT30M", Period{minutes: 300}},
+		{"PT5S", Period{seconds: 50}},
+		{"P3Y6M39DT1H2M4S", Period{years: 30, months: 60, days: 390, hours: 10, minutes: 20, seconds: 40}},
+		{"-P3Y6M39DT1H2M4S", Period{years: -30, months: -60, days: -390, hours: -10, minutes: -20, seconds: -40}},
+		{"P2.5Y", Period{years: 25}},
 	}
 	for i, c := range cases {
 		s := c.period.String()
@@ -152,23 +235,23 @@ func TestPeriodIntComponents(t *testing.T) {
 		value                      string
 		y, m, w, d, dx, hh, mm, ss int
 	}{
-		{"P0D", 0, 0, 0, 0, 0, 0, 0, 0},
-		{"P1Y", 1, 0, 0, 0, 0, 0, 0, 0},
-		{"-P1Y", -1, 0, 0, 0, 0, 0, 0, 0},
-		{"P1W", 0, 0, 1, 7, 0, 0, 0, 0},
-		{"-P1W", 0, 0, -1, -7, 0, 0, 0, 0},
-		{"P6M", 0, 6, 0, 0, 0, 0, 0, 0},
-		{"-P6M", 0, -6, 0, 0, 0, 0, 0, 0},
-		{"P12M", 1, 0, 0, 0, 0, 0, 0, 0},
-		{"-P12M", -1, -0, 0, 0, 0, 0, 0, 0},
-		{"P39D", 0, 0, 5, 39, 4, 0, 0, 0},
-		{"-P39D", 0, 0, -5, -39, -4, 0, 0, 0},
-		{"P4D", 0, 0, 0, 4, 4, 0, 0, 0},
-		{"-P4D", 0, 0, 0, -4, -4, 0, 0, 0},
-		{"PT12H", 0, 0, 0, 0, 0, 12, 0, 0},
-		{"PT60M", 0, 0, 0, 0, 0, 1, 0, 0},
-		{"PT30M", 0, 0, 0, 0, 0, 0, 30, 0},
-		{"PT5S", 0, 0, 0, 0, 0, 0, 0, 5},
+		{value: "P0D"},
+		{value: "P1Y", y: 1},
+		{value: "-P1Y", y: -1},
+		{value: "P1W", w: 1, d: 7},
+		{value: "-P1W", w: -1, d: -7},
+		{value: "P6M", m: 6},
+		{value: "-P6M", m: -6},
+		{value: "P12M", y: 1},
+		{value: "-P12M", y: -1, m: -0},
+		{value: "P39D", w: 5, d: 39, dx: 4},
+		{value: "-P39D", w: -5, d: -39, dx: -4},
+		{value: "P4D", d: 4, dx: 4},
+		{value: "-P4D", d: -4, dx: -4},
+		{value: "PT12H", hh: 12},
+		{value: "PT60M", hh: 1},
+		{value: "PT30M", mm: 30},
+		{value: "PT5S", ss: 5},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
@@ -187,45 +270,55 @@ func TestPeriodFloatComponents(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		value                      string
+		value                      Period
 		y, m, w, d, dx, hh, mm, ss float32
 	}{
-		{"P0D", 0, 0, 0, 0, 0, 0, 0, 0},
+		// note: the negative cases are also covered (see below)
+
+		{}, // zero case
 
 		// YMD cases
-		{"P1Y", 1, 0, 0, 0, 0, 0, 0, 0},
-		{"P1.1Y", 1.1, 0, 0, 0, 0, 0, 0, 0},
-		{"-P1Y", -1, 0, 0, 0, 0, 0, 0, 0},
-		{"P1W", 0, 0, 1, 7, 0, 0, 0, 0},
-		{"P1.1W", 0, 0, 1.1, 7.7, 0, 0, 0, 0},
-		{"-P1W", 0, 0, -1, -7, 0, 0, 0, 0},
-		{"P1.1M", 0, 1.1, 0, 0, 0, 0, 0, 0},
-		{"P6M", 0, 6, 0, 0, 0, 0, 0, 0},
-		{"-P6M", 0, -6, 0, 0, 0, 0, 0, 0},
-		{"P12M", 1, 0, 0, 0, 0, 0, 0, 0},
-		{"-P12M", -1, 0, 0, 0, 0, 0, 0, 0},
-		{"P39D", 0, 0, 5.571429, 39, 4, 0, 0, 0},
-		{"-P39D", 0, 0, -5.571429, -39, -4, 0, 0, 0},
-		{"P4D", 0, 0, 0.5714286, 4, 4, 0, 0, 0},
-		{"-P4D", 0, 0, -0.5714286, -4, -4, 0, 0, 0},
+		{value: Period{years: 10}, y: 1},
+		{value: Period{years: 15}, y: 1.5},
+		{value: Period{months: 10}, m: 1},
+		{value: Period{months: 15}, m: 1.5},
+		{value: Period{months: 60}, m: 6},
+		{value: Period{months: 120}, m: 12},
+		{value: Period{days: 70}, w: 1, d: 7},
+		{value: Period{days: 77}, w: 1.1, d: 7.7},
+		{value: Period{days: 10}, w: 1.0 / 7, d: 1},
+		{value: Period{days: 11}, w: 1.1 / 7, d: 1.1},
+		{value: Period{days: 390}, w: 5.571429, d: 39, dx: 4},
+		{value: Period{days: 40}, w: 0.5714286, d: 4, dx: 4},
 
 		// HMS cases
-		{"PT1.1H", 0, 0, 0, 0, 0, 1.1, 0, 0},
-		{"PT12H", 0, 0, 0, 0, 0, 12, 0, 0},
-		{"PT1.1M", 0, 0, 0, 0, 0, 0, 1.1, 0},
-		{"PT30M", 0, 0, 0, 0, 0, 0, 30, 0},
-		{"PT1.1S", 0, 0, 0, 0, 0, 0, 0, 1.1},
-		{"PT5S", 0, 0, 0, 0, 0, 0, 0, 5},
+		{value: Period{hours: 11}, hh: 1.1},
+		{value: Period{hours: 10, minutes: 60}, hh: 1, mm: 6},
+		{value: Period{hours: 120}, hh: 12},
+		{value: Period{minutes: 11}, mm: 1.1},
+		{value: Period{minutes: 10, seconds: 60}, mm: 1, ss: 6},
+		{value: Period{minutes: 300}, mm: 30},
+		{value: Period{seconds: 11}, ss: 1.1},
+		{value: Period{seconds: 50}, ss: 5},
 	}
 	for i, c := range cases {
-		p := MustParse(c.value)
-		g.Expect(p.YearsFloat()).To(Equal(c.y), info(i, c.value))
-		g.Expect(p.MonthsFloat()).To(Equal(c.m), info(i, c.value))
-		g.Expect(p.WeeksFloat()).To(Equal(c.w), info(i, c.value))
-		g.Expect(p.DaysFloat()).To(Equal(c.d), info(i, c.value))
-		g.Expect(p.HoursFloat()).To(Equal(c.hh), info(i, c.value))
-		g.Expect(p.MinutesFloat()).To(Equal(c.mm), info(i, c.value))
-		g.Expect(p.SecondsFloat()).To(Equal(c.ss), info(i, c.value))
+		pp := c.value
+		g.Expect(pp.YearsFloat()).To(Equal(c.y), info(i, c.value))
+		g.Expect(pp.MonthsFloat()).To(Equal(c.m), info(i, c.value))
+		g.Expect(pp.WeeksFloat()).To(Equal(c.w), info(i, c.value))
+		g.Expect(pp.DaysFloat()).To(Equal(c.d), info(i, c.value))
+		g.Expect(pp.HoursFloat()).To(Equal(c.hh), info(i, c.value))
+		g.Expect(pp.MinutesFloat()).To(Equal(c.mm), info(i, c.value))
+		g.Expect(pp.SecondsFloat()).To(Equal(c.ss), info(i, c.value))
+
+		pn := c.value.Negate()
+		g.Expect(pn.YearsFloat()).To(Equal(-c.y), info(i, c.value))
+		g.Expect(pn.MonthsFloat()).To(Equal(-c.m), info(i, c.value))
+		g.Expect(pn.WeeksFloat()).To(Equal(-c.w), info(i, c.value))
+		g.Expect(pn.DaysFloat()).To(Equal(-c.d), info(i, c.value))
+		g.Expect(pn.HoursFloat()).To(Equal(-c.hh), info(i, c.value))
+		g.Expect(pn.MinutesFloat()).To(Equal(-c.mm), info(i, c.value))
+		g.Expect(pn.SecondsFloat()).To(Equal(-c.ss), info(i, c.value))
 	}
 }
 
@@ -411,23 +504,26 @@ func TestNewPeriod(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		years, months, days, hours, minutes, seconds int
 		period                                       Period
+		years, months, days, hours, minutes, seconds int
 	}{
-		{0, 0, 0, 0, 0, 0, Period{0, 0, 0, 0, 0, 0}},
-		{0, 0, 0, 0, 0, 1, Period{0, 0, 0, 0, 0, 10}},
-		{0, 0, 0, 0, 1, 0, Period{0, 0, 0, 0, 10, 0}},
-		{0, 0, 0, 1, 0, 0, Period{0, 0, 0, 10, 0, 0}},
-		{0, 0, 1, 0, 0, 0, Period{0, 0, 10, 0, 0, 0}},
-		{0, 1, 0, 0, 0, 0, Period{0, 10, 0, 0, 0, 0}},
-		{1, 0, 0, 0, 0, 0, Period{10, 0, 0, 0, 0, 0}},
-		{100, 222, 700, 0, 0, 0, Period{1000, 2220, 7000, 0, 0, 0}},
-		{0, 0, 0, 0, 0, -1, Period{0, 0, 0, 0, 0, -10}},
-		{0, 0, 0, 0, -1, 0, Period{0, 0, 0, 0, -10, 0}},
-		{0, 0, 0, -1, 0, 0, Period{0, 0, 0, -10, 0, 0}},
-		{0, 0, -1, 0, 0, 0, Period{0, 0, -10, 0, 0, 0}},
-		{0, -1, 0, 0, 0, 0, Period{0, -10, 0, 0, 0, 0}},
-		{-1, 0, 0, 0, 0, 0, Period{-10, 0, 0, 0, 0, 0}},
+		{}, // zero case
+
+		// positives
+		{period: Period{seconds: 10}, seconds: 1},
+		{period: Period{minutes: 10}, minutes: 1},
+		{period: Period{hours: 10}, hours: 1},
+		{period: Period{days: 10}, days: 1},
+		{period: Period{months: 10}, months: 1},
+		{period: Period{years: 10}, years: 1},
+		{period: Period{1000, 2220, 7000, 0, 0, 0}, years: 100, months: 222, days: 700},
+		// negatives
+		{period: Period{seconds: -10}, seconds: -1},
+		{period: Period{minutes: -10}, minutes: -1},
+		{period: Period{hours: -10}, hours: -1},
+		{period: Period{days: -10}, days: -1},
+		{period: Period{months: -10}, months: -1},
+		{period: Period{years: -10}, years: -1},
 	}
 	for i, c := range cases {
 		p := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
@@ -442,16 +538,18 @@ func TestNewHMS(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		hours, minutes, seconds int
 		period                  Period
+		hours, minutes, seconds int
 	}{
-		{0, 0, 0, Period{0, 0, 0, 0, 0, 0}},
-		{0, 0, 1, Period{0, 0, 0, 0, 0, 10}},
-		{0, 1, 0, Period{0, 0, 0, 0, 10, 0}},
-		{1, 0, 0, Period{0, 0, 0, 10, 0, 0}},
-		{0, 0, -1, Period{0, 0, 0, 0, 0, -10}},
-		{0, -1, 0, Period{0, 0, 0, 0, -10, 0}},
-		{-1, 0, 0, Period{0, 0, 0, -10, 0, 0}},
+		{}, // zero case
+		// postives
+		{period: Period{seconds: 10}, seconds: 1},
+		{period: Period{minutes: 10}, minutes: 1},
+		{period: Period{hours: 10}, hours: 1},
+		// negatives
+		{period: Period{seconds: -10}, seconds: -1},
+		{period: Period{minutes: -10}, minutes: -1},
+		{period: Period{hours: -10}, hours: -1},
 	}
 	for i, c := range cases {
 		p := NewHMS(c.hours, c.minutes, c.seconds)
@@ -466,17 +564,19 @@ func TestNewYMD(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		years, months, days int
 		period              Period
+		years, months, days int
 	}{
-		{0, 0, 0, Period{0, 0, 0, 0, 0, 0}},
-		{0, 0, 1, Period{0, 0, 10, 0, 0, 0}},
-		{0, 1, 0, Period{0, 10, 0, 0, 0, 0}},
-		{1, 0, 0, Period{10, 0, 0, 0, 0, 0}},
-		{100, 222, 700, Period{1000, 2220, 7000, 0, 0, 0}},
-		{0, 0, -1, Period{0, 0, -10, 0, 0, 0}},
-		{0, -1, 0, Period{0, -10, 0, 0, 0, 0}},
-		{-1, 0, 0, Period{-10, 0, 0, 0, 0, 0}},
+		{}, // zero case
+		// positives
+		{period: Period{days: 10}, days: 1},
+		{period: Period{months: 10}, months: 1},
+		{period: Period{years: 10}, years: 1},
+		{period: Period{years: 1000, months: 2220, days: 7000}, years: 100, months: 222, days: 700},
+		// negatives
+		{period: Period{days: -10}, days: -1},
+		{period: Period{months: -10}, months: -1},
+		{period: Period{years: -10}, years: -1},
 	}
 	for i, c := range cases {
 		p := NewYMD(c.years, c.months, c.days)
@@ -489,27 +589,27 @@ func TestNewYMD(t *testing.T) {
 
 func TestNewOf(t *testing.T) {
 	// HMS tests
-	testNewOf(t, 100*time.Millisecond, Period{0, 0, 0, 0, 0, 1}, true)
-	testNewOf(t, time.Second, Period{0, 0, 0, 0, 0, 10}, true)
-	testNewOf(t, time.Minute, Period{0, 0, 0, 0, 10, 0}, true)
-	testNewOf(t, time.Hour, Period{0, 0, 0, 10, 0, 0}, true)
-	testNewOf(t, time.Hour+time.Minute+time.Second, Period{0, 0, 0, 10, 10, 10}, true)
-	testNewOf(t, 24*time.Hour+time.Minute+time.Second, Period{0, 0, 0, 240, 10, 10}, true)
-	testNewOf(t, 3276*time.Hour+59*time.Minute+59*time.Second, Period{0, 0, 0, 32760, 590, 590}, true)
-	testNewOf(t, 30*time.Minute+67*time.Second+600*time.Millisecond, Period{0, 0, 0, 0, 310, 76}, true)
+	testNewOf(t, 100*time.Millisecond, Period{seconds: 1}, true)
+	testNewOf(t, time.Second, Period{seconds: 10}, true)
+	testNewOf(t, time.Minute, Period{minutes: 10}, true)
+	testNewOf(t, time.Hour, Period{hours: 10}, true)
+	testNewOf(t, time.Hour+time.Minute+time.Second, Period{hours: 10, minutes: 10, seconds: 10}, true)
+	testNewOf(t, 24*time.Hour+time.Minute+time.Second, Period{hours: 240, minutes: 10, seconds: 10}, true)
+	testNewOf(t, 3276*time.Hour+59*time.Minute+59*time.Second, Period{hours: 32760, minutes: 590, seconds: 590}, true)
+	testNewOf(t, 30*time.Minute+67*time.Second+600*time.Millisecond, Period{minutes: 310, seconds: 76}, true)
 
 	// YMD tests: must be over 3276 hours (approx 4.5 months), otherwise HMS will take care of it
 	// first rollover: >3276 hours
-	testNewOf(t, 3277*time.Hour, Period{0, 0, 1360, 130, 0, 0}, false)
-	testNewOf(t, 3288*time.Hour, Period{0, 0, 1370, 0, 0, 0}, false)
-	testNewOf(t, 3289*time.Hour, Period{0, 0, 1370, 10, 0, 0}, false)
-	testNewOf(t, 24*3276*time.Hour, Period{0, 0, 32760, 0, 0, 0}, false)
+	testNewOf(t, 3277*time.Hour, Period{days: 1360, hours: 130}, false)
+	testNewOf(t, 3288*time.Hour, Period{days: 1370}, false)
+	testNewOf(t, 3289*time.Hour, Period{days: 1370, hours: 10}, false)
+	testNewOf(t, 24*3276*time.Hour, Period{days: 32760}, false)
 
 	// second rollover: >3276 days
-	testNewOf(t, 24*3277*time.Hour, Period{80, 110, 200, 0, 0, 0}, false)
-	testNewOf(t, 3277*oneDay, Period{80, 110, 200, 0, 0, 0}, false)
-	testNewOf(t, 3277*oneDay+time.Hour+time.Minute+time.Second, Period{80, 110, 200, 10, 0, 0}, false)
-	testNewOf(t, 36525*oneDay, Period{1000, 0, 0, 0, 0, 0}, false)
+	testNewOf(t, 24*3277*time.Hour, Period{years: 80, months: 110, days: 200}, false)
+	testNewOf(t, 3277*oneDay, Period{years: 80, months: 110, days: 200}, false)
+	testNewOf(t, 3277*oneDay+time.Hour+time.Minute+time.Second, Period{years: 80, months: 110, days: 200, hours: 10}, false)
+	testNewOf(t, 36525*oneDay, Period{years: 1000}, false)
 }
 
 func testNewOf(t *testing.T, source time.Duration, expected Period, precise bool) {
@@ -541,48 +641,48 @@ func TestBetween(t *testing.T) {
 		{now, now, Period{0, 0, 0, 0, 0, 0}},
 
 		// simple positive date calculations
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 1, 1, 0, 0, 0, 100), Period{0, 0, 0, 0, 0, 1}},
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 2, 2, 1, 1, 1, 1), Period{0, 0, 320, 10, 10, 10}},
-		{utc(2015, 2, 1, 0, 0, 0, 0), utc(2015, 3, 2, 1, 1, 1, 1), Period{0, 0, 290, 10, 10, 10}},
-		{utc(2015, 3, 1, 0, 0, 0, 0), utc(2015, 4, 2, 1, 1, 1, 1), Period{0, 0, 320, 10, 10, 10}},
-		{utc(2015, 4, 1, 0, 0, 0, 0), utc(2015, 5, 2, 1, 1, 1, 1), Period{0, 0, 310, 10, 10, 10}},
-		{utc(2015, 5, 1, 0, 0, 0, 0), utc(2015, 6, 2, 1, 1, 1, 1), Period{0, 0, 320, 10, 10, 10}},
-		{utc(2015, 6, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{0, 0, 310, 10, 10, 10}},
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{0, 0, 1820, 10, 10, 10}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 1, 1, 0, 0, 0, 100), Period{seconds: 1}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 2, 2, 1, 1, 1, 1), Period{days: 320, hours: 10, minutes: 10, seconds: 10}},
+		{utc(2015, 2, 1, 0, 0, 0, 0), utc(2015, 3, 2, 1, 1, 1, 1), Period{days: 290, hours: 10, minutes: 10, seconds: 10}},
+		{utc(2015, 3, 1, 0, 0, 0, 0), utc(2015, 4, 2, 1, 1, 1, 1), Period{days: 320, hours: 10, minutes: 10, seconds: 10}},
+		{utc(2015, 4, 1, 0, 0, 0, 0), utc(2015, 5, 2, 1, 1, 1, 1), Period{days: 310, hours: 10, minutes: 10, seconds: 10}},
+		{utc(2015, 5, 1, 0, 0, 0, 0), utc(2015, 6, 2, 1, 1, 1, 1), Period{days: 320, hours: 10, minutes: 10, seconds: 10}},
+		{utc(2015, 6, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{days: 310, hours: 10, minutes: 10, seconds: 10}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{days: 1820, hours: 10, minutes: 10, seconds: 10}},
 
 		// less than one month
-		{utc(2016, 1, 2, 0, 0, 0, 0), utc(2016, 2, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
-		{utc(2015, 2, 2, 0, 0, 0, 0), utc(2015, 3, 1, 0, 0, 0, 0), Period{0, 0, 270, 0, 0, 0}}, // non-leap
-		{utc(2016, 2, 2, 0, 0, 0, 0), utc(2016, 3, 1, 0, 0, 0, 0), Period{0, 0, 280, 0, 0, 0}}, // leap year
-		{utc(2016, 3, 2, 0, 0, 0, 0), utc(2016, 4, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
-		{utc(2016, 4, 2, 0, 0, 0, 0), utc(2016, 5, 1, 0, 0, 0, 0), Period{0, 0, 290, 0, 0, 0}},
-		{utc(2016, 5, 2, 0, 0, 0, 0), utc(2016, 6, 1, 0, 0, 0, 0), Period{0, 0, 300, 0, 0, 0}},
-		{utc(2016, 6, 2, 0, 0, 0, 0), utc(2016, 7, 1, 0, 0, 0, 0), Period{0, 0, 290, 0, 0, 0}},
+		{utc(2016, 1, 2, 0, 0, 0, 0), utc(2016, 2, 1, 0, 0, 0, 0), Period{days: 300}},
+		{utc(2015, 2, 2, 0, 0, 0, 0), utc(2015, 3, 1, 0, 0, 0, 0), Period{days: 270}}, // non-leap
+		{utc(2016, 2, 2, 0, 0, 0, 0), utc(2016, 3, 1, 0, 0, 0, 0), Period{days: 280}}, // leap year
+		{utc(2016, 3, 2, 0, 0, 0, 0), utc(2016, 4, 1, 0, 0, 0, 0), Period{days: 300}},
+		{utc(2016, 4, 2, 0, 0, 0, 0), utc(2016, 5, 1, 0, 0, 0, 0), Period{days: 290}},
+		{utc(2016, 5, 2, 0, 0, 0, 0), utc(2016, 6, 1, 0, 0, 0, 0), Period{days: 300}},
+		{utc(2016, 6, 2, 0, 0, 0, 0), utc(2016, 7, 1, 0, 0, 0, 0), Period{days: 290}},
 
 		// BST drops an hour at the daylight-saving transition
-		{utc(2015, 1, 1, 0, 0, 0, 0), bst(2015, 7, 2, 1, 1, 1, 1), Period{0, 0, 1820, 0, 10, 10}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), bst(2015, 7, 2, 1, 1, 1, 1), Period{days: 1820, minutes: 10, seconds: 10}},
 
 		// negative date calculation
-		{utc(2015, 1, 1, 0, 0, 0, 100), utc(2015, 1, 1, 0, 0, 0, 0), Period{0, 0, 0, 0, 0, -1}},
-		{utc(2015, 6, 2, 0, 0, 0, 0), utc(2015, 5, 1, 0, 0, 0, 0), Period{0, 0, -320, 0, 0, 0}},
-		{utc(2015, 6, 2, 1, 1, 1, 1), utc(2015, 5, 1, 0, 0, 0, 0), Period{0, 0, -320, -10, -10, -10}},
+		{utc(2015, 1, 1, 0, 0, 0, 100), utc(2015, 1, 1, 0, 0, 0, 0), Period{seconds: -1}},
+		{utc(2015, 6, 2, 0, 0, 0, 0), utc(2015, 5, 1, 0, 0, 0, 0), Period{days: -320}},
+		{utc(2015, 6, 2, 1, 1, 1, 1), utc(2015, 5, 1, 0, 0, 0, 0), Period{days: -320, hours: -10, minutes: -10, seconds: -10}},
 
 		// daytime only
-		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 2, 3, 4, 500), Period{0, 0, 0, 0, 0, 5}},
-		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 4, 4, 7, 500), Period{0, 0, 0, 20, 10, 35}},
-		{utc(2015, 1, 1, 2, 3, 4, 500), utc(2015, 1, 1, 4, 4, 7, 0), Period{0, 0, 0, 20, 10, 25}},
+		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 2, 3, 4, 500), Period{seconds: 5}},
+		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 4, 4, 7, 500), Period{hours: 20, minutes: 10, seconds: 35}},
+		{utc(2015, 1, 1, 2, 3, 4, 500), utc(2015, 1, 1, 4, 4, 7, 0), Period{hours: 20, minutes: 10, seconds: 25}},
 
 		// different dates and times
-		{utc(2015, 2, 1, 1, 0, 0, 0), utc(2015, 5, 30, 5, 6, 7, 0), Period{0, 0, 1180, 40, 60, 70}},
-		{utc(2015, 2, 1, 1, 0, 0, 0), bst(2015, 5, 30, 5, 6, 7, 0), Period{0, 0, 1180, 30, 60, 70}},
+		{utc(2015, 2, 1, 1, 0, 0, 0), utc(2015, 5, 30, 5, 6, 7, 0), Period{days: 1180, hours: 40, minutes: 60, seconds: 70}},
+		{utc(2015, 2, 1, 1, 0, 0, 0), bst(2015, 5, 30, 5, 6, 7, 0), Period{days: 1180, hours: 30, minutes: 60, seconds: 70}},
 
 		// earlier month in later year
-		{utc(2015, 12, 22, 0, 0, 0, 0), utc(2016, 1, 10, 5, 6, 7, 0), Period{0, 0, 190, 50, 60, 70}},
-		{utc(2015, 2, 11, 5, 6, 7, 500), utc(2016, 1, 10, 0, 0, 0, 0), Period{0, 0, 3320, 180, 530, 525}},
+		{utc(2015, 12, 22, 0, 0, 0, 0), utc(2016, 1, 10, 5, 6, 7, 0), Period{days: 190, hours: 50, minutes: 60, seconds: 70}},
+		{utc(2015, 2, 11, 5, 6, 7, 500), utc(2016, 1, 10, 0, 0, 0, 0), Period{days: 3320, hours: 180, minutes: 530, seconds: 525}},
 
 		// larger ranges
-		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{0, 0, 29210, 0, 0, 10}},
-		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{80, 110, 300, 0, 0, 10}},
+		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{days: 29210, seconds: 10}},
+		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{years: 80, months: 110, days: 300, seconds: 10}},
 	}
 	for i, c := range cases {
 		n := Between(c.a, c.b)
@@ -591,66 +691,67 @@ func TestBetween(t *testing.T) {
 }
 
 func TestNormalise(t *testing.T) {
-	// zero cases
-	testNormalise(t, New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0))
+	cases := []struct {
+		source, precise, approx Period
+	}{
+		// zero cases
+		{New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0), New(0, 0, 0, 0, 0, 0)},
 
-	// carry seconds to minutes
-	testNormalise(t, Period{0, 0, 0, 0, 0, 699}, Period{0, 0, 0, 0, 10, 99}, Period{0, 0, 0, 0, 10, 99})
+		// carry seconds to minutes
+		{Period{seconds: 699}, Period{minutes: 10, seconds: 99}, Period{minutes: 10, seconds: 99}},
 
-	// carry minutes to seconds
-	testNormalise(t, Period{0, 0, 0, 0, 5, 0}, Period{0, 0, 0, 0, 0, 300}, Period{0, 0, 0, 0, 0, 300})
-	testNormalise(t, Period{0, 0, 0, 0, 1, 0}, Period{0, 0, 0, 0, 0, 60}, Period{0, 0, 0, 0, 0, 60})
-	testNormalise(t, Period{0, 0, 0, 0, 55, 0}, Period{0, 0, 0, 0, 50, 300}, Period{0, 0, 0, 0, 50, 300})
+		// carry minutes to seconds
+		{Period{minutes: 5}, Period{seconds: 300}, Period{seconds: 300}},
+		{Period{minutes: 1}, Period{seconds: 60}, Period{seconds: 60}},
+		{Period{minutes: 55}, Period{minutes: 50, seconds: 300}, Period{minutes: 50, seconds: 300}},
 
-	// carry minutes to hours
-	testNormalise(t, Period{0, 0, 0, 0, 699, 0}, Period{0, 0, 0, 10, 90, 540}, Period{0, 0, 0, 10, 90, 540})
+		// carry minutes to hours
+		{Period{minutes: 699}, Period{hours: 10, minutes: 90, seconds: 540}, Period{hours: 10, minutes: 90, seconds: 540}},
 
-	// carry hours to minutes
-	testNormalise(t, Period{0, 0, 0, 5, 0, 0}, Period{0, 0, 0, 0, 300, 0}, Period{0, 0, 0, 0, 300, 0})
+		// carry hours to minutes
+		{Period{hours: 5}, Period{minutes: 300}, Period{minutes: 300}},
 
-	// carry hours to days
-	testNormalise(t, Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 0, 240, 540, 0}, Period{0, 0, 0, 240, 540, 0})
-	testNormalise(t, Period{0, 0, 0, 249, 0, 0}, Period{0, 0, 0, 240, 540, 0}, Period{0, 0, 0, 240, 540, 0})
-	testNormalise(t, Period{0, 0, 0, 369, 0, 0}, Period{0, 0, 0, 360, 540, 0}, Period{0, 0, 10, 120, 540, 0})
-	testNormalise(t, Period{0, 0, 0, 249, 0, 10}, Period{0, 0, 0, 240, 540, 10}, Period{0, 0, 0, 240, 540, 10})
+		// carry hours to days
+		{Period{hours: 249}, Period{hours: 240, minutes: 540}, Period{hours: 240, minutes: 540}},
+		{Period{hours: 249}, Period{hours: 240, minutes: 540}, Period{hours: 240, minutes: 540}},
+		{Period{hours: 369}, Period{hours: 360, minutes: 540}, Period{days: 10, hours: 120, minutes: 540}},
+		{Period{hours: 249, seconds: 10}, Period{hours: 240, minutes: 540, seconds: 10}, Period{hours: 240, minutes: 540, seconds: 10}},
 
-	// carry days to hours
-	testNormalise(t, Period{0, 0, 5, 30, 0, 0}, Period{0, 0, 0, 150, 00, 0}, Period{0, 0, 0, 150, 0, 0})
+		// carry days to hours
+		{Period{days: 5, hours: 30}, Period{hours: 150}, Period{hours: 150}},
 
-	// carry months to years
-	testNormalise(t, Period{0, 125, 0, 0, 0, 0}, Period{0, 125, 0, 0, 0, 0}, Period{0, 125, 0, 0, 0, 0})
-	testNormalise(t, Period{0, 131, 0, 0, 0, 0}, Period{10, 11, 0, 0, 0, 0}, Period{10, 11, 0, 0, 0, 0})
+		// carry months to years
+		{Period{months: 125}, Period{months: 125}, Period{months: 125}},
+		{Period{months: 131}, Period{years: 10, months: 11}, Period{years: 10, months: 11}},
 
-	// carry days to months
-	testNormalise(t, Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0}, Period{0, 0, 323, 0, 0, 0})
+		// carry days to months
+		{Period{days: 323}, Period{days: 323}, Period{days: 323}},
 
-	// carry months to days
-	testNormalise(t, Period{0, 5, 203, 0, 0, 0}, Period{0, 0, 355, 0, 0, 0}, Period{0, 10, 50, 0, 0, 0})
+		// carry months to days
+		{Period{months: 5, days: 203}, Period{days: 355}, Period{months: 10, days: 50}},
 
-	// full ripple up
-	testNormalise(t, Period{0, 121, 305, 239, 591, 601}, Period{10, 0, 330, 360, 540, 61}, Period{10, 10, 40, 0, 540, 61})
+		// full ripple up
+		{Period{months: 121, days: 305, hours: 239, minutes: 591, seconds: 601}, Period{years: 10, days: 330, hours: 360, minutes: 540, seconds: 61}, Period{years: 10, months: 10, days: 40, minutes: 540, seconds: 61}},
 
-	// carry years to months
-	testNormalise(t, Period{5, 0, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0}, Period{0, 60, 0, 0, 0, 0})
-	testNormalise(t, Period{5, 25, 0, 0, 0, 0}, Period{0, 85, 0, 0, 0, 0}, Period{0, 85, 0, 0, 0, 0})
-	testNormalise(t, Period{5, 20, 10, 0, 0, 0}, Period{0, 80, 10, 0, 0, 0}, Period{0, 80, 10, 0, 0, 0})
+		// carry years to months
+		{Period{years: 5}, Period{months: 60}, Period{months: 60}},
+		{Period{years: 5, months: 25}, Period{months: 85}, Period{months: 85}},
+		{Period{years: 5, months: 20, days: 10}, Period{months: 80, days: 10}, Period{months: 80, days: 10}},
+	}
+	for i, c := range cases {
+		testNormaliseBothSigns(t, i, c.source, c.precise, true)
+		testNormaliseBothSigns(t, i, c.source, c.approx, false)
+	}
 }
 
-func testNormalise(t *testing.T, source, precise, approx Period) {
-	t.Helper()
-
-	testNormaliseBothSigns(t, source, precise, true)
-	testNormaliseBothSigns(t, source, approx, false)
-}
-
-func testNormaliseBothSigns(t *testing.T, source, expected Period, precise bool) {
+func testNormaliseBothSigns(t *testing.T, i int, source, expected Period, precise bool) {
 	g := NewGomegaWithT(t)
 	t.Helper()
 
 	n1 := source.Normalise(precise)
 	if n1 != expected {
-		t.Errorf("%v.Normalise(%v) %s\n   gives %-22s %#v %s,\n    want %-22s %#v %s",
-			source, precise, source.DurationApprox(),
+		t.Errorf("%d: %v.Normalise(%v) %s\n   gives %-22s %#v %s,\n    want %-22s %#v %s",
+			i, source, precise, source.DurationApprox(),
 			n1, n1, n1.DurationApprox(),
 			expected, expected, expected.DurationApprox())
 	}

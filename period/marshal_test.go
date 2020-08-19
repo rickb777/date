@@ -9,9 +9,13 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestGobEncoding(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
 	decoder := gob.NewDecoder(&b)
@@ -29,24 +33,22 @@ func TestGobEncoding(t *testing.T) {
 		"P2Y3M4W5DT1H7M9S",
 		"-P2Y3M4W5DT1H7M9S",
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		period := MustParse(c)
 		var p Period
 		err := encoder.Encode(&period)
-		if err != nil {
-			t.Errorf("Gob(%v) encode error %v", c, err)
-		} else {
+		g.Expect(err).NotTo(HaveOccurred(), info(i, c))
+		if err == nil {
 			err = decoder.Decode(&p)
-			if err != nil {
-				t.Errorf("Gob(%v) decode error %v", c, err)
-			} else if p != period {
-				t.Errorf("Gob(%v) decode got %v", c, p)
-			}
+			g.Expect(err).NotTo(HaveOccurred(), info(i, c))
+			g.Expect(p).To(Equal(period), info(i, c))
 		}
 	}
 }
 
 func TestPeriodJSONMarshalling(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value Period
 		want  string
@@ -61,25 +63,22 @@ func TestPeriodJSONMarshalling(t *testing.T) {
 		{New(0, 1, 0, 0, 0, 0), `"P1M"`},
 		{New(1, 0, 0, 0, 0, 0), `"P1Y"`},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		var p Period
-		bytes, err := json.Marshal(c.value)
-		if err != nil {
-			t.Errorf("JSON(%v) marshal error %v", c, err)
-		} else if string(bytes) != c.want {
-			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bytes), c.want)
-		} else {
-			err = json.Unmarshal(bytes, &p)
-			if err != nil {
-				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
-			} else if p != c.value {
-				t.Errorf("JSON(%v) unmarshal got %v", c.value, p)
-			}
+		bb, err := json.Marshal(c.value)
+		g.Expect(err).NotTo(HaveOccurred(), info(i, c))
+		g.Expect(string(bb)).To(Equal(c.want), info(i, c))
+		if string(bb) == c.want {
+			err = json.Unmarshal(bb, &p)
+			g.Expect(err).NotTo(HaveOccurred(), info(i, c))
+			g.Expect(p).To(Equal(c.value), info(i, c))
 		}
 	}
 }
 
 func TestPeriodTextMarshalling(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value Period
 		want  string
@@ -94,25 +93,22 @@ func TestPeriodTextMarshalling(t *testing.T) {
 		{New(0, 1, 0, 0, 0, 0), "P1M"},
 		{New(1, 0, 0, 0, 0, 0), "P1Y"},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		var p Period
-		bytes, err := c.value.MarshalText()
-		if err != nil {
-			t.Errorf("Text(%v) marshal error %v", c, err)
-		} else if string(bytes) != c.want {
-			t.Errorf("Text(%v) == %v, want %v", c.value, string(bytes), c.want)
-		} else {
-			err = p.UnmarshalText(bytes)
-			if err != nil {
-				t.Errorf("Text(%v) unmarshal error %v", c.value, err)
-			} else if p != c.value {
-				t.Errorf("Text(%v) unmarshal got %v", c.value, p)
-			}
+		bb, err := c.value.MarshalText()
+		g.Expect(err).NotTo(HaveOccurred(), info(i, c))
+		g.Expect(string(bb)).To(Equal(c.want), info(i, c))
+		if string(bb) == c.want {
+			err = p.UnmarshalText(bb)
+			g.Expect(err).NotTo(HaveOccurred(), info(i, c))
+			g.Expect(p).To(Equal(c.value), info(i, c))
 		}
 	}
 }
 
 func TestInvalidPeriodText(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	cases := []struct {
 		value string
 		want  string
@@ -121,11 +117,10 @@ func TestInvalidPeriodText(t *testing.T) {
 		{`not-a-period`, `expected 'P' period mark at the start: not-a-period`},
 		{`P000`, `unexpected remaining components 000: P000`},
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		var p Period
 		err := p.UnmarshalText([]byte(c.value))
-		if err == nil || err.Error() != c.want {
-			t.Errorf("InvalidText(%v) == %v, want %v", c.value, err, c.want)
-		}
+		g.Expect(err).To(HaveOccurred(), info(i, c))
+		g.Expect(err.Error()).To(Equal(c.want), info(i, c))
 	}
 }
