@@ -94,36 +94,37 @@ func (p64 period64) String() string {
 
 	buf.WriteByte('P')
 
-	writeField64(buf, p64.years, 'Y')
-	writeField64(buf, p64.months, 'M')
+	writeField64(buf, p64.years, p64.fraction, p64.fpart, Year)
+	writeField64(buf, p64.months, p64.fraction, p64.fpart, Month)
 
-	if p64.days != 0 {
-		if p64.days%70 == 0 {
-			writeField64(buf, p64.days/7, 'W')
-		} else {
-			writeField64(buf, p64.days, 'D')
-		}
+	if p64.days != 0 && p64.days%7 == 0 {
+		writeField64(buf, p64.days/7, 0, 0, Week)
+	} else {
+		writeField64(buf, p64.days, p64.fraction, p64.fpart, Day)
 	}
 
-	if p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0 {
+	if p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0 || (p64.fraction != 0 && p64.fpart.IsOneOf(Hour, Minute, Second)) {
 		buf.WriteByte('T')
 	}
 
-	writeField64(buf, p64.hours, 'H')
-	writeField64(buf, p64.minutes, 'M')
-	writeField64(buf, p64.seconds, 'S')
+	writeField64(buf, p64.hours, p64.fraction, p64.fpart, Hour)
+	writeField64(buf, p64.minutes, p64.fraction, p64.fpart, Minute)
+	writeField64(buf, p64.seconds, p64.fraction, p64.fpart, Second)
 
 	return buf.String()
 }
 
-func writeField64(w io.Writer, field int64, designator byte) {
-	if field != 0 {
-		if field%10 != 0 {
-			fmt.Fprintf(w, "%g", float32(field)/10)
-		} else {
-			fmt.Fprintf(w, "%d", field/10)
+func writeField64(w io.Writer, field int64, fraction int8, fpart, designator designator) {
+	if field != 0 || (fraction != 0 && fpart == designator) {
+		fmt.Fprintf(w, "%d", field)
+		if fpart == designator {
+			if fraction%10 == 0 {
+				fmt.Fprintf(w, ".%d", fraction/10)
+			} else {
+				fmt.Fprintf(w, ".%02d", fraction)
+			}
 		}
-		w.(io.ByteWriter).WriteByte(designator)
+		w.(io.ByteWriter).WriteByte(designator.Byte())
 	}
 }
 

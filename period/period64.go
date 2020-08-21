@@ -2,6 +2,7 @@ package period
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -9,8 +10,12 @@ import (
 type period64 struct {
 	// always positive values
 	years, months, days, hours, minutes, seconds int64
+	// fraction applies to just one of the fields
+	fraction int8
+	fpart    designator
 	// true if the period is negative
-	neg   bool
+	neg bool
+	// the original input string
 	input string
 }
 
@@ -19,14 +24,18 @@ func (period Period) toPeriod64(input string) *period64 {
 		return &period64{
 			years: int64(-period.years), months: int64(-period.months), days: int64(-period.days),
 			hours: int64(-period.hours), minutes: int64(-period.minutes), seconds: int64(-period.seconds),
-			neg:   true,
-			input: input,
+			fraction: -period.fraction,
+			fpart:    period.fpart,
+			input:    input,
+			neg:      true,
 		}
 	}
 	return &period64{
 		years: int64(period.years), months: int64(period.months), days: int64(period.days),
 		hours: int64(period.hours), minutes: int64(period.minutes), seconds: int64(period.seconds),
-		input: input,
+		fraction: period.fraction,
+		fpart:    period.fpart,
+		input:    input,
 	}
 }
 
@@ -60,81 +69,161 @@ func (p64 *period64) toPeriod() (Period, error) {
 
 	if p64.neg {
 		return Period{
-			int16(-p64.years), int16(-p64.months), int16(-p64.days),
-			int16(-p64.hours), int16(-p64.minutes), int16(-p64.seconds),
+			years: int16(-p64.years), months: int16(-p64.months), days: int16(-p64.days),
+			hours: int16(-p64.hours), minutes: int16(-p64.minutes), seconds: int16(-p64.seconds),
+			fraction: -p64.fraction,
+			fpart:    p64.fpart,
 		}, nil
 	}
 
 	return Period{
-		int16(p64.years), int16(p64.months), int16(p64.days),
-		int16(p64.hours), int16(p64.minutes), int16(p64.seconds),
+		years: int16(p64.years), months: int16(p64.months), days: int16(p64.days),
+		hours: int16(p64.hours), minutes: int16(p64.minutes), seconds: int16(p64.seconds),
+		fraction: p64.fraction,
+		fpart:    p64.fpart,
 	}, nil
 }
 
 func (p64 *period64) normalise64(precise bool) *period64 {
-	return p64.rippleUp(precise).moveFractionToRight()
+	return p64.rippleUp(precise).simplify(precise)
 }
 
 func (p64 *period64) rippleUp(precise bool) *period64 {
-	// remember that the fields are all fixed-point 1E1
-
-	p64.minutes = p64.minutes + (p64.seconds/600)*10
-	p64.seconds = p64.seconds % 600
-
-	p64.hours = p64.hours + (p64.minutes/600)*10
-	p64.minutes = p64.minutes % 600
-
-	// 32670-(32670/60)-(32670/3600) = 32760 - 546 - 9.1 = 32204.9
-	if !precise || p64.hours > 32204 {
-		p64.days += (p64.hours / 240) * 10
-		p64.hours = p64.hours % 240
+	if p64.seconds != 0 {
+		p64.minutes += p64.seconds / 60
+		p64.seconds %= 60
 	}
 
-	if !precise || p64.days > 32760 {
-		dE6 := p64.days * oneE6
-		p64.months += dE6 / daysPerMonthE6
-		p64.days = (dE6 % daysPerMonthE6) / oneE6
+	if p64.minutes != 0 {
+		p64.hours += p64.minutes / 60
+		p64.minutes %= 60
 	}
 
-	p64.years = p64.years + (p64.months/120)*10
-	p64.months = p64.months % 120
+	if !precise || p64.hours > math.MaxInt16 {
+		p64.days += p64.hours / 24
+		p64.hours %= 24
+	}
+
+	// this section can introduce small arithmetic errors so
+	// it is only used prevent overflow
+	if p64.days > math.MaxInt16 {
+		totalHours := float64((p64.days * 24) + p64.hours)
+		deltaMonthsF := totalHours / hoursPerMonthF
+		deltaMonths, remMonthsF := math.Modf(deltaMonthsF)
+		daysF := remMonthsF * daysPerMonthF
+		days, remDays := math.Modf(daysF)
+		const iota = 1.0 / 360000 // reduces unwanted rounding-down
+		hoursF := (remDays * 24) + iota
+		hours, remHours := math.Modf(hoursF)
+
+		p64.months += int64(deltaMonths)
+		p64.days = int64(days)
+		p64.hours = int64(hours)
+		p64.minutes += int64(remHours * 60)
+
+		if p64.hours >= 24 {
+			p64.days += p64.hours / 24
+			p64.hours %= 24
+		}
+	}
+
+	if p64.months != 0 {
+		p64.years += p64.months / 12
+		p64.months %= 12
+	}
 
 	return p64
 }
 
-// moveFractionToRight applies the rule that only the smallest field is permitted to have a decimal fraction.
-func (p64 *period64) moveFractionToRight() *period64 {
-	// remember that the fields are all fixed-point 1E1
-
-	y10 := p64.years % 10
-	if y10 != 0 && (p64.months != 0 || p64.days != 0 || p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0) {
-		p64.months += y10 * 12
-		p64.years = (p64.years / 10) * 10
+func (p64 *period64) simplify(precise bool) *period64 {
+	if p64.years == 1 &&
+		0 < p64.months && p64.months <= 6 &&
+		p64.days == 0 {
+		p64.months += 12
+		p64.years = 0
 	}
 
-	m10 := p64.months % 10
-	if m10 != 0 && (p64.days != 0 || p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0) {
-		p64.days += (m10 * daysPerMonthE6) / oneE6
-		p64.months = (p64.months / 10) * 10
+	if !precise && p64.days == 1 &&
+		p64.months == 0 &&
+		0 < p64.hours && p64.hours < 10 &&
+		p64.minutes == 0 {
+		p64.hours += 24
+		p64.days = 0
 	}
 
-	d10 := p64.days % 10
-	if d10 != 0 && (p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0) {
-		p64.hours += d10 * 24
-		p64.days = (p64.days / 10) * 10
+	if p64.hours == 1 &&
+		p64.days == 0 &&
+		0 < p64.minutes && p64.minutes < 10 &&
+		p64.seconds == 0 &&
+		p64.fpart.IsOneOf(NoFraction, Minute) {
+		p64.minutes += 60
+		p64.hours = 0
 	}
 
-	hh10 := p64.hours % 10
-	if hh10 != 0 && (p64.minutes != 0 || p64.seconds != 0) {
-		p64.minutes += hh10 * 60
-		p64.hours = (p64.hours / 10) * 10
-	}
-
-	mm10 := p64.minutes % 10
-	if mm10 != 0 && p64.seconds != 0 {
-		p64.seconds += mm10 * 60
-		p64.minutes = (p64.minutes / 10) * 10
+	if p64.minutes == 1 &&
+		p64.hours == 0 &&
+		0 < p64.seconds && p64.seconds < 10 &&
+		p64.fpart.IsOneOf(NoFraction, Second) {
+		p64.seconds += 60
+		p64.minutes = 0
 	}
 
 	return p64
+}
+
+//-------------------------------------------------------------------------------------------------
+
+func (p64 *period64) centiYears() int64 {
+	d := p64.years * 100
+	if p64.fpart == Year {
+		d += int64(p64.fraction)
+	}
+	return d
+}
+
+func (p64 *period64) centiMonths() int64 {
+	d := p64.months * 100
+	if p64.fpart == Month {
+		d += int64(p64.fraction)
+	}
+	return d
+}
+
+func (p64 *period64) centiDays() int64 {
+	d := p64.days * 100
+	if p64.fpart == Day {
+		d += int64(p64.fraction)
+	}
+	return d
+}
+
+func (p64 *period64) centiHours() int64 {
+	h := p64.hours * 100
+	if p64.fpart == Hour {
+		h += int64(p64.fraction)
+	}
+	return h
+}
+
+func (p64 *period64) centiMinutes() int64 {
+	m := p64.minutes * 100
+	if p64.fpart == Minute {
+		m += int64(p64.fraction)
+	}
+	return m
+}
+
+func (p64 *period64) centiSeconds() int64 {
+	s := p64.seconds * 100
+	if p64.fpart == Second {
+		s += int64(p64.fraction)
+	}
+	return s
+}
+
+func (p64 *period64) totalDaysApproxE6() int64 {
+	ydE6 := p64.centiYears() * daysPerYearE6
+	mdE6 := p64.centiMonths() * daysPerMonthE6
+	ddE6 := p64.centiDays() * oneE6
+	return (ydE6 + mdE6 + ddE6) / 100
 }
