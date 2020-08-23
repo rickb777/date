@@ -17,8 +17,7 @@ var oneDay = 24 * time.Hour
 var oneMonthApprox = 2629746 * time.Second // 30.436875 days
 var oneYearApprox = 31556952 * time.Second // 365.2425 days
 
-//TODO
-func xTestParseErrors(t *testing.T) {
+func TestParseErrors(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -28,48 +27,47 @@ func xTestParseErrors(t *testing.T) {
 		expvalue  string
 	}{
 		{"", false, "cannot parse a blank string as a period", ""},
-		{"XY", false, "expected 'P' period mark at the start: ", "XY"},
-		{"PxY", false, "expected a number before the 'Y' designator: ", "PxY"},
-		{"PxW", false, "expected a number before the 'W' designator: ", "PxW"},
-		{"PxD", false, "expected a number before the 'D' designator: ", "PxD"},
-		{"PTxH", false, "expected a number before the 'H' designator: ", "PTxH"},
-		{"PTxM", false, "expected a number before the 'M' designator: ", "PTxM"},
-		{"PTxS", false, "expected a number before the 'S' designator: ", "PTxS"},
-		{"P1HT1M", false, "unexpected remaining components 1H: ", "P1HT1M"},
-		{"PT1Y", false, "unexpected remaining components 1Y: ", "PT1Y"},
-		{"P1S", false, "unexpected remaining components 1S: ", "P1S"},
+		{`P000`, false, `: missing designator at the end`, "P000"},
+		{"XY", false, ": expected 'P' period mark at the start", "XY"},
+		{"PxY", false, ": expected a number but found 'x'", "PxY"},
+		{"PxW", false, ": expected a number but found 'x'", "PxW"},
+		{"PxD", false, ": expected a number but found 'x'", "PxD"},
+		{"PTxH", false, ": expected a number but found 'x'", "PTxH"},
+		{"PTxM", false, ": expected a number but found 'x'", "PTxM"},
+		{"PTxS", false, ": expected a number but found 'x'", "PTxS"},
+		{"P1HT1M", false, ": 'H' designator cannot occur here", "P1HT1M"},
+		{"PT1Y", false, ": 'Y' designator cannot occur here", "PT1Y"},
+		{"P1S", false, ": 'S' designator cannot occur here", "P1S"},
+		{"PT1HT1S", false, ": 'T' designator cannot occur more than once", "PT1HT1S"},
+		{"P0.1YT0.1S", false, ": 'Y' & 'S' only the last field can have a fraction", "P0.1YT0.1S"},
+		{"P", false, ": expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator", "P"},
 		// integer overflow
-		{"P32768Y", false, "integer overflow occurred in years: ", "P32768Y"},
-		{"P32768M", false, "integer overflow occurred in months: ", "P32768M"},
-		{"P32768D", false, "integer overflow occurred in days: ", "P32768D"},
-		{"PT32768H", false, "integer overflow occurred in hours: ", "PT32768H"},
-		{"PT32768M", false, "integer overflow occurred in minutes: ", "PT32768M"},
-		{"PT32768S", false, "integer overflow occurred in seconds: ", "PT32768S"},
-		{"PT32768H32768M32768S", false, "integer overflow occurred in hours,minutes,seconds: ", "PT32768H32768M32768S"},
-		{"PT103412160000S", false, "integer overflow occurred in seconds: ", "PT103412160000S"},
-		{"P39324M", true, "integer overflow occurred in years: ", "P39324M"},
-		{"P1196900D", true, "integer overflow occurred in years: ", "P1196900D"},
-		{"PT28725600H", true, "integer overflow occurred in years: ", "PT28725600H"},
-		{"PT1723536000M", true, "integer overflow occurred in years: ", "PT1723536000M"},
-		{"PT103412160000S", true, "integer overflow occurred in years: ", "PT103412160000S"},
+		{"P32768Y", false, ": integer overflow occurred in years", "P32768Y"},
+		{"P32768M", false, ": integer overflow occurred in months", "P32768M"},
+		{"P32768W", false, ": integer overflow occurred in days", "P32768W"},
+		{"P32768D", false, ": integer overflow occurred in days", "P32768D"},
+		{"PT32768H", false, ": integer overflow occurred in hours", "PT32768H"},
+		{"PT32768M", false, ": integer overflow occurred in minutes", "PT32768M"},
+		{"PT32768S", false, ": integer overflow occurred in seconds", "PT32768S"},
+		{"PT32768H32768M32768S", false, ": integer overflow occurred in hours,minutes,seconds", "PT32768H32768M32768S"},
+		{"PT103412160000S", false, ": integer overflow occurred in seconds", "PT103412160000S"},
 	}
 	for i, c := range cases {
 		_, ep := ParseWithNormalise(c.value, c.normalise)
 		g.Expect(ep).To(HaveOccurred(), info(i, c.value))
-		g.Expect(ep.Error()).To(Equal(c.expected+c.expvalue), info(i, c.value))
+		g.Expect(ep.Error()).To(Equal(c.expvalue+c.expected), info(i, c.value))
 
 		_, en := ParseWithNormalise("-"+c.value, c.normalise)
 		g.Expect(en).To(HaveOccurred(), info(i, c.value))
 		if c.expvalue != "" {
-			g.Expect(en.Error()).To(Equal(c.expected+"-"+c.expvalue), info(i, c.value))
+			g.Expect(en.Error()).To(Equal("-"+c.expvalue+c.expected), info(i, c.value))
 		} else {
 			g.Expect(en.Error()).To(Equal(c.expected), info(i, c.value))
 		}
 	}
 }
 
-//TODO
-func xTestParsePeriodWithNormalise(t *testing.T) {
+func TestParsePeriodWithNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -78,21 +76,21 @@ func xTestParsePeriodWithNormalise(t *testing.T) {
 		period   Period
 	}{
 		// all rollovers
-		{"PT1234.5S", "PT20M34.5S", Period{minutes: 200, seconds: 345}},
-		{"PT1234.5M", "PT20H34.5M", Period{hours: 200, minutes: 345}},
-		{"PT12345.6H", "P514DT9.6H", Period{days: 5140, hours: 96}},
-		{"P3276.1D", "P8Y11M19.2D", Period{years: 80, months: 110, days: 192}},
-		{"P1234.5M", "P102Y10.5M", Period{years: 1020, months: 105}},
+		{"PT1234.5S", "PT20M34.5S", Period{minutes: 20, seconds: 34, fraction: 50, fpart: Second}},
+		{"PT1234.5M", "PT20H34.5M", Period{hours: 20, minutes: 34, fraction: 50, fpart: Minute}},
+		{"PT12345.6H", "PT12345.6H", Period{hours: 12345, fraction: 60, fpart: Hour}},
+		//TODO {"P32768.1D", "P89Y8M17DT22H8M.1D", Period{years: 89, months: 8, days: 17, hours: 24, minutes: 32, fraction: 10, fpart: Day}},
+		{"P1234.5M", "P102Y10.5M", Period{years: 102, months: 10, fraction: 50, fpart: Month}},
 		// largest possible number of seconds normalised only in hours, mins, sec
-		{"PT11592000S", "PT3220H", Period{hours: 32200}},
-		{"-PT11592000S", "-PT3220H", Period{hours: -32200}},
-		{"PT11595599S", "PT3220H59M59S", Period{hours: 32200, minutes: 590, seconds: 590}},
+		{"PT11592000S", "PT3220H", Period{hours: 3220}},
+		{"-PT11592000S", "-PT3220H", Period{hours: -3220}},
+		{"PT11595599S", "PT3220H59M59S", Period{hours: 3220, minutes: 59, seconds: 59}},
 		// largest possible number of seconds normalised only in days, hours, mins, sec
-		{"PT283046400S", "P468W", Period{days: 32760}},
-		{"-PT283046400S", "-P468W", Period{days: -32760}},
-		{"PT43084443590S", "P1365Y3M2WT26H83M50S", Period{years: 13650, months: 30, days: 140, hours: 260, minutes: 830, seconds: 500}},
-		{"PT103412159999S", "P3276Y11M29DT37H83M59S", Period{years: 32760, months: 110, days: 290, hours: 370, minutes: 830, seconds: 590}},
-		{"PT283132799S", "P468WT23H59M59S", Period{days: 32760, hours: 230, minutes: 590, seconds: 590}},
+		{"PT283046400S", "P468W", Period{days: 3276}},
+		{"-PT283046400S", "-P468W", Period{days: -3276}},
+		{"PT43084443590S", "P1365Y3M15DT4H73M50S", Period{years: 1365, months: 3, days: 15, hours: 4, minutes: 73, seconds: 50}},
+		{"PT103412159999S", "P3277YT6H110M59S", Period{years: 3277, months: 0, days: 0, hours: 6, minutes: 110, seconds: 59}},
+		{"PT283132799S", "P468WT23H59M59S", Period{days: 3276, hours: 23, minutes: 59, seconds: 59}},
 		// other examples are in TestNormalise
 	}
 	for i, c := range cases {
@@ -104,8 +102,7 @@ func xTestParsePeriodWithNormalise(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestParsePeriodWithoutNormalise(t *testing.T) {
+func TestParsePeriodWithoutNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -124,60 +121,58 @@ func xTestParsePeriodWithoutNormalise(t *testing.T) {
 		{"PT0M", "P0D", Period{}},
 		{"PT0S", "P0D", Period{}},
 		// ones
-		{"P1Y", "P1Y", Period{years: 10}},
-		{"P1M", "P1M", Period{months: 10}},
-		{"P1W", "P1W", Period{days: 70}},
-		{"P1D", "P1D", Period{days: 10}},
-		{"PT1H", "PT1H", Period{hours: 10}},
-		{"PT1M", "PT1M", Period{minutes: 10}},
-		{"PT1S", "PT1S", Period{seconds: 10}},
+		{"P1Y", "P1Y", Period{years: 1}},
+		{"P1M", "P1M", Period{months: 1}},
+		{"P1W", "P1W", Period{days: 7}},
+		{"P1D", "P1D", Period{days: 1}},
+		{"PT1H", "PT1H", Period{hours: 1}},
+		{"PT1M", "PT1M", Period{minutes: 1}},
+		{"PT1S", "PT1S", Period{seconds: 1}},
 		// smallest
-		{"P0.1Y", "P0.1Y", Period{years: 1}},
-		{"-P0.1Y", "-P0.1Y", Period{years: -1}},
-		{"P0.1M", "P0.1M", Period{months: 1}},
-		{"-P0.1M", "-P0.1M", Period{months: -1}},
-		{"P0.1D", "P0.1D", Period{days: 1}},
-		{"-P0.1D", "-P0.1D", Period{days: -1}},
-		{"PT0.1H", "PT0.1H", Period{hours: 1}},
-		{"-PT0.1H", "-PT0.1H", Period{hours: -1}},
-		{"PT0.1M", "PT0.1M", Period{minutes: 1}},
-		{"-PT0.1M", "-PT0.1M", Period{minutes: -1}},
-		{"PT0.1S", "PT0.1S", Period{seconds: 1}},
-		{"-PT0.1S", "-PT0.1S", Period{seconds: -1}},
+		{"P0.01Y", "P0.01Y", Period{fraction: 1, fpart: Year}},
+		{"-P0.01Y", "-P0.01Y", Period{fraction: -1, fpart: Year}},
+		{"P0.01M", "P0.01M", Period{fraction: 1, fpart: Month}},
+		{"-P0.01M", "-P0.01M", Period{fraction: -1, fpart: Month}},
+		{"P0.01D", "P0.01D", Period{fraction: 1, fpart: Day}},
+		{"-P0.01D", "-P0.01D", Period{fraction: -1, fpart: Day}},
+		{"PT0.01H", "PT0.01H", Period{fraction: 1, fpart: Hour}},
+		{"-PT0.01H", "-PT0.01H", Period{fraction: -1, fpart: Hour}},
+		{"PT0.01M", "PT0.01M", Period{fraction: 1, fpart: Minute}},
+		{"-PT0.01M", "-PT0.01M", Period{fraction: -1, fpart: Minute}},
+		{"PT0.01S", "PT0.01S", Period{fraction: 1, fpart: Second}},
+		{"-PT0.01S", "-PT0.01S", Period{fraction: -1, fpart: Second}},
 		// week special case: also not identity when reversed
-		{"P0.1W", "P0.7D", Period{days: 7}},
-		{"-P0.1W", "-P0.7D", Period{days: -7}},
+		{"P0.01W", "P0.07D", Period{fraction: 7, fpart: Day}},
+		{"-P0.01W", "-P0.07D", Period{fraction: -7, fpart: Day}},
 		// largest
-		{"PT3276.7S", "PT3276.7S", Period{seconds: 32767}},
-		{"PT3276.7M", "PT3276.7M", Period{minutes: 32767}},
-		{"PT3276.7H", "PT3276.7H", Period{hours: 32767}},
-		{"P3276.7D", "P3276.7D", Period{days: 32767}},
-		{"P3276.7M", "P3276.7M", Period{months: 32767}},
-		{"P3276.7Y", "P3276.7Y", Period{years: 32767}},
+		{"PT32767.99S", "PT32767.99S", Period{seconds: 32767, fraction: 99, fpart: Second}},
+		{"PT32767.99M", "PT32767.99M", Period{minutes: 32767, fraction: 99, fpart: Minute}},
+		{"PT32767.99H", "PT32767.99H", Period{hours: 32767, fraction: 99, fpart: Hour}},
+		{"P32766.99D", "P32766.99D", Period{days: 32766, fraction: 99, fpart: Day}},
+		{"P32767.99M", "P32767.99M", Period{months: 32767, fraction: 99, fpart: Month}},
+		{"P32767.99Y", "P32767.99Y", Period{years: 32767, fraction: 99, fpart: Year}},
 
-		{"P3Y", "P3Y", Period{years: 30}},
-		{"P6M", "P6M", Period{months: 60}},
-		{"P5W", "P5W", Period{days: 350}},
-		{"P4D", "P4D", Period{days: 40}},
-		{"PT12H", "PT12H", Period{hours: 120}},
-		{"PT30M", "PT30M", Period{minutes: 300}},
-		{"PT25S", "PT25S", Period{seconds: 250}},
-		{"PT30M67.6S", "PT30M67.6S", Period{minutes: 300, seconds: 676}},
-		{"P2.Y", "P2Y", Period{years: 20}},
-		{"P2.5Y", "P2.5Y", Period{years: 25}},
-		{"P2.15Y", "P2.1Y", Period{years: 21}},
-		{"P2.125Y", "P2.1Y", Period{years: 21}},
-		{"P1Y2.M", "P1Y2M", Period{years: 10, months: 20}},
-		{"P1Y2.5M", "P1Y2.5M", Period{years: 10, months: 25}},
-		{"P1Y2.15M", "P1Y2.1M", Period{years: 10, months: 21}},
-		{"P1Y2.125M", "P1Y2.1M", Period{years: 10, months: 21}},
-		{"P3276.7Y", "P3276.7Y", Period{years: 32767}},
-		{"-P3276.7Y", "-P3276.7Y", Period{years: -32767}},
+		{"P3Y", "P3Y", Period{years: 3}},
+		{"P6M", "P6M", Period{months: 6}},
+		{"P5W", "P5W", Period{days: 35}},
+		{"P4D", "P4D", Period{days: 4}},
+		{"PT12H", "PT12H", Period{hours: 12}},
+		{"PT30M", "PT30M", Period{minutes: 30}},
+		{"PT25S", "PT25S", Period{seconds: 25}},
+		{"PT30M67.6S", "PT30M67.6S", Period{minutes: 30, seconds: 67, fraction: 60, fpart: Second}},
+		{"P2.Y", "P2Y", Period{years: 2}},
+		{"P2.5Y", "P2.5Y", Period{years: 2, fraction: 50, fpart: Year}},
+		{"P2.15Y", "P2.15Y", Period{years: 2, fraction: 15, fpart: Year}},
+		{"P2.125Y", "P2.12Y", Period{years: 2, fraction: 12, fpart: Year}},
+		{"P1Y2.M", "P1Y2M", Period{years: 1, months: 2}},
+		{"P1Y2.5M", "P1Y2.5M", Period{years: 1, months: 2, fraction: 50, fpart: Month}},
+		{"P1Y2.15M", "P1Y2.15M", Period{years: 1, months: 2, fraction: 15, fpart: Month}},
+		{"P1Y2.125M", "P1Y2.12M", Period{years: 1, months: 2, fraction: 12, fpart: Month}},
 		// others
-		{"P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 30, months: 60, days: 390, hours: 120, minutes: 400, seconds: 50}},
-		{"+P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 30, months: 60, days: 390, hours: 120, minutes: 400, seconds: 50}},
-		{"-P3Y6M5W4DT12H40M5S", "-P3Y6M39DT12H40M5S", Period{years: -30, months: -60, days: -390, hours: -120, minutes: -400, seconds: -50}},
-		{"P1Y14M35DT48H125M800S", "P1Y14M5WT48H125M800S", Period{years: 10, months: 140, days: 350, hours: 480, minutes: 1250, seconds: 8000}},
+		{"P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 3, months: 6, days: 39, hours: 12, minutes: 40, seconds: 5}},
+		{"+P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 3, months: 6, days: 39, hours: 12, minutes: 40, seconds: 5}},
+		{"-P3Y6M5W4DT12H40M5S", "-P3Y6M39DT12H40M5S", Period{years: -3, months: -6, days: -39, hours: -12, minutes: -40, seconds: -5}},
+		{"P1Y14M35DT48H125M800S", "P1Y14M5WT48H125M800S", Period{years: 1, months: 14, days: 35, hours: 48, minutes: 125, seconds: 800}},
 	}
 	for i, c := range cases {
 		p, err := ParseWithNormalise(c.value, false)
@@ -723,21 +718,53 @@ func xTestBetween(t *testing.T) {
 	}
 }
 
-func TestNormalise(t *testing.T) {
+func TestNormaliseUnchanged(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		source period64
+	}{
+		// zero case
+		{period64{}},
+
+		{period64{years: 1}},
+		{period64{months: 1}},
+		{period64{days: 1}},
+		{period64{hours: 1}},
+		{period64{minutes: 1}},
+		{period64{seconds: 1}},
+
+		{period64{years: 1, months: 1, days: 1, hours: 1, minutes: 1, seconds: 1, fraction: 1, fpart: Second}},
+
+		{period64{minutes: 1, seconds: 10}},
+		{period64{hours: 1, minutes: 10}},
+		{period64{years: 1, months: 7}},
+
+		{period64{years: 1, fraction: 1, fpart: Year}},
+		{period64{months: 1, fraction: 1, fpart: Month}},
+		{period64{days: 1, fraction: 1, fpart: Day}},
+		{period64{hours: 1, fraction: 1, fpart: Hour}},
+		{period64{minutes: 1, fraction: 1, fpart: Minute}},
+		{period64{seconds: 1, fraction: 1, fpart: Second}},
+
+		// don't carry MaxInt16 - 1 where it would cause small arithmetic errors
+		{period64{years: 32767}},
+		{period64{days: 32767}},
+	}
+	for i, c := range cases {
+		p, err := c.source.toPeriod()
+		g.Expect(err).NotTo(HaveOccurred())
+
+		testNormaliseBothSigns(t, i, c.source, p, true)
+		testNormaliseBothSigns(t, i, c.source, p, false)
+	}
+}
+
+func TestNormaliseChanged(t *testing.T) {
 	cases := []struct {
 		source          period64
 		precise, approx Period
 	}{
-		// zero case
-		{period64{}, Period{}, Period{}},
-
-		// simple no-change case
-		{
-			source:  period64{years: 1, months: 1, days: 1, hours: 1, minutes: 1, seconds: 1, fraction: 1, fpart: Second},
-			precise: Period{years: 1, months: 1, days: 1, hours: 1, minutes: 1, seconds: 1, fraction: 1, fpart: Second},
-			approx:  Period{years: 1, months: 1, days: 1, hours: 1, minutes: 1, seconds: 1, fraction: 1, fpart: Second},
-		},
-
 		// carry seconds to minutes
 		{period64{seconds: 70}, Period{minutes: 1, seconds: 10}, Period{minutes: 1, seconds: 10}},
 		{period64{seconds: 699}, Period{minutes: 11, seconds: 39}, Period{minutes: 11, seconds: 39}},
@@ -745,14 +772,6 @@ func TestNormalise(t *testing.T) {
 		// carry minutes to hours
 		{period64{minutes: 70}, Period{hours: 1, minutes: 10}, Period{hours: 1, minutes: 10}},
 		{period64{minutes: 699}, Period{hours: 11, minutes: 39}, Period{hours: 11, minutes: 39}},
-
-		// unchanged
-		{period64{seconds: 1}, Period{seconds: 1}, Period{seconds: 1}},
-		{period64{minutes: 1}, Period{minutes: 1}, Period{minutes: 1}},
-		{period64{hours: 1}, Period{hours: 1}, Period{hours: 1}},
-		{period64{minutes: 1, seconds: 10}, Period{minutes: 1, seconds: 10}, Period{minutes: 1, seconds: 10}},
-		{period64{hours: 1, minutes: 10}, Period{hours: 1, minutes: 10}, Period{hours: 1, minutes: 10}},
-		{period64{years: 1, months: 7}, Period{years: 1, months: 7}, Period{years: 1, months: 7}},
 
 		// simplify 1 minute to seconds
 		{period64{minutes: 1, seconds: 9}, Period{seconds: 69}, Period{seconds: 69}},

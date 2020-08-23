@@ -59,122 +59,192 @@ func ParseWithNormalise(period string, normalise bool) (Period, error) {
 		return Period{}, nil
 	}
 
-	result := period64{input: period}
-	pcopy := period
-	if pcopy[0] == '-' {
-		result.neg = true
-		pcopy = pcopy[1:]
-	} else if pcopy[0] == '+' {
-		pcopy = pcopy[1:]
+	p64, err := parse(period, normalise)
+	if err != nil {
+		return Period{}, err
+	}
+	return p64.toPeriod()
+}
+
+func parse(period string, normalise bool) (*period64, error) {
+	neg := false
+	remaining := period
+	if remaining[0] == '-' {
+		neg = true
+		remaining = remaining[1:]
+	} else if remaining[0] == '+' {
+		remaining = remaining[1:]
 	}
 
-	if pcopy[0] != 'P' {
-		return Period{}, fmt.Errorf("expected 'P' period mark at the start: %s", period)
+	if remaining[0] != 'P' {
+		return nil, fmt.Errorf("%s: expected 'P' period mark at the start", period)
 	}
-	pcopy = pcopy[1:]
+	remaining = remaining[1:]
 
-	st := parseState{period, pcopy, false, nil}
-	t := strings.IndexByte(pcopy, 'T')
-	if t >= 0 {
-		st.pcopy = pcopy[t+1:]
+	var whole int64
+	var fraction int8
+	result := &period64{input: period, neg: neg}
+	var weekValue int64
+	var years, months, weeks, days, hours, minutes, seconds itemState
+	var des byte
+	var err error
+	nComponents := 0
 
-		result.hours, st = parseField(st, 'H')
-		if st.err != nil {
-			return Period{}, fmt.Errorf("expected a number before the 'H' designator: %s", period)
+	years, months, weeks, days = Armed, Armed, Armed, Armed
+
+	isHMS := false
+	for len(remaining) > 0 {
+		if remaining[0] == 'T' {
+			if isHMS {
+				return nil, fmt.Errorf("%s: 'T' designator cannot occur more than once", period)
+			}
+			isHMS = true
+
+			years, months, weeks, days = Unready, Unready, Unready, Unready
+			hours, minutes, seconds = Armed, Armed, Armed
+
+			remaining = remaining[1:]
+
+		} else {
+			whole, fraction, des, remaining, err = parseNextField(remaining, period)
+			if err != nil {
+				return nil, err
+			}
+
+			switch des {
+			case 'Y':
+				years, err = years.testAndSet(whole, fraction, Year, result, &result.years)
+			case 'W':
+				weeks, err = weeks.testAndSet(whole, fraction, Week, result, &weekValue)
+			case 'D':
+				days, err = days.testAndSet(whole, fraction, Day, result, &result.days)
+			case 'H':
+				hours, err = hours.testAndSet(whole, fraction, Hour, result, &result.hours)
+			case 'S':
+				seconds, err = seconds.testAndSet(whole, fraction, Second, result, &result.seconds)
+			case 'M':
+				if isHMS {
+					minutes, err = minutes.testAndSet(whole, fraction, Minute, result, &result.minutes)
+				} else {
+					months, err = months.testAndSet(whole, fraction, Month, result, &result.months)
+				}
+			default:
+				return nil, fmt.Errorf("%s: expected a number not '%c'", period, des)
+			}
+			nComponents++
+
+			if err != nil {
+				return nil, err
+			}
 		}
-
-		result.minutes, st = parseField(st, 'M')
-		if st.err != nil {
-			return Period{}, fmt.Errorf("expected a number before the 'M' designator: %s", period)
-		}
-
-		result.seconds, st = parseField(st, 'S')
-		if st.err != nil {
-			return Period{}, fmt.Errorf("expected a number before the 'S' designator: %s", period)
-		}
-
-		if len(st.pcopy) != 0 {
-			return Period{}, fmt.Errorf("unexpected remaining components %s: %s", st.pcopy, period)
-		}
-
-		st.pcopy = pcopy[:t]
 	}
 
-	result.years, st = parseField(st, 'Y')
-	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'Y' designator: %s", period)
-	}
-	result.months, st = parseField(st, 'M')
-	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'M' designator: %s", period)
-	}
-	weeks, st := parseField(st, 'W')
-	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'W' designator: %s", period)
+	if nComponents == 0 {
+		return nil, fmt.Errorf("%s: expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator", period)
 	}
 
-	days, st := parseField(st, 'D')
-	if st.err != nil {
-		return Period{}, fmt.Errorf("expected a number before the 'D' designator: %s", period)
-	}
-
-	if len(st.pcopy) != 0 {
-		return Period{}, fmt.Errorf("unexpected remaining components %s: %s", st.pcopy, period)
-	}
-
-	result.days = weeks*7 + days
-	//fmt.Printf("%#v\n", st)
-
-	if !st.ok {
-		return Period{}, fmt.Errorf("expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator: %s", period)
-	}
+	result.days += weekValue * 7
 
 	if normalise {
-		return result.normalise64(true).toPeriod()
+		result = result.normalise64(true)
 	}
 
-	return result.toPeriod()
+	return result, nil
 }
 
-type parseState struct {
-	period, pcopy string
-	ok            bool
-	err           error
-}
+//-------------------------------------------------------------------------------------------------
 
-func parseField(st parseState, mark byte) (int64, parseState) {
-	//fmt.Printf("%c %#v\n", mark, st)
-	r := int64(0)
-	m := strings.IndexByte(st.pcopy, mark)
-	if m > 0 {
-		r, st.err = parseDecimalFixedPoint(st.pcopy[:m], st.period)
-		if st.err != nil {
-			return 0, st
+type itemState int
+
+const (
+	Unready itemState = iota
+	Armed
+	Set
+)
+
+func (i itemState) testAndSet(whole int64, fraction int8, des designator, result *period64, value *int64) (itemState, error) {
+	switch i {
+	case Unready:
+		return i, fmt.Errorf("%s: '%c' designator cannot occur here", result.input, des.Byte())
+	case Set:
+		return i, fmt.Errorf("%s: '%c' designator cannot occur more than once", result.input, des)
+	}
+	if fraction != 0 && result.fraction != 0 {
+		return i, fmt.Errorf("%s: '%c' & '%c' only the last field can have a fraction", result.input, result.fpart, des.Byte())
+	}
+
+	if fraction != 0 {
+		if des == Week {
+			result.fraction = fraction * 7
+			result.fpart = Day
+		} else {
+			result.fraction = fraction
+			result.fpart = des
 		}
-		st.pcopy = st.pcopy[m+1:]
-		st.ok = true
 	}
-	return r, st
+
+	*value = whole
+	return Set, nil
+}
+
+//-------------------------------------------------------------------------------------------------
+
+func parseNextField(str, original string) (int64, int8, byte, string, error) {
+	i := scanDigits(str)
+	if i < 0 {
+		return 0, 0, 0, "", fmt.Errorf("%s: missing designator at the end", original)
+	}
+
+	des := str[i]
+	whole, frac, err := parseDecimalNumber(str[:i], original, des)
+	return whole, frac, des, str[i+1:], err
 }
 
 // Fixed-point three decimal places
-func parseDecimalFixedPoint(s, original string) (int64, error) {
-	//was := s
-	dec := strings.IndexByte(s, '.')
+func parseDecimalNumber(number, original string, des byte) (whole int64, frac int8, err error) {
+	dec := strings.IndexByte(number, '.')
 	if dec < 0 {
-		dec = strings.IndexByte(s, ',')
+		dec = strings.IndexByte(number, ',')
 	}
 
 	if dec >= 0 {
-		dp := len(s) - dec
-		if dp > 1 {
-			s = s[:dec] + s[dec+1:dec+2]
-		} else {
-			s = s[:dec] + s[dec+1:] + "0"
+		whole, err = strconv.ParseInt(number[:dec], 10, 64)
+		if err == nil {
+			var n int64
+			number = number[dec+1:]
+			switch len(number) {
+			case 0: // skip
+			case 1:
+				n, err = strconv.ParseInt(number, 10, 64)
+				frac = int8(n * 10)
+			default:
+				n, err = strconv.ParseInt(number[:2], 10, 64)
+				frac = int8(n)
+			}
 		}
 	} else {
-		s = s + "0"
+		whole, err = strconv.ParseInt(number, 10, 64)
 	}
 
-	return strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return whole, 0, fmt.Errorf("%s: expected a number but found '%c'", original, des)
+	}
+
+	return whole, frac, err
+}
+
+// scanDigits finds the first non-digit byte after a given starting point.
+// Note that it does not care about runes or UTF-8 encoding; it assumes that
+// a period string is always valid ASCII as well as UTF-8.
+func scanDigits(s string) int {
+	for i, c := range s {
+		if !isDigit(c) {
+			return i
+		}
+	}
+	return -1
+}
+
+func isDigit(c rune) bool {
+	return ('0' <= c && c <= '9') || c == '.' || c == ','
 }

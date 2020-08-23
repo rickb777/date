@@ -23,6 +23,14 @@ var designatorByte = map[designator]byte{
 	Second: 'S',
 }
 
+func (d designator) IsAfterT() bool {
+	switch d {
+	case Hour, Minute, Second:
+		return true
+	}
+	return false
+}
+
 func (d designator) Byte() byte {
 	return designatorByte[d]
 }

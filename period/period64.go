@@ -64,7 +64,7 @@ func (p64 *period64) toPeriod() (Period, error) {
 		if p64.input == "" {
 			p64.input = p64.String()
 		}
-		return Period{}, fmt.Errorf("integer overflow occurred in %s: %s", strings.Join(f, ","), p64.input)
+		return Period{}, fmt.Errorf("%s: integer overflow occurred in %s", p64.input, strings.Join(f, ","))
 	}
 
 	if p64.neg {
