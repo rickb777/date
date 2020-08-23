@@ -446,8 +446,7 @@ func testPeriodToDuration(t *testing.T, i int, value string, duration time.Durat
 	}
 }
 
-//TODO
-func xTestSignPotisitveNegative(t *testing.T) {
+func TestSignPotisitveNegative(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -478,8 +477,7 @@ func xTestSignPotisitveNegative(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodApproxDays(t *testing.T) {
+func TestPeriodApproxDays(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -492,17 +490,17 @@ func xTestPeriodApproxDays(t *testing.T) {
 		{"P1D", 1},
 		{"P1M", 30},
 		{"P1Y", 365},
-		{"-P1Y", -365},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		td := p.TotalDaysApprox()
-		g.Expect(td).To(Equal(c.approxDays), info(i, c.value))
+		td1 := p.TotalDaysApprox()
+		g.Expect(td1).To(Equal(c.approxDays), info(i, c.value))
+		td2 := p.Negate().TotalDaysApprox()
+		g.Expect(td2).To(Equal(-c.approxDays), info(i, c.value))
 	}
 }
 
-//TODO
-func xTestPeriodApproxMonths(t *testing.T) {
+func TestPeriodApproxMonths(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -520,19 +518,19 @@ func xTestPeriodApproxMonths(t *testing.T) {
 		{"P2M31D", 3},
 		{"P1Y", 12},
 		{"P2Y3M", 27},
-		{"-P1Y", -12},
 		{"PT24H", 0},
 		{"PT744H", 1},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
-		td := p.TotalMonthsApprox()
-		g.Expect(td).To(Equal(c.approxMonths), info(i, c.value))
+		td1 := p.TotalMonthsApprox()
+		g.Expect(td1).To(Equal(c.approxMonths), info(i, c.value))
+		td2 := p.Negate().TotalMonthsApprox()
+		g.Expect(td2).To(Equal(-c.approxMonths), info(i, c.value))
 	}
 }
 
-//TODO
-func xTestNewPeriod(t *testing.T) {
+func TestNewPeriod(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -541,33 +539,31 @@ func xTestNewPeriod(t *testing.T) {
 	}{
 		{}, // zero case
 
-		// positives
-		{period: Period{seconds: 10}, seconds: 1},
-		{period: Period{minutes: 10}, minutes: 1},
-		{period: Period{hours: 10}, hours: 1},
-		{period: Period{days: 10}, days: 1},
-		{period: Period{months: 10}, months: 1},
-		{period: Period{years: 10}, years: 1},
-		{period: Period{years: 1000, months: 2220, days: 7000}, years: 100, months: 222, days: 700},
-		// negatives
-		{period: Period{seconds: -10}, seconds: -1},
-		{period: Period{minutes: -10}, minutes: -1},
-		{period: Period{hours: -10}, hours: -1},
-		{period: Period{days: -10}, days: -1},
-		{period: Period{months: -10}, months: -1},
-		{period: Period{years: -10}, years: -1},
+		{period: Period{seconds: 1}, seconds: 1},
+		{period: Period{minutes: 1}, minutes: 1},
+		{period: Period{hours: 1}, hours: 1},
+		{period: Period{days: 1}, days: 1},
+		{period: Period{months: 1}, months: 1},
+		{period: Period{years: 1}, years: 1},
+		{period: Period{years: 100, months: 222, days: 700}, years: 100, months: 222, days: 700},
 	}
 	for i, c := range cases {
-		p := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
-		g.Expect(p).To(Equal(c.period), info(i, c.period))
-		g.Expect(p.Years()).To(Equal(c.years), info(i, c.period))
-		g.Expect(p.Months()).To(Equal(c.months), info(i, c.period))
-		g.Expect(p.Days()).To(Equal(c.days), info(i, c.period))
+		pp := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
+		g.Expect(pp).To(Equal(c.period), info(i, c.period))
+		g.Expect(pp.Years()).To(Equal(c.years), info(i, c.period))
+		g.Expect(pp.Months()).To(Equal(c.months), info(i, c.period))
+		g.Expect(pp.Days()).To(Equal(c.days), info(i, c.period))
+
+		pn := New(-c.years, -c.months, -c.days, -c.hours, -c.minutes, -c.seconds)
+		en := c.period.Negate()
+		g.Expect(pn).To(Equal(en), info(i, en))
+		g.Expect(pn.Years()).To(Equal(-c.years), info(i, en))
+		g.Expect(pn.Months()).To(Equal(-c.months), info(i, en))
+		g.Expect(pn.Days()).To(Equal(-c.days), info(i, en))
 	}
 }
 
-//TODO
-func xTestNewHMS(t *testing.T) {
+func TestNewHMS(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -575,26 +571,30 @@ func xTestNewHMS(t *testing.T) {
 		hours, minutes, seconds int
 	}{
 		{}, // zero case
-		// postives
-		{period: Period{seconds: 10}, seconds: 1},
-		{period: Period{minutes: 10}, minutes: 1},
-		{period: Period{hours: 10}, hours: 1},
-		// negatives
-		{period: Period{seconds: -10}, seconds: -1},
-		{period: Period{minutes: -10}, minutes: -1},
-		{period: Period{hours: -10}, hours: -1},
+
+		{period: Period{seconds: 1}, seconds: 1},
+		{period: Period{minutes: 1}, minutes: 1},
+		{period: Period{hours: 1}, hours: 1},
+		{period: Period{hours: 3, minutes: 4, seconds: 5}, hours: 3, minutes: 4, seconds: 5},
+		{period: Period{hours: 32767, minutes: 32767, seconds: 32767}, hours: 32767, minutes: 32767, seconds: 32767},
 	}
 	for i, c := range cases {
-		p := NewHMS(c.hours, c.minutes, c.seconds)
-		g.Expect(p).To(Equal(c.period), info(i, c.period))
-		g.Expect(p.Hours()).To(Equal(c.hours), info(i, c.period))
-		g.Expect(p.Minutes()).To(Equal(c.minutes), info(i, c.period))
-		g.Expect(p.Seconds()).To(Equal(c.seconds), info(i, c.period))
+		pp := NewHMS(c.hours, c.minutes, c.seconds)
+		g.Expect(pp).To(Equal(c.period), info(i, c.period))
+		g.Expect(pp.Hours()).To(Equal(c.hours), info(i, c.period))
+		g.Expect(pp.Minutes()).To(Equal(c.minutes), info(i, c.period))
+		g.Expect(pp.Seconds()).To(Equal(c.seconds), info(i, c.period))
+
+		pn := NewHMS(-c.hours, -c.minutes, -c.seconds)
+		en := c.period.Negate()
+		g.Expect(pn).To(Equal(en), info(i, en))
+		g.Expect(pn.Hours()).To(Equal(-c.hours), info(i, en))
+		g.Expect(pn.Minutes()).To(Equal(-c.minutes), info(i, en))
+		g.Expect(pn.Seconds()).To(Equal(-c.seconds), info(i, en))
 	}
 }
 
-//TODO
-func xTestNewYMD(t *testing.T) {
+func TestNewYMD(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -602,22 +602,26 @@ func xTestNewYMD(t *testing.T) {
 		years, months, days int
 	}{
 		{}, // zero case
-		// positives
-		{period: Period{days: 10}, days: 1},
-		{period: Period{months: 10}, months: 1},
-		{period: Period{years: 10}, years: 1},
-		{period: Period{years: 1000, months: 2220, days: 7000}, years: 100, months: 222, days: 700},
-		// negatives
-		{period: Period{days: -10}, days: -1},
-		{period: Period{months: -10}, months: -1},
-		{period: Period{years: -10}, years: -1},
+
+		{period: Period{days: 1}, days: 1},
+		{period: Period{months: 1}, months: 1},
+		{period: Period{years: 1}, years: 1},
+		{period: Period{years: 100, months: 222, days: 700}, years: 100, months: 222, days: 700},
+		{period: Period{years: 32767, months: 32767, days: 32767}, years: 32767, months: 32767, days: 32767},
 	}
 	for i, c := range cases {
-		p := NewYMD(c.years, c.months, c.days)
-		g.Expect(p).To(Equal(c.period), info(i, c.period))
-		g.Expect(p.Years()).To(Equal(c.years), info(i, c.period))
-		g.Expect(p.Months()).To(Equal(c.months), info(i, c.period))
-		g.Expect(p.Days()).To(Equal(c.days), info(i, c.period))
+		pp := NewYMD(c.years, c.months, c.days)
+		g.Expect(pp).To(Equal(c.period), info(i, c.period))
+		g.Expect(pp.Years()).To(Equal(c.years), info(i, c.period))
+		g.Expect(pp.Months()).To(Equal(c.months), info(i, c.period))
+		g.Expect(pp.Days()).To(Equal(c.days), info(i, c.period))
+
+		pn := NewYMD(-c.years, -c.months, -c.days)
+		en := c.period.Negate()
+		g.Expect(pn).To(Equal(en), info(i, en))
+		g.Expect(pn.Years()).To(Equal(-c.years), info(i, en))
+		g.Expect(pn.Months()).To(Equal(-c.months), info(i, en))
+		g.Expect(pn.Days()).To(Equal(-c.days), info(i, en))
 	}
 }
 

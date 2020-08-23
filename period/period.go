@@ -61,6 +61,8 @@ type Period struct {
 // need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
+// Because this implementation uses int16 internally, the paramters must
+// be within the range +/- math.MaxInt16.
 func NewYMD(years, months, days int) Period {
 	return New(years, months, days, 0, 0, 0)
 }
@@ -70,6 +72,8 @@ func NewYMD(years, months, days int) Period {
 // if you need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
+// Because this implementation uses int16 internally, the paramters must
+// be within the range +/- math.MaxInt16.
 func NewHMS(hours, minutes, seconds int) Period {
 	return New(0, 0, 0, hours, minutes, seconds)
 }
@@ -79,6 +83,8 @@ func NewHMS(hours, minutes, seconds int) Period {
 // if you need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
+// Because this implementation uses int16 internally, the paramters must
+// be within the range +/- math.MaxInt16.
 func New(years, months, days, hours, minutes, seconds int) Period {
 	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
 		(years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
@@ -617,21 +623,17 @@ func (period Period) totalDaysApproxE8() int64 {
 // a year is 365.2425 days as per Gregorian calendar rules) and a month is 1/12 of that. Whole
 // multiples of 24 hours are also included in the calculation.
 func (period Period) TotalDaysApprox() int {
-	pn := period.toPeriod64("").normalise64(false)
-	tdE6 := pn.totalDaysApproxE6()
-	hE6 := (pn.centiHours() * oneE4) / 24
-	return int((tdE6 + hE6) / oneE7)
+	d := period.DurationApprox()
+	return int(d / (24 * time.Hour))
 }
 
 // TotalMonthsApprox gets the approximate total number of months in the period. The days component
 // is included by approximation, assuming a year is 365.2425 days (as per Gregorian calendar rules)
 // and a month is 1/12 of that. Whole multiples of 24 hours are also included in the calculation.
 func (period Period) TotalMonthsApprox() int {
-	pn := period.toPeriod64("").normalise64(false)
-	mE1 := pn.years*12 + pn.months
-	hE1 := pn.hours / 24
-	dE1 := ((pn.days + hE1) * oneE6) / daysPerMonthE6
-	return int((mE1 + dE1) / 10)
+	const dpm = time.Duration(daysPerMonthE6)
+	d := period.DurationApprox()
+	return int(d / (dpm * 24 * (time.Hour / 1000000)))
 }
 
 // Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
