@@ -13,8 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-//TODO
-func xTestGobEncoding(t *testing.T) {
+func TestGobEncoding(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	var b bytes.Buffer
@@ -47,8 +46,7 @@ func xTestGobEncoding(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodJSONMarshalling(t *testing.T) {
+func TestPeriodJSONMarshalling(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -78,8 +76,7 @@ func xTestPeriodJSONMarshalling(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodTextMarshalling(t *testing.T) {
+func TestPeriodTextMarshalling(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {

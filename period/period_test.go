@@ -183,8 +183,7 @@ func TestParsePeriodWithoutNormalise(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodString(t *testing.T) {
+func TestPeriodString(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -247,8 +246,7 @@ func xTestPeriodString(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodIntComponents(t *testing.T) {
+func TestPeriodIntComponents(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -286,8 +284,7 @@ func xTestPeriodIntComponents(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodFloatComponents(t *testing.T) {
+func TestPeriodFloatComponents(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -299,28 +296,35 @@ func xTestPeriodFloatComponents(t *testing.T) {
 		{}, // zero case
 
 		// YMD cases
-		{value: Period{years: 10}, y: 1},
-		{value: Period{years: 15}, y: 1.5},
-		{value: Period{months: 10}, m: 1},
-		{value: Period{months: 15}, m: 1.5},
-		{value: Period{months: 60}, m: 6},
-		{value: Period{months: 120}, m: 12},
-		{value: Period{days: 70}, w: 1, d: 7},
-		{value: Period{days: 77}, w: 1.1, d: 7.7},
-		{value: Period{days: 10}, w: 1.0 / 7, d: 1},
-		{value: Period{days: 11}, w: 1.1 / 7, d: 1.1},
-		{value: Period{days: 390}, w: 5.571429, d: 39, dx: 4},
-		{value: Period{days: 40}, w: 0.5714286, d: 4, dx: 4},
+		{value: Period{years: 1}, y: 1},
+		{value: Period{years: 1, fraction: 50, fpart: Year}, y: 1.5},
+		{value: Period{years: 1, fraction: 1, fpart: Year}, y: 1.01},
+		{value: Period{months: 1}, m: 1},
+		{value: Period{months: 1, fraction: 50, fpart: Month}, m: 1.5},
+		{value: Period{months: 1, fraction: 1, fpart: Month}, m: 1.01},
+		{value: Period{months: 6}, m: 6},
+		{value: Period{months: 12}, m: 12},
+		{value: Period{days: 7}, w: 1, d: 7},
+		{value: Period{days: 7, fraction: 70, fpart: Day}, w: 1.1, d: 7.7},
+		{value: Period{days: 7, fraction: 1, fpart: Day}, w: 7.01 / 7, d: 7.01},
+		{value: Period{days: 1}, w: 1.0 / 7, d: 1},
+		{value: Period{days: 1, fraction: 10, fpart: Day}, w: 1.1 / 7, d: 1.1},
+		{value: Period{days: 1, fraction: 1, fpart: Day}, w: 1.01 / 7, d: 1.01},
+		{value: Period{days: 39}, w: 5.571429, d: 39, dx: 4},
+		{value: Period{days: 4}, w: 0.5714286, d: 4, dx: 4},
 
 		// HMS cases
-		{value: Period{hours: 11}, hh: 1.1},
-		{value: Period{hours: 10, minutes: 60}, hh: 1, mm: 6},
-		{value: Period{hours: 120}, hh: 12},
-		{value: Period{minutes: 11}, mm: 1.1},
-		{value: Period{minutes: 10, seconds: 60}, mm: 1, ss: 6},
-		{value: Period{minutes: 300}, mm: 30},
-		{value: Period{seconds: 11}, ss: 1.1},
-		{value: Period{seconds: 50}, ss: 5},
+		{value: Period{hours: 1, fraction: 10, fpart: Hour}, hh: 1.1},
+		{value: Period{hours: 1, fraction: 1, fpart: Hour}, hh: 1.01},
+		{value: Period{hours: 1, minutes: 6}, hh: 1, mm: 6},
+		{value: Period{hours: 12}, hh: 12},
+		{value: Period{minutes: 1, fraction: 10, fpart: Minute}, mm: 1.1},
+		{value: Period{minutes: 1, fraction: 1, fpart: Minute}, mm: 1.01},
+		{value: Period{minutes: 1, seconds: 6}, mm: 1, ss: 6},
+		{value: Period{minutes: 30}, mm: 30},
+		{value: Period{seconds: 1, fraction: 10, fpart: Second}, ss: 1.1},
+		{value: Period{seconds: 1, fraction: 1, fpart: Second}, ss: 1.01},
+		{value: Period{seconds: 5}, ss: 5},
 	}
 	for i, c := range cases {
 		pp := c.value
@@ -396,10 +400,7 @@ func xTestPeriodAddToTime(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodToDuration(t *testing.T) {
-	g := NewGomegaWithT(t)
-
+func TestPeriodToDuration(t *testing.T) {
 	cases := []struct {
 		value    string
 		duration time.Duration
@@ -408,7 +409,6 @@ func xTestPeriodToDuration(t *testing.T) {
 		{"P0D", time.Duration(0), true},
 		{"PT1S", 1 * time.Second, true},
 		{"PT0.1S", 100 * time.Millisecond, true},
-		{"-PT0.1S", -100 * time.Millisecond, true},
 		{"PT3276S", 3276 * time.Second, true},
 		{"PT1M", 60 * time.Second, true},
 		{"PT0.1M", 6 * time.Second, true},
@@ -416,7 +416,6 @@ func xTestPeriodToDuration(t *testing.T) {
 		{"PT1H", 3600 * time.Second, true},
 		{"PT0.1H", 360 * time.Second, true},
 		{"PT3220H", 3220 * time.Hour, true},
-		{"PT3221H", 3221 * time.Hour, false}, // threshold of normalisation wrapping
 		// days, months and years conversions are never precise
 		{"P1D", 24 * time.Hour, false},
 		{"P0.1D", 144 * time.Minute, false},
@@ -425,19 +424,25 @@ func xTestPeriodToDuration(t *testing.T) {
 		{"P0.1M", oneMonthApprox / 10, false},
 		{"P3276M", 3276 * oneMonthApprox, false},
 		{"P1Y", oneYearApprox, false},
-		{"-P1Y", -oneYearApprox, false},
-		{"P3276Y", 3276 * oneYearApprox, false},   // near the upper limit of range
-		{"-P3276Y", -3276 * oneYearApprox, false}, // near the lower limit of range
+		{"P3276Y", 3276 * oneYearApprox, false}, // near the upper limit of range
 	}
 	for i, c := range cases {
-		p := MustParse(c.value)
-		d1, prec := p.Duration()
-		g.Expect(d1).To(Equal(c.duration), info(i, c.value))
-		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
-		d2 := p.DurationApprox()
-		if c.precise {
-			g.Expect(d2).To(Equal(c.duration), info(i, c.value))
-		}
+		testPeriodToDuration(t, i, c.value, c.duration, c.precise)
+		testPeriodToDuration(t, i, "-"+c.value, -c.duration, c.precise)
+	}
+}
+
+func testPeriodToDuration(t *testing.T, i int, value string, duration time.Duration, precise bool) {
+	t.Helper()
+	g := NewGomegaWithT(t)
+	hint := info(i, "%s %s %v", value, duration, precise)
+	pp := MustParse(value)
+	d1, prec := pp.Duration()
+	g.Expect(d1).To(Equal(duration), hint)
+	g.Expect(prec).To(Equal(precise), hint)
+	d2 := pp.DurationApprox()
+	if precise {
+		g.Expect(d2).To(Equal(duration), hint)
 	}
 }
 
@@ -1026,6 +1031,10 @@ func init() {
 	london, _ = time.LoadLocation("Europe/London")
 }
 
-func info(i int, m interface{}) string {
-	return fmt.Sprintf("%d %v", i, m)
+func info(i int, m ...interface{}) string {
+	if s, ok := m[0].(string); ok {
+		m[0] = i
+		return fmt.Sprintf("%d "+s, m...)
+	}
+	return fmt.Sprintf("%d %v", i, m[0])
 }

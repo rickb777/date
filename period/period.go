@@ -594,7 +594,7 @@ func (period Period) DurationApprox() time.Duration {
 // and a month being 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
-	tdE6 := time.Duration(period.totalDaysApproxE6() * 8640)
+	tdE6 := time.Duration(period.totalDaysApproxE8() * 864)
 	stE3 := period.hmsDuration()
 	return tdE6*time.Microsecond + stE3, tdE6 == 0
 }
@@ -606,11 +606,11 @@ func (period Period) hmsDuration() time.Duration {
 	return (hhE3 + mmE3 + ssE3) * time.Millisecond
 }
 
-func (period Period) totalDaysApproxE6() int64 {
+func (period Period) totalDaysApproxE8() int64 {
 	ydE6 := period.centiYears() * daysPerYearE6
 	mdE6 := period.centiMonths() * daysPerMonthE6
 	ddE6 := period.centiDays() * oneE6
-	return (ydE6 + mdE6 + ddE6) / 100
+	return ydE6 + mdE6 + ddE6
 }
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes

@@ -204,8 +204,7 @@ func TestTSMarshalText(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestTSParseInLocation(t *testing.T) {
+func TestTSParseInLocation(t *testing.T) {
 	// use Berlin, which is UTC-1
 	berlin, _ := time.LoadLocation("Europe/Berlin")
 	t0120 := time.Date(2015, 1, 20, 10, 13, 14, 0, time.UTC)
