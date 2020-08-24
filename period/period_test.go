@@ -625,8 +625,7 @@ func TestNewYMD(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestNewOf(t *testing.T) {
+func TestNewOf(t *testing.T) {
 	// HMS tests
 	testNewOf(t, 1, 10*time.Millisecond, Period{fraction: 1, fpart: Second}, true)
 	testNewOf(t, 2, time.Second, Period{seconds: 1}, true)
@@ -666,8 +665,7 @@ func testNewOf1(t *testing.T, i int, source time.Duration, expected Period, prec
 	}
 }
 
-//TODO
-func xTestBetween(t *testing.T) {
+func TestBetween(t *testing.T) {
 	g := NewGomegaWithT(t)
 	now := time.Now()
 
@@ -678,52 +676,51 @@ func xTestBetween(t *testing.T) {
 		{now, now, Period{}},
 
 		// simple positive date calculations
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 1, 1, 0, 0, 0, 100), Period{seconds: 1}},
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 2, 2, 1, 1, 1, 1), Period{days: 32, hours: 1, minutes: 1, seconds: 1}},
-		{utc(2015, 2, 1, 0, 0, 0, 0), utc(2015, 3, 2, 1, 1, 1, 1), Period{days: 29, hours: 1, minutes: 1, seconds: 1}},
-		{utc(2015, 3, 1, 0, 0, 0, 0), utc(2015, 4, 2, 1, 1, 1, 1), Period{days: 32, hours: 1, minutes: 1, seconds: 1}},
-		{utc(2015, 4, 1, 0, 0, 0, 0), utc(2015, 5, 2, 1, 1, 1, 1), Period{days: 31, hours: 1, minutes: 1, seconds: 1}},
-		{utc(2015, 5, 1, 0, 0, 0, 0), utc(2015, 6, 2, 1, 1, 1, 1), Period{days: 32, hours: 1, minutes: 1, seconds: 1}},
-		{utc(2015, 6, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{days: 31, hours: 1, minutes: 1, seconds: 1}},
-		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 1), Period{days: 182, hours: 1, minutes: 1, seconds: 1}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 1, 1, 0, 0, 0, 10), Period{seconds: 0, fraction: 1, fpart: Second}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 2, 2, 1, 1, 1, 10), Period{days: 32, hours: 1, minutes: 1, seconds: 1, fraction: 1, fpart: Second}},
+		{utc(2015, 2, 1, 0, 0, 0, 0), utc(2015, 3, 2, 1, 1, 1, 0), Period{days: 29, hours: 1, minutes: 1, seconds: 1}},
+		{utc(2015, 3, 1, 0, 0, 0, 0), utc(2015, 4, 2, 1, 1, 1, 0), Period{days: 32, hours: 1, minutes: 1, seconds: 1}},
+		{utc(2015, 4, 1, 0, 0, 0, 0), utc(2015, 5, 2, 1, 1, 1, 0), Period{days: 31, hours: 1, minutes: 1, seconds: 1}},
+		{utc(2015, 5, 1, 0, 0, 0, 0), utc(2015, 6, 2, 1, 1, 1, 0), Period{days: 32, hours: 1, minutes: 1, seconds: 1}},
+		{utc(2015, 6, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 0), Period{days: 31, hours: 1, minutes: 1, seconds: 1}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 7, 2, 1, 1, 1, 0), Period{days: 182, hours: 1, minutes: 1, seconds: 1}},
 
 		// less than one month
-		{utc(2016, 1, 2, 0, 0, 0, 0), utc(2016, 2, 1, 0, 0, 0, 0), Period{days: 300}},
-		{utc(2015, 2, 2, 0, 0, 0, 0), utc(2015, 3, 1, 0, 0, 0, 0), Period{days: 270}}, // non-leap
-		{utc(2016, 2, 2, 0, 0, 0, 0), utc(2016, 3, 1, 0, 0, 0, 0), Period{days: 280}}, // leap year
-		{utc(2016, 3, 2, 0, 0, 0, 0), utc(2016, 4, 1, 0, 0, 0, 0), Period{days: 300}},
-		{utc(2016, 4, 2, 0, 0, 0, 0), utc(2016, 5, 1, 0, 0, 0, 0), Period{days: 290}},
-		{utc(2016, 5, 2, 0, 0, 0, 0), utc(2016, 6, 1, 0, 0, 0, 0), Period{days: 300}},
-		{utc(2016, 6, 2, 0, 0, 0, 0), utc(2016, 7, 1, 0, 0, 0, 0), Period{days: 290}},
+		{utc(2016, 1, 2, 0, 0, 0, 0), utc(2016, 2, 1, 0, 0, 0, 0), Period{days: 30}},
+		{utc(2015, 2, 2, 0, 0, 0, 0), utc(2015, 3, 1, 0, 0, 0, 0), Period{days: 27}}, // non-leap
+		{utc(2016, 2, 2, 0, 0, 0, 0), utc(2016, 3, 1, 0, 0, 0, 0), Period{days: 28}}, // leap year
+		{utc(2016, 3, 2, 0, 0, 0, 0), utc(2016, 4, 1, 0, 0, 0, 0), Period{days: 30}},
+		{utc(2016, 4, 2, 0, 0, 0, 0), utc(2016, 5, 1, 0, 0, 0, 0), Period{days: 29}},
+		{utc(2016, 5, 2, 0, 0, 0, 0), utc(2016, 6, 1, 0, 0, 0, 0), Period{days: 30}},
+		{utc(2016, 6, 2, 0, 0, 0, 0), utc(2016, 7, 1, 0, 0, 0, 0), Period{days: 29}},
 
 		// BST drops an hour at the daylight-saving transition
-		{utc(2015, 1, 1, 0, 0, 0, 0), bst(2015, 7, 2, 1, 1, 1, 1), Period{days: 1820, minutes: 10, seconds: 10}},
-
-		// negative date calculation
-		{utc(2015, 1, 1, 0, 0, 0, 100), utc(2015, 1, 1, 0, 0, 0, 0), Period{seconds: -1}},
-		{utc(2015, 6, 2, 0, 0, 0, 0), utc(2015, 5, 1, 0, 0, 0, 0), Period{days: -320}},
-		{utc(2015, 6, 2, 1, 1, 1, 1), utc(2015, 5, 1, 0, 0, 0, 0), Period{days: -320, hours: -10, minutes: -10, seconds: -10}},
+		{utc(2015, 1, 1, 0, 0, 0, 0), bst(2015, 7, 2, 1, 1, 1, 10), Period{days: 182, minutes: 1, seconds: 1, fraction: 1, fpart: Second}},
 
 		// daytime only
-		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 2, 3, 4, 500), Period{seconds: 5}},
-		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 4, 4, 7, 500), Period{hours: 20, minutes: 10, seconds: 35}},
-		{utc(2015, 1, 1, 2, 3, 4, 500), utc(2015, 1, 1, 4, 4, 7, 0), Period{hours: 20, minutes: 10, seconds: 25}},
+		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 2, 3, 4, 500), Period{fraction: 50, fpart: Second}},
+		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 4, 4, 7, 500), Period{hours: 2, minutes: 1, seconds: 3, fraction: 50, fpart: Second}},
+		{utc(2015, 1, 1, 2, 3, 4, 500), utc(2015, 1, 1, 4, 4, 7, 0), Period{hours: 2, minutes: 1, seconds: 2, fraction: 50, fpart: Second}},
 
 		// different dates and times
-		{utc(2015, 2, 1, 1, 0, 0, 0), utc(2015, 5, 30, 5, 6, 7, 0), Period{days: 1180, hours: 40, minutes: 60, seconds: 70}},
-		{utc(2015, 2, 1, 1, 0, 0, 0), bst(2015, 5, 30, 5, 6, 7, 0), Period{days: 1180, hours: 30, minutes: 60, seconds: 70}},
+		{utc(2015, 2, 1, 1, 0, 0, 0), utc(2015, 5, 30, 5, 6, 7, 0), Period{days: 118, hours: 4, minutes: 6, seconds: 7}},
+		{utc(2015, 2, 1, 1, 0, 0, 0), bst(2015, 5, 30, 5, 6, 7, 0), Period{days: 118, hours: 3, minutes: 6, seconds: 7}},
 
 		// earlier month in later year
-		{utc(2015, 12, 22, 0, 0, 0, 0), utc(2016, 1, 10, 5, 6, 7, 0), Period{days: 190, hours: 50, minutes: 60, seconds: 70}},
-		{utc(2015, 2, 11, 5, 6, 7, 500), utc(2016, 1, 10, 0, 0, 0, 0), Period{days: 3320, hours: 180, minutes: 530, seconds: 525}},
+		{utc(2015, 12, 22, 0, 0, 0, 0), utc(2016, 1, 10, 5, 6, 7, 0), Period{days: 19, hours: 5, minutes: 6, seconds: 7}},
+		{utc(2015, 2, 11, 5, 6, 7, 500), utc(2016, 1, 10, 0, 0, 0, 0), Period{days: 332, hours: 18, minutes: 53, seconds: 52, fraction: 50, fpart: Second}},
 
 		// larger ranges
-		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{days: 29210, seconds: 10}},
-		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{years: 80, months: 110, days: 300, seconds: 10}},
+		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{days: 2921, seconds: 1}},
+		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{years: 0, months: 0, days: 3287, seconds: 1}},
 	}
 	for i, c := range cases {
-		n := Between(c.a, c.b)
-		g.Expect(n).To(Equal(c.expected), info(i, c.expected))
+		pp := Between(c.a, c.b)
+		g.Expect(pp).To(Equal(c.expected), info(i, c.expected))
+
+		pn := Between(c.b, c.a)
+		en := c.expected.Negate()
+		g.Expect(pn).To(Equal(en), info(i, en))
 	}
 }
 

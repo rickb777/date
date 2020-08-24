@@ -154,7 +154,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 	years := (oneE4 * totalDays) / daysPerYearE4
 	months := ((oneE6 * totalDays) / daysPerMonthE6) - (12 * years)
 	hours := totalHours - totalDays*24
-	totalDays = ((totalDays * oneE6) - (daysPerMonthE6 * months) - (daysPerYearE6 * years)) / oneE4
+	totalDays = ((totalDays * oneE6) - (daysPerMonthE6 * months) - (daysPerYearE6 * years)) / oneE6
 	return Period{
 		years:  sign * int16(years),
 		months: sign * int16(months),
@@ -166,32 +166,34 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 // Between converts the span between two times to a period. Based on the Gregorian conversion
 // algorithms of `time.Time`, the resultant period is precise.
 //
-// To improve precision, result is not always fully normalised; for time differences less than 3276 hours
-// (about 4.5 months), it will contain zero in the years, months and days fields but the number of hours
-// may be up to 3275; this reduces errors arising from the variable lengths of months. For larger time
-// differences (greater than 3276 hours) the days, months and years fields are used as well.
+// To improve precision, result is not always fully normalised; for time differences less than 32768 hours
+// (about 45 months), it will contain zero in the years, months and days fields but the number of hours
+// may be up to 32767; this reduces errors arising from the variable lengths of months. For larger time
+// differences (greater than 32767 hours) the days, months and years fields are used as well.
 //
 // Remember that the resultant period does not retain any knowledge of the calendar, so any subsequent
 // computations applied to the period can only be precise if they concern either the date (year, month,
 // day) part, or the clock (hour, minute, second) part, but not both.
 func Between(t1, t2 time.Time) (p Period) {
-	if t1.Location() != t2.Location() {
-		t2 = t2.In(t1.Location())
-	}
-
 	sign := 1
 	if t2.Before(t1) {
 		t1, t2, sign = t2, t1, -1
 	}
 
+	if t1.Location() != t2.Location() {
+		t2 = t2.In(t1.Location())
+	}
+
 	year, month, day, hour, min, sec, hundredth := daysDiff(t1, t2)
 
+	p = New(year, month, day, hour, min, sec)
+	if hundredth != 0 {
+		p.fraction += int8(hundredth)
+		p.fpart = Second
+	}
+
 	if sign < 0 {
-		p = New(-year, -month, -day, -hour, -min, -sec)
-		p.seconds -= int16(hundredth)
-	} else {
-		p = New(year, month, day, hour, min, sec)
-		p.seconds += int16(hundredth)
+		p = p.Negate()
 	}
 	return
 }
@@ -210,6 +212,11 @@ func daysDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, centi int) {
 	centi = (t2.Nanosecond() - t1.Nanosecond()) / 10000000
 
 	// Normalize negative values
+	if centi < 0 {
+		centi += 100
+		sec--
+	}
+
 	if sec < 0 {
 		sec += 60
 		min--
@@ -226,7 +233,7 @@ func daysDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, centi int) {
 	}
 
 	// test 16bit storage limit
-	if day > 32767 {
+	if day > math.MaxInt16 {
 		y1, m1, d1 := t1.Date()
 		y2, m2, d2 := t2.Date()
 		year = y2 - y1
