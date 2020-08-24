@@ -13,8 +13,15 @@ import (
 )
 
 // Format converts the period to human-readable form using the default localisation.
+// Multiples of 7 days are shown as weeks.
 func (period Period) Format() string {
 	return period.FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, PeriodWeekNames, PeriodDayNames, PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
+}
+
+// FormatWithoutWeeks converts the period to human-readable form using the default localisation.
+// Multiples of 7 days are not shown as weeks.
+func (period Period) FormatWithoutWeeks() string {
+	return period.FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames, PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
 }
 
 // FormatWithPeriodNames converts the period to human-readable form in a localisable way.
@@ -22,27 +29,28 @@ func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, day
 	period = period.Abs()
 
 	parts := make([]string, 0)
-	parts = appendNonBlank(parts, yearNames.FormatFloat(float10(period.years)))
-	parts = appendNonBlank(parts, monthNames.FormatFloat(float10(period.months)))
+	parts = appendNonBlank(parts, yearNames.FormatFloat(period.YearsFloat()))
+	parts = appendNonBlank(parts, monthNames.FormatFloat(period.MonthsFloat()))
 
-	if period.days > 0 || (period.IsZero()) {
+	if period.days > 0 || period.fpart == Day || period.IsZero() {
 		if len(weekNames) > 0 {
-			weeks := period.days / 70
-			mdays := period.days % 70
+			weeks := period.days / 7
+			mdays := period.days % 7
 			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, mdays)
 			if weeks > 0 {
 				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
 			}
-			if mdays > 0 || weeks == 0 {
-				parts = appendNonBlank(parts, dayNames.FormatFloat(float10(mdays)))
+			if mdays > 0 || weeks == 0 || period.fpart == Day {
+				period.days = mdays
+				parts = appendNonBlank(parts, dayNames.FormatFloat(period.DaysFloat()))
 			}
 		} else {
-			parts = appendNonBlank(parts, dayNames.FormatFloat(float10(period.days)))
+			parts = appendNonBlank(parts, dayNames.FormatFloat(period.DaysFloat()))
 		}
 	}
-	parts = appendNonBlank(parts, hourNames.FormatFloat(float10(period.hours)))
-	parts = appendNonBlank(parts, minNames.FormatFloat(float10(period.minutes)))
-	parts = appendNonBlank(parts, secNames.FormatFloat(float10(period.seconds)))
+	parts = appendNonBlank(parts, hourNames.FormatFloat(period.HoursFloat()))
+	parts = appendNonBlank(parts, minNames.FormatFloat(period.MinutesFloat()))
+	parts = appendNonBlank(parts, secNames.FormatFloat(period.SecondsFloat()))
 
 	return strings.Join(parts, ", ")
 }
@@ -126,8 +134,4 @@ func writeField64(w io.Writer, field int64, fraction int8, fpart, designator des
 		}
 		w.(io.ByteWriter).WriteByte(designator.Byte())
 	}
-}
-
-func float10(v int16) float32 {
-	return float32(v) / 10
 }

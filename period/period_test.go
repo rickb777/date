@@ -10,7 +10,6 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/rickb777/plural"
 )
 
 var oneDay = 24 * time.Hour
@@ -839,42 +838,79 @@ func testNormaliseBothSigns(t *testing.T, i int, source period64, expected Perio
 	g.Expect(n2).To(Equal(eneg), info2)
 }
 
-//TODO
-func xTestPeriodFormat(t *testing.T) {
+func TestPeriodFormat(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
-		period string
-		expect string
+		period  string
+		expectW string
+		expectD string
 	}{
-		{"P0D", "0 days"},
-		{"P1Y", "1 year"},
-		{"P3Y", "3 years"},
-		{"-P3Y", "3 years"},
-		{"P1M", "1 month"},
-		{"P6M", "6 months"},
-		{"-P6M", "6 months"},
-		{"P1W", "1 week"},
-		{"-P1W", "1 week"},
-		{"P7D", "1 week"},
-		{"P35D", "5 weeks"},
-		{"-P35D", "5 weeks"},
-		{"P1D", "1 day"},
-		{"P4D", "4 days"},
-		{"-P4D", "4 days"},
-		{"P1Y1M8D", "1 year, 1 month, 1 week, 1 day"},
-		{"PT1H1M1S", "1 hour, 1 minute, 1 second"},
-		{"P1Y1M8DT1H1M1S", "1 year, 1 month, 1 week, 1 day, 1 hour, 1 minute, 1 second"},
-		{"P3Y6M39DT2H7M9S", "3 years, 6 months, 5 weeks, 4 days, 2 hours, 7 minutes, 9 seconds"},
-		{"-P3Y6M39DT2H7M9S", "3 years, 6 months, 5 weeks, 4 days, 2 hours, 7 minutes, 9 seconds"},
-		{"P1.1Y", "1.1 years"},
-		{"P2.5Y", "2.5 years"},
-		{"P2.15Y", "2.1 years"},
-		{"P2.125Y", "2.1 years"},
+		{"P0D", "0 days", ""},
+
+		{"P1Y1M7D", "1 year, 1 month, 1 week", "1 year, 1 month, 7 days"},
+		{"P1Y1M1W1D", "1 year, 1 month, 1 week, 1 day", "1 year, 1 month, 8 days"},
+		{"PT1H1M1S", "1 hour, 1 minute, 1 second", ""},
+		{"P1Y1M1W1DT1H1M1S", "1 year, 1 month, 1 week, 1 day, 1 hour, 1 minute, 1 second", ""},
+		{"P3Y6M39DT2H7M9S", "3 years, 6 months, 5 weeks, 4 days, 2 hours, 7 minutes, 9 seconds", ""},
+		{"P365D", "52 weeks, 1 day", ""},
+
+		{"P1Y", "1 year", ""},
+		{"P3Y", "3 years", ""},
+		{"P1.1Y", "1.1 years", ""},
+		{"P2.5Y", "2.5 years", ""},
+		{"P2.15Y", "2.15 years", ""},
+		{"P2.125Y", "2.12 years", ""},
+
+		{"P1M", "1 month", ""},
+		{"P6M", "6 months", ""},
+		{"P1.1M", "1.1 months", ""},
+		{"P2.5M", "2.5 months", ""},
+		{"P2.15M", "2.15 months", ""},
+		{"P2.125M", "2.12 months", ""},
+
+		{"P1W", "1 week", "7 days"},
+		{"P1.1W", "1 week, 0.7 day", "7.7 days"},
+		{"P7D", "1 week", "7 days"},
+		{"P35D", "5 weeks", "35 days"},
+		{"P1D", "1 day", "1 day"},
+		{"P4D", "4 days", "4 days"},
+		{"P1.1D", "1.1 days", ""},
+		{"P2.5D", "2.5 days", ""},
+		{"P2.15D", "2.15 days", ""},
+		{"P2.125D", "2.12 days", ""},
+
+		{"PT1H", "1 hour", ""},
+		{"PT1.1H", "1.1 hours", ""},
+		{"PT2.5H", "2.5 hours", ""},
+		{"PT2.15H", "2.15 hours", ""},
+		{"PT2.125H", "2.12 hours", ""},
+
+		{"PT1M", "1 minute", ""},
+		{"PT1.1M", "1.1 minutes", ""},
+		{"PT2.5M", "2.5 minutes", ""},
+		{"PT2.15M", "2.15 minutes", ""},
+		{"PT2.125M", "2.12 minutes", ""},
+
+		{"PT1S", "1 second", ""},
+		{"PT1.1S", "1.1 seconds", ""},
+		{"PT2.5S", "2.5 seconds", ""},
+		{"PT2.15S", "2.15 seconds", ""},
+		{"PT2.125S", "2.12 seconds", ""},
 	}
 	for i, c := range cases {
-		s := MustParse(c.period).Format()
-		g.Expect(s).To(Equal(c.expect), info(i, c.expect))
+		p := MustParse(c.period)
+		sp := p.Format()
+		g.Expect(sp).To(Equal(c.expectW), info(i, "%s -> %s", p, c.expectW))
+
+		en := p.Negate()
+		sn := en.Format()
+		g.Expect(sn).To(Equal(c.expectW), info(i, "%s -> %s", en, c.expectW))
+
+		if c.expectD != "" {
+			s := MustParse(c.period).FormatWithoutWeeks()
+			g.Expect(s).To(Equal(c.expectD), info(i, "%s -> %s", p, c.expectD))
+		}
 	}
 }
 
@@ -945,42 +981,6 @@ func xTestPeriodAdd(t *testing.T) {
 	for i, c := range cases {
 		s := MustParse(c.one).Add(MustParse(c.two))
 		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
-	}
-}
-
-//TODO
-func xTestPeriodFormatWithoutWeeks(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	cases := []struct {
-		period string
-		expect string
-	}{
-		{"P0D", "0 days"},
-		{"P1Y", "1 year"},
-		{"P3Y", "3 years"},
-		{"-P3Y", "3 years"},
-		{"P1M", "1 month"},
-		{"P6M", "6 months"},
-		{"-P6M", "6 months"},
-		{"P7D", "7 days"},
-		{"P35D", "35 days"},
-		{"-P35D", "35 days"},
-		{"P1D", "1 day"},
-		{"P4D", "4 days"},
-		{"-P4D", "4 days"},
-		{"P1Y1M1DT1H1M1S", "1 year, 1 month, 1 day, 1 hour, 1 minute, 1 second"},
-		{"P3Y6M39DT2H7M9S", "3 years, 6 months, 39 days, 2 hours, 7 minutes, 9 seconds"},
-		{"-P3Y6M39DT2H7M9S", "3 years, 6 months, 39 days, 2 hours, 7 minutes, 9 seconds"},
-		{"P1.1Y", "1.1 years"},
-		{"P2.5Y", "2.5 years"},
-		{"P2.15Y", "2.1 years"},
-		{"P2.125Y", "2.1 years"},
-	}
-	for i, c := range cases {
-		s := MustParse(c.period).FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames,
-			PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
-		g.Expect(s).To(Equal(c.expect), info(i, c.expect))
 	}
 }
 
