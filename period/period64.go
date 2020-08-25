@@ -85,7 +85,11 @@ func (p64 *period64) toPeriod() (Period, error) {
 }
 
 func (p64 *period64) normalise64(precise bool) *period64 {
-	return p64.rippleUp(precise).simplify(precise)
+	return p64.rippleUp(precise).
+		simplifyYears(precise).
+		simplifyDays(precise).
+		simplifyHours().
+		simplifyMinutes()
 }
 
 func (p64 *period64) rippleUp(precise bool) *period64 {
@@ -135,14 +139,7 @@ func (p64 *period64) rippleUp(precise bool) *period64 {
 	return p64
 }
 
-func (p64 *period64) simplify(precise bool) *period64 {
-	if p64.years == 1 &&
-		0 < p64.months && p64.months <= 6 &&
-		p64.days == 0 {
-		p64.months += 12
-		p64.years = 0
-	}
-
+func (p64 *period64) simplifyYears(precise bool) *period64 {
 	if p64.fpart == Year {
 		centiMonths := 12 * int64(p64.fraction)
 		monthFraction := centiMonths % 100
@@ -153,6 +150,17 @@ func (p64 *period64) simplify(precise bool) *period64 {
 		}
 	}
 
+	if p64.years == 1 &&
+		0 < p64.months && p64.months <= 6 &&
+		p64.days == 0 {
+		p64.months += 12
+		p64.years = 0
+	}
+
+	return p64
+}
+
+func (p64 *period64) simplifyDays(precise bool) *period64 {
 	if !precise && p64.days == 1 &&
 		p64.years == 0 &&
 		p64.months == 0 &&
@@ -162,6 +170,20 @@ func (p64 *period64) simplify(precise bool) *period64 {
 		p64.days = 0
 	}
 
+	return p64
+}
+
+func (p64 *period64) simplifyHours() *period64 {
+	if p64.fpart == Hour {
+		centiMinutes := 60 * int64(p64.fraction)
+		minuteFraction := centiMinutes % 100
+		if minuteFraction == 0 {
+			p64.minutes += centiMinutes / 100
+			p64.fraction = 0
+			p64.fpart = NoFraction
+		}
+	}
+
 	if p64.hours == 1 &&
 		p64.days == 0 &&
 		0 < p64.minutes && p64.minutes < 10 &&
@@ -169,6 +191,20 @@ func (p64 *period64) simplify(precise bool) *period64 {
 		p64.fpart.IsOneOf(NoFraction, Minute) {
 		p64.minutes += 60
 		p64.hours = 0
+	}
+
+	return p64
+}
+
+func (p64 *period64) simplifyMinutes() *period64 {
+	if p64.fpart == Minute {
+		centiSeconds := 60 * int64(p64.fraction)
+		secondFraction := centiSeconds % 100
+		if secondFraction == 0 {
+			p64.seconds += centiSeconds / 100
+			p64.fraction = 0
+			p64.fpart = NoFraction
+		}
 	}
 
 	if p64.minutes == 1 &&

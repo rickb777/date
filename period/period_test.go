@@ -76,8 +76,8 @@ func TestParsePeriodWithNormalise(t *testing.T) {
 	}{
 		// all rollovers
 		{"PT1234.5S", "PT20M34.5S", Period{minutes: 20, seconds: 34, fraction: 50, fpart: Second}},
-		{"PT1234.5M", "PT20H34.5M", Period{hours: 20, minutes: 34, fraction: 50, fpart: Minute}},
-		{"PT12345.6H", "PT12345.6H", Period{hours: 12345, fraction: 60, fpart: Hour}},
+		{"PT1234.5M", "PT20H34M30S", Period{hours: 20, minutes: 34, seconds: 30}},
+		{"PT12345.6H", "PT12345H36M", Period{hours: 12345, minutes: 36}},
 		//TODO {"P32768.1D", "P89Y8M17DT22H8M.1D", Period{years: 89, months: 8, days: 17, hours: 24, minutes: 32, fraction: 10, fpart: Day}},
 		{"P1234.5M", "P102Y10.5M", Period{years: 102, months: 10, fraction: 50, fpart: Month}},
 		// largest possible number of seconds normalised only in hours, mins, sec
@@ -807,6 +807,8 @@ func TestNormaliseChanged(t *testing.T) {
 		// simplify 1 hour to minutes
 		{period64{hours: 1, minutes: 9}, Period{minutes: 69}, Period{minutes: 69}},
 		{period64{hours: 1, minutes: 9, fraction: 1, fpart: Minute}, Period{minutes: 69, fraction: 1, fpart: Minute}, Period{minutes: 69, fraction: 1, fpart: Minute}},
+		{period64{hours: 1, fraction: 25, fpart: Hour}, Period{hours: 1, minutes: 15}, Period{hours: 1, minutes: 15}},
+		{period64{hours: 1, fraction: 75, fpart: Hour}, Period{hours: 1, minutes: 45}, Period{hours: 1, minutes: 45}},
 
 		// carry hours to days
 		{period64{hours: 48}, Period{hours: 48}, Period{days: 2}},
@@ -829,7 +831,8 @@ func TestNormaliseChanged(t *testing.T) {
 
 		// carry years to months
 		{period64{years: 1}, Period{years: 1}, Period{years: 1}},
-		{period64{years: 1, fraction: 25, fpart: Year}, Period{years: 1, months: 3}, Period{years: 1, months: 3}},
+		{period64{years: 1, fraction: 25, fpart: Year}, Period{months: 15}, Period{months: 15}},
+		{period64{years: 1, fraction: 75, fpart: Year}, Period{years: 1, months: 9}, Period{years: 1, months: 9}},
 		{period64{years: 1, months: 6}, Period{months: 18}, Period{months: 18}},
 		{period64{years: 1, months: 7}, Period{years: 1, months: 7}, Period{years: 1, months: 7}},
 	}
@@ -844,10 +847,10 @@ func testNormaliseBothSigns(t *testing.T, i int, source period64, expected Perio
 	t.Helper()
 
 	sstr := source.String()
-	//n1, err := source.normalise64(precise).toPeriod()
-	//info1 := fmt.Sprintf("%d: %s.Normalise(%v) expected %s to equal %s", i, sstr, precise, n1, expected)
-	//g.Expect(err).NotTo(HaveOccurred())
-	//g.Expect(n1).To(Equal(expected), info1)
+	n1, err := source.normalise64(precise).toPeriod()
+	info1 := fmt.Sprintf("%d: %s.Normalise(%v) expected %s to equal %s", i, sstr, precise, n1, expected)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(n1).To(Equal(expected), info1)
 
 	source.neg = !source.neg
 	eneg := expected.Negate()
@@ -903,15 +906,15 @@ func TestPeriodFormat(t *testing.T) {
 		{"P2.125D", "2.12 days", ""},
 
 		{"PT1H", "1 hour", ""},
-		{"PT1.1H", "1.1 hours", ""},
-		{"PT2.5H", "2.5 hours", ""},
-		{"PT2.15H", "2.15 hours", ""},
+		{"PT1.1H", "66 minutes", ""},
+		{"PT2.5H", "2 hours, 30 minutes", ""},
+		{"PT2.15H", "2 hours, 9 minutes", ""},
 		{"PT2.125H", "2.12 hours", ""},
 
 		{"PT1M", "1 minute", ""},
-		{"PT1.1M", "1.1 minutes", ""},
-		{"PT2.5M", "2.5 minutes", ""},
-		{"PT2.15M", "2.15 minutes", ""},
+		{"PT1.1M", "66 seconds", ""},
+		{"PT2.5M", "2 minutes, 30 seconds", ""},
+		{"PT2.15M", "2 minutes, 9 seconds", ""},
 		{"PT2.125M", "2.12 minutes", ""},
 
 		{"PT1S", "1 second", ""},
