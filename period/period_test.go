@@ -752,6 +752,10 @@ func TestNormaliseUnchanged(t *testing.T) {
 		{period64{minutes: 1, fraction: 1, fpart: Minute}},
 		{period64{seconds: 1, fraction: 1, fpart: Second}},
 
+		// don't carry days to months...
+		{period64{days: 32}},
+		{period64{days: 32767}},
+
 		// don't carry MaxInt16 - 1 where it would cause small arithmetic errors
 		{period64{years: 32767}},
 		{period64{days: 32767}},
@@ -799,11 +803,7 @@ func TestNormaliseChanged(t *testing.T) {
 		{period64{months: 13}, Period{months: 13}, Period{months: 13}},
 		{period64{months: 25}, Period{years: 2, months: 1}, Period{years: 2, months: 1}},
 
-		// don't carry days to months...
-		{period64{days: 32}, Period{days: 32}, Period{days: 32}},
-		{period64{days: 32767}, Period{days: 32767}, Period{days: 32767}},
-
-		// ...except to prevent overflow
+		// carry days to prevent overflow
 		{period64{days: 32768}, Period{years: 89, months: 8, days: 17, hours: 22, minutes: 8}, Period{years: 89, months: 8, days: 17, hours: 22, minutes: 8}},
 
 		// full ripple up
@@ -914,8 +914,10 @@ func TestPeriodFormat(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodScale(t *testing.T) {
+var ymdDesignators = []string{"Y", "M", "W", "D"}
+var hmsDesignators = []string{"H", "M", "S"}
+
+func TestPeriodScale_simpleCases(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -923,45 +925,100 @@ func xTestPeriodScale(t *testing.T) {
 		m      float32
 		expect string
 	}{
-		{"P0D", 2, "P0D"},
-		{"P1D", 2, "P2D"},
-		{"P1D", 0, "P0D"},
-		{"P1D", 365, "P365D"},
-		{"P1M", 2, "P2M"},
-		{"P1M", 12, "P1Y"},
-		//TODO {"P1Y3M", 1.0/15, "P1M"},
-		{"P1Y", 2, "P2Y"},
-		{"PT1H", 2, "PT2H"},
-		{"PT1M", 2, "PT2M"},
-		{"PT1S", 2, "PT2S"},
+		{"0", 2, "0"},
+		{"1", 0, "0"},
+		{"1", 1, "1"},
+		{"1", 2, "2"},
+		{"10", 2, "20"},
+		{"400", 10, "4000"},
+		{"1", 500, "500"},
+	}
+	for i, c := range cases {
+		for _, des := range ymdDesignators {
+			pp := MustParse(fmt.Sprintf("P%s%s", c.one, des))
+			ep := MustParse(fmt.Sprintf("P%s%s", c.expect, des))
+			en := ep.Negate()
+
+			g.Expect(pp.ScaleWithOverflowCheck(c.m)).To(Equal(ep), info(i, "%s x %g", pp, c.m))
+			g.Expect(pp.ScaleWithOverflowCheck(-c.m)).To(Equal(en), info(i, "%s x %g", pp, c.m))
+
+			pn := pp.Negate()
+			g.Expect(pn.ScaleWithOverflowCheck(c.m)).To(Equal(en), info(i, "%s x %g", en, c.m))
+			g.Expect(pn.ScaleWithOverflowCheck(-c.m)).To(Equal(ep), info(i, "%s x %g", en, c.m))
+		}
+
+		for _, des := range hmsDesignators {
+			pp := MustParse(fmt.Sprintf("PT%s%s", c.one, des))
+			ep := MustParse(fmt.Sprintf("PT%s%s", c.expect, des))
+			g.Expect(pp.ScaleWithOverflowCheck(c.m)).To(Equal(ep), info(i, "%s x %g", pp, c.m))
+
+			en := ep.Negate()
+			pn := pp.Negate()
+			g.Expect(pn.ScaleWithOverflowCheck(c.m)).To(Equal(en), info(i, "%s x %g", en, c.m))
+			g.Expect(pn.ScaleWithOverflowCheck(-c.m)).To(Equal(ep), info(i, "%s x %g", en, c.m))
+		}
+	}
+}
+
+func TestPeriodScale_complexCases(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		one    string
+		m      float32
+		expect string
+	}{
+		{"PT1S", 0.01, "PT0.01S"},
+		{"PT1S", 0.1, "PT0.1S"},
+		{"PT1M", 0.5, "PT30S"},
+		{"PT1H", 0.5, "PT30M"},
+		{"PT1M", 1.0 / 60, "PT1S"},
+		{"PT1H", 1.0 / 60, "PT1M"},
+		{"PT1H", 1.0 / 7, "PT8M34.29S"},
+		{"PT1M", 1.0 / 7, "PT8.57S"},
+
+		{"PT1M", 60, "PT1H"},
+		{"PT1S", 60, "PT1M"},
+		{"PT1S", 86400, "PT24H"},
+
 		{"P1D", 0.5, "P0.5D"},
+		{"P1D", 0.1, "PT2H24M"},
+		{"P1D", 1.0 / 24, "PT1H"},
+		{"P1D", 1.0 / 1440, "PT1M"},
+		{"P1D", 1.0 / 86400, "PT1S"},
+
+		{"P2M", 0.5, "P1M"},
 		{"P1M", 0.5, "P0.5M"},
-		{"P1Y", 0.5, "P0.5Y"},
-		{"PT1H", 0.5, "PT0.5H"},
-		{"PT1H", 0.1, "PT6M"},
-		//TODO {"PT1H", 0.01, "PT36S"},
-		{"PT1M", 0.5, "PT0.5M"},
-		{"PT1S", 0.5, "PT0.5S"},
-		{"PT1H", 1.0 / 3600, "PT1S"},
+		{"P2Y", 0.5, "P1Y"},
+		{"P1Y", 0.5, "P6M"},
+		{"P1Y", 1.0 / 365.2425, "P1D"},
+
 		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
 		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
 		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
 		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
-		{"PT1M", 60, "PT1H"},
-		{"PT1S", 60, "PT1M"},
-		{"PT1S", 86400, "PT24H"},
-		{"PT1S", 86400000, "P1000D"},
-		{"P365.5D", 10, "P10Y2.5D"},
-		//{"P365.5D", 0.1, "P36DT12H"},
+
+		{"PT1S", 86400000, "PT24000H"},
+		{"PT1H", 24 * 32768, "P89Y8M17DT22H8M"},
+		{"P365.5D", 10, "P3655D"},
+		{"P365D", 0.5, "P182.5D"},
+
+		// these two cases both have small rounding errors
+		{"P3650D", 0.1, "P365DT0.47S"},
+		{"P36500D", 0.01, "P364DT23H59M59.24S"},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one).Scale(c.m)
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
+		pp := MustParse(c.one)
+		sp := pp.Scale(c.m)
+		g.Expect(sp).To(Equal(MustParse(c.expect)), info(i, "%s x %g", pp, c.m))
+
+		sn := pp.Negate().Scale(c.m)
+		en := MustParse(c.expect).Negate()
+		g.Expect(sn).To(Equal(en), info(i, "%s x %g", en, c.m))
 	}
 }
 
-//TODO
-func xTestPeriodAdd(t *testing.T) {
+func TestPeriodAdd(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -984,8 +1041,7 @@ func xTestPeriodAdd(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodParseOnlyYMD(t *testing.T) {
+func TestPeriodParseOnlyYMD(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -1001,8 +1057,7 @@ func xTestPeriodParseOnlyYMD(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodParseOnlyHMS(t *testing.T) {
+func TestPeriodParseOnlyHMS(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {

@@ -359,28 +359,93 @@ func (period Period) Scale(factor float32) Period {
 //
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
 // decimal place; each field is only int16.
-//
-// Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
 func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
 	ap, neg := period.absNeg()
 
-	if -0.5 < factor && factor < 0.5 {
-		d, pr1 := ap.Duration()
-		mul := float64(d) * float64(factor)
-		p2, pr2 := NewOf(time.Duration(mul))
-		return p2.Normalise(pr1 && pr2), nil
+	cy := ap.centiYears()
+	cm := ap.centiMonths()
+	cd := ap.centiDays()
+	chh := ap.centiHours()
+	cmm := ap.centiMinutes()
+	css := ap.centiSeconds()
+
+	f64 := float64(factor)
+	fi, ff := math.Modf(f64)
+	if ff == 0 {
+		// simplest case: integer scale factor
+		fii := int64(fi)
+		p64 := &period64{
+			years:   (cy * fii) / 100,
+			months:  (cm * fii) / 100,
+			days:    (cd * fii) / 100,
+			hours:   (chh * fii) / 100,
+			minutes: (cmm * fii) / 100,
+			seconds: (css * fii) / 100,
+			neg:     neg,
+		}
+
+		return p64.normalise64(true).toPeriod()
 	}
 
-	y := int64(float32(ap.years) * factor)
-	m := int64(float32(ap.months) * factor)
-	d := int64(float32(ap.days) * factor)
-	hh := int64(float32(ap.hours) * factor)
-	mm := int64(float32(ap.minutes) * factor)
-	ss := int64(float32(ap.seconds) * factor)
-	//TODO fraction
+	ym := f64 * float64(cy*12+cm)
+	d := f64 * float64(cd)
+	hms := f64 * float64((chh*3600)+(cmm*60)+css)
 
-	p64 := &period64{years: y, months: m, days: d, hours: hh, minutes: mm, seconds: ss, neg: neg}
+	ymi, ymf := math.Modf(ym)
+	di, df := math.Modf(d)
+	hmsi, hmsf := math.Modf(hms)
+
+	if ymf == 0 && df == 0 && hmsf == 0 {
+		// special case: scaled result is integral
+		return integralScaledResult(ymi, di, hmsi, neg)
+	}
+
+	// less accurate case involving fractional values
+	return approximateScaledResult(f64, ap, neg)
+}
+
+func integralScaledResult(ym, d, hms float64, neg bool) (Period, error) {
+	ymi := int64(ym)
+	di := int64(d)
+	hmsi := int64(hms)
+
+	p64 := &period64{
+		months:  ymi / 100,
+		days:    di / 100,
+		seconds: hmsi / 100,
+		neg:     neg,
+	}
+
+	ymf := ymi % 100
+	if ymf != 0 {
+		p64.fraction = int8(ymf)
+		p64.fpart = Month
+	}
+
+	df := di % 100
+	if df != 0 {
+		p64.fraction = int8(df)
+		p64.fpart = Day
+	}
+
+	sf := hmsi % 100
+	if sf != 0 {
+		p64.fraction = int8(sf)
+		p64.fpart = Second
+	}
+
 	return p64.normalise64(true).toPeriod()
+}
+
+func approximateScaledResult(factor float64, ap Period, neg bool) (Period, error) {
+	duration, pr1 := ap.Duration()
+	mul := float64(duration) * float64(factor)
+	// add 5ms to round half-up
+	p2, pr2 := NewOf(time.Duration(mul) + 5*time.Millisecond)
+	if neg {
+		p2 = p2.Negate()
+	}
+	return p2.Normalise(pr1 && pr2), nil
 }
 
 func absInt16(v int16) int16 {
