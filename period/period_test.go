@@ -346,8 +346,7 @@ func TestPeriodFloatComponents(t *testing.T) {
 	}
 }
 
-//TODO
-func xTestPeriodAddToTime(t *testing.T) {
+func TestPeriodAddToTime(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	const ms = 1000000
@@ -368,28 +367,26 @@ func xTestPeriodAddToTime(t *testing.T) {
 		{"PT1S", t0.Add(sec), true},
 		{"PT0.1S", t0.Add(100 * ms), true},
 		{"-PT0.1S", t0.Add(-100 * ms), true},
-		{"PT3276S", t0.Add(3276 * sec), true},
+		{"PT32767S", t0.Add(32767 * sec), true},
 		{"PT1M", t0.Add(60 * sec), true},
 		{"PT0.1M", t0.Add(6 * sec), true},
-		{"PT3276M", t0.Add(3276 * min), true},
+		{"PT32767M", t0.Add(32767 * min), true},
 		{"PT1H", t0.Add(hr), true},
 		{"PT0.1H", t0.Add(6 * min), true},
-		{"PT3276H", t0.Add(3276 * hr), true},
+		{"PT32767H", t0.Add(32767 * hr), true},
 		{"P1D", t0.AddDate(0, 0, 1), true},
-		{"P3276D", t0.AddDate(0, 0, 3276), true},
+		{"P32767D", t0.AddDate(0, 0, 32767), true},
 		{"P1M", t0.AddDate(0, 1, 0), true},
-		{"P3276M", t0.AddDate(0, 3276, 0), true},
+		{"P32767M", t0.AddDate(0, 32767, 0), true},
 		{"P1Y", t0.AddDate(1, 0, 0), true},
 		{"-P1Y", t0.AddDate(-1, 0, 0), true},
-		{"P3276Y", t0.AddDate(3276, 0, 0), true},   // near the upper limit of range
-		{"-P3276Y", t0.AddDate(-3276, 0, 0), true}, // near the lower limit of range
+		{"P32767Y", t0.AddDate(32767, 0, 0), true},   // near the upper limit of range
+		{"-P32767Y", t0.AddDate(-32767, 0, 0), true}, // near the lower limit of range
 		// approximate cases
 		{"P0.1D", t0.Add(144 * min), false},
 		{"-P0.1D", t0.Add(-144 * min), false},
 		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
 		{"P0.1Y", t0.Add(oneYearApprox / 10), false},
-		// after normalisation, this period is one month and 9.2 days
-		{"-P0.1Y0.1M0.1D", t0.Add(-oneMonthApprox - (13248 * min)), false},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
@@ -445,7 +442,7 @@ func testPeriodToDuration(t *testing.T, i int, value string, duration time.Durat
 	}
 }
 
-func TestSignPotisitveNegative(t *testing.T) {
+func TestSignPositiveNegative(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
