@@ -10,33 +10,29 @@ import (
 	"time"
 )
 
-const daysPerYearE4 int64 = 3652425               // 365.2425 days by the Gregorian rule
-const daysPerYearF float64 = 365.2425             // 365.2425 days by the Gregorian rule
-const daysPerYearE6 = daysPerYearE4 * 100         // 365.2425 days by the Gregorian rule
-const daysPerMonthE6 int64 = 30436875             // 30.436875 days per month
-const hoursPerMonthE6 int64 = daysPerMonthE6 * 24 // approx, assuming always 24h per day
-const daysPerMonthF float64 = daysPerYearF / 12   // 30.436875 days per month
-const hoursPerMonthF float64 = daysPerMonthF * 24 // approx, assuming always 24h per day
+const daysPerYearE4 int64 = 3652425       // 365.2425 days by the Gregorian rule
+const daysPerYearF float64 = 365.2425     // 365.2425 days by the Gregorian rule
+const daysPerYearE6 = daysPerYearE4 * 100 // 365.2425 days by the Gregorian rule
+const daysPerMonthE6 int64 = 30436875     // 30.436875 days per month
+const daysPerMonthF = daysPerYearF / 12   // 30.436875 days per month
+const hoursPerMonthF = daysPerMonthF * 24 // approx, assuming always 24h per day
 
 const oneE4 int64 = 10000
 const oneE6 int64 = 1000000
-const oneE7 int64 = 10000000
-const oneE9 int64 = 1000000000
-const oneE10 int64 = 10000000000
 
-const hundredMs = 100 * time.Millisecond
 const tenMs = 10 * time.Millisecond
 
 // reminder: int64 overflow is after 9,223,372,036,854,775,807 (math.MaxInt64)
 
 // Period holds a period of time and provides conversion to/from ISO-8601 representations.
 // Therefore there are six fields: years, months, days, hours, minutes, and seconds.
+// Weeks are only partially supported.
 //
 // In the ISO representation, decimal fractions are supported, although only the last non-zero
-// component is allowed to have a fraction according to the Standard. For example "P2.5Y"
-// is 2.5 years.
+// component is allowed to have a fraction according to the Standard. For example "P1.25Y"
+// is 1.25 years (15 months).
 //
-// However, in this implementation, the precision is limited to teo decimal places only, by
+// However, in this implementation, the precision is limited to two decimal places only, by
 // means of integers with fixed point arithmetic. (This avoids using float32 in the struct,
 // so there are no problems testing equality using ==.)
 //
@@ -140,17 +136,23 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 
 	if totalDays <= math.MaxInt16 {
 		hours := totalHours - totalDays*24
-		minutes := d % time.Hour / time.Minute
-		seconds := d % time.Minute / hundredMs
+		minutes := (d % time.Hour) / time.Minute
+		seconds := (d % time.Minute) / time.Second
+		fraction := (d % time.Second) / tenMs
+		fpart := NoFraction
+		if fraction != 0 {
+			fpart = Second
+		}
 		return Period{
-			days:    sign * int16(totalDays),
-			hours:   sign * int16(hours),
-			minutes: sign * int16(minutes),
-			seconds: sign * int16(seconds),
+			days:     sign * int16(totalDays),
+			hours:    sign * int16(hours),
+			minutes:  sign * int16(minutes),
+			seconds:  sign * int16(seconds),
+			fraction: int8(sign) * int8(fraction),
+			fpart:    fpart,
 		}, false
 	}
 
-	// TODO it is uncertain whether this is too imprecise and should be improved
 	years := (oneE4 * totalDays) / daysPerYearE4
 	months := ((oneE6 * totalDays) / daysPerMonthE6) - (12 * years)
 	hours := totalHours - totalDays*24
@@ -326,9 +328,16 @@ func (period Period) Negate() Period {
 // The result is not normalised and may overflow arithmetically (to make this unlikely, use Normalise on
 // the inputs before adding them).
 func (period Period) Add(that Period) Period {
+	fpart := period.fpart
 	if period.fpart != that.fpart {
 		//TODO
 	}
+
+	fraction := period.fraction + that.fraction
+	if fraction == 0 {
+		fpart = NoFraction
+	}
+
 	return Period{
 		years:    period.years + that.years,
 		months:   period.months + that.months,
@@ -336,7 +345,8 @@ func (period Period) Add(that Period) Period {
 		hours:    period.hours + that.hours,
 		minutes:  period.minutes + that.minutes,
 		seconds:  period.seconds + that.seconds,
-		fraction: period.fraction + that.fraction,
+		fraction: fraction,
+		fpart:    fpart,
 	}
 }
 

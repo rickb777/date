@@ -143,7 +143,18 @@ func (p64 *period64) simplify(precise bool) *period64 {
 		p64.years = 0
 	}
 
+	if p64.fpart == Year {
+		centiMonths := 12 * int64(p64.fraction)
+		monthFraction := centiMonths % 100
+		if monthFraction == 0 {
+			p64.months += centiMonths / 100
+			p64.fraction = 0
+			p64.fpart = NoFraction
+		}
+	}
+
 	if !precise && p64.days == 1 &&
+		p64.years == 0 &&
 		p64.months == 0 &&
 		0 < p64.hours && p64.hours < 10 &&
 		p64.minutes == 0 {
