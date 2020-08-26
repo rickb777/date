@@ -86,10 +86,10 @@ func (p64 *period64) toPeriod() (Period, error) {
 
 func (p64 *period64) normalise64(precise bool) *period64 {
 	return p64.rippleUp(precise).
-		simplifyYears(precise).
-		simplifyDays(precise).
-		simplifyHours().
-		simplifyMinutes()
+		reduceYearsFraction().
+		reduceDaysFraction(precise).
+		reduceHoursFraction().
+		reduceMinutesFraction()
 }
 
 func (p64 *period64) rippleUp(precise bool) *period64 {
@@ -139,7 +139,7 @@ func (p64 *period64) rippleUp(precise bool) *period64 {
 	return p64
 }
 
-func (p64 *period64) simplifyYears(precise bool) *period64 {
+func (p64 *period64) reduceYearsFraction() *period64 {
 	if p64.fpart == Year {
 		centiMonths := 12 * int64(p64.fraction)
 		monthFraction := centiMonths % 100
@@ -150,30 +150,38 @@ func (p64 *period64) simplifyYears(precise bool) *period64 {
 		}
 	}
 
-	if p64.years == 1 &&
-		0 < p64.months && p64.months <= 6 &&
-		p64.days == 0 {
-		p64.months += 12
-		p64.years = 0
+	return p64
+}
+
+func (p64 *period64) reduceDaysFraction(precise bool) *period64 {
+	if !precise && p64.fpart == Day {
+		centiHours := 24 * int64(p64.fraction)
+		hourFraction := centiHours % 100
+		if hourFraction == 0 {
+			p64.hours += centiHours / 100
+			p64.fraction = 0
+			p64.fpart = NoFraction
+		}
 	}
 
 	return p64
 }
 
-func (p64 *period64) simplifyDays(precise bool) *period64 {
-	if !precise && p64.days == 1 &&
-		p64.years == 0 &&
-		p64.months == 0 &&
-		0 < p64.hours && p64.hours < 10 &&
-		p64.minutes == 0 {
-		p64.hours += 24
-		p64.days = 0
+func (p64 *period64) reduceMonthsFraction(precise bool) *period64 {
+	if !precise && p64.fpart == Month {
+		centiDays := (daysPerMonthE6 * int64(p64.fraction)) / oneE6
+		dayFraction := centiDays % 100
+		if dayFraction == 0 {
+			p64.days += centiDays / 100
+			p64.fraction = 0
+			p64.fpart = NoFraction
+		}
 	}
 
 	return p64
 }
 
-func (p64 *period64) simplifyHours() *period64 {
+func (p64 *period64) reduceHoursFraction() *period64 {
 	if p64.fpart == Hour {
 		centiMinutes := 60 * int64(p64.fraction)
 		minuteFraction := centiMinutes % 100
@@ -184,19 +192,10 @@ func (p64 *period64) simplifyHours() *period64 {
 		}
 	}
 
-	if p64.hours == 1 &&
-		p64.days == 0 &&
-		0 < p64.minutes && p64.minutes < 10 &&
-		p64.seconds == 0 &&
-		p64.fpart.IsOneOf(NoFraction, Minute) {
-		p64.minutes += 60
-		p64.hours = 0
-	}
-
 	return p64
 }
 
-func (p64 *period64) simplifyMinutes() *period64 {
+func (p64 *period64) reduceMinutesFraction() *period64 {
 	if p64.fpart == Minute {
 		centiSeconds := 60 * int64(p64.fraction)
 		secondFraction := centiSeconds % 100
@@ -205,14 +204,6 @@ func (p64 *period64) simplifyMinutes() *period64 {
 			p64.fraction = 0
 			p64.fpart = NoFraction
 		}
-	}
-
-	if p64.minutes == 1 &&
-		p64.hours == 0 &&
-		0 < p64.seconds && p64.seconds < 10 &&
-		p64.fpart.IsOneOf(NoFraction, Second) {
-		p64.seconds += 60
-		p64.minutes = 0
 	}
 
 	return p64

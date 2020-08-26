@@ -177,9 +177,9 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 // computations applied to the period can only be precise if they concern either the date (year, month,
 // day) part, or the clock (hour, minute, second) part, but not both.
 func Between(t1, t2 time.Time) (p Period) {
-	sign := 1
+	neg := false
 	if t2.Before(t1) {
-		t1, t2, sign = t2, t1, -1
+		t1, t2, neg = t2, t1, true
 	}
 
 	if t1.Location() != t2.Location() {
@@ -194,10 +194,7 @@ func Between(t1, t2 time.Time) (p Period) {
 		p.fpart = Second
 	}
 
-	if sign < 0 {
-		p = p.Negate()
-	}
-	return
+	return p.condNegate(neg)
 }
 
 func daysDiff(t1, t2 time.Time) (year, month, day, hour, min, sec, centi int) {
@@ -307,6 +304,13 @@ func (period Period) absNeg() (Period, bool) {
 		return period.Negate(), true
 	}
 	return period, false
+}
+
+func (period Period) condNegate(neg bool) Period {
+	if neg {
+		return period.Negate()
+	}
+	return period
 }
 
 // Negate changes the sign of the period.
@@ -452,10 +456,7 @@ func approximateScaledResult(factor float64, ap Period, neg bool) (Period, error
 	mul := float64(duration) * float64(factor)
 	// add 5ms to round half-up
 	p2, pr2 := NewOf(time.Duration(mul) + 5*time.Millisecond)
-	if neg {
-		p2 = p2.Negate()
-	}
-	return p2.Normalise(pr1 && pr2), nil
+	return p2.condNegate(neg).Normalise(pr1 && pr2), nil
 }
 
 func absInt16(v int16) int16 {
@@ -738,4 +739,98 @@ func (period Period) TotalMonthsApprox() int {
 func (period Period) Normalise(precise bool) Period {
 	n, _ := period.toPeriod64("").normalise64(precise).toPeriod()
 	return n
+}
+
+// Simplify applies some heuristic simplifications with the objective of reducing the number
+// of non-zero fields and thus making the rendered form simpler. It should be applied to
+// a normalised period, otherwise the results may be unpredictable.
+//
+// Note that months and days are never combined, due to the variability of month lengths.
+// Days and hours are only combined when imprecise behaviour is selected; this is due to
+// daylight savings transitions, during which there are more than or fewer than 24 hours
+// per day.
+//
+//The following transformation rules are applied in order:
+//
+// * P1YnM becomes 12+n months for 0 < n <= 6
+// * P1DTnH becomes 24+n hours for 0 < n <= 6 (unless precise is true)
+// * PT1HnM becomes 60+n minutes for 0 < n <= 10
+// * PT1MnS becomes 60+n seconds for 0 < n <= 10
+//
+// At each step, if a fraction exists and would affect the calculation, the transformations
+// stop.
+//
+// The thresholds can be set using the varargs th parameter. By default, the thresholds a,
+// b, c, d are 6 months, 6 hours, 10 minutes, 10 seconds respectively as listed in the rules
+// above.
+//
+// * No thresholds is equivalent to 6, 6, 10, 10.
+// * A single threshold a is equivalent to a, a, a, a.
+// * Two thresholds a, b are equivalent to a, a, b, b.
+// * Three thresholds a, b, c are equivalent to a, b, c, c.
+// * Four thresholds a, b, c, d are used as provided.
+//
+func (period Period) Simplify(precise bool, th ...int) Period {
+	switch len(th) {
+	case 0:
+		return period.doSimplify(precise, 6, 6, 10, 10)
+	case 1:
+		return period.doSimplify(precise, int16(th[0]), int16(th[0]), int16(th[0]), int16(th[0]))
+	case 2:
+		return period.doSimplify(precise, int16(th[0]), int16(th[0]), int16(th[1]), int16(th[1]))
+	case 3:
+		return period.doSimplify(precise, int16(th[0]), int16(th[1]), int16(th[2]), int16(th[2]))
+	default:
+		return period.doSimplify(precise, int16(th[0]), int16(th[1]), int16(th[2]), int16(th[3]))
+	}
+}
+
+func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
+	if period.fpart == Year {
+		return period
+	}
+
+	ap, neg := period.absNeg()
+
+	if ap.years == 1 &&
+		0 < ap.months && ap.months <= a &&
+		ap.days == 0 {
+		ap.months += 12
+		ap.years = 0
+	}
+
+	if ap.fpart.IsOneOf(Month, Day) {
+		return ap.condNegate(neg)
+	}
+
+	if !precise && ap.days == 1 &&
+		ap.years == 0 &&
+		ap.months == 0 &&
+		0 < ap.hours && ap.hours <= b {
+		ap.hours += 24
+		ap.days = 0
+	}
+
+	if ap.fpart == Hour {
+		return ap.condNegate(neg)
+	}
+
+	if ap.hours == 1 &&
+		0 < ap.minutes && ap.minutes <= c {
+		ap.minutes += 60
+		ap.hours = 0
+	}
+
+	if ap.fpart == Minute {
+		return ap.condNegate(neg)
+	}
+
+	if ap.minutes == 1 &&
+		ap.hours == 0 &&
+		0 < ap.seconds && ap.seconds <= d {
+		ap.seconds += 60
+		ap.minutes = 0
+	}
+
+	return ap.condNegate(neg)
 }

@@ -37,6 +37,7 @@ func TestParseErrors(t *testing.T) {
 		{"P1HT1M", false, ": 'H' designator cannot occur here", "P1HT1M"},
 		{"PT1Y", false, ": 'Y' designator cannot occur here", "PT1Y"},
 		{"P1S", false, ": 'S' designator cannot occur here", "P1S"},
+		{"P1D2D", false, ": 'D' designator cannot occur more than once", "P1D2D"},
 		{"PT1HT1S", false, ": 'T' designator cannot occur more than once", "PT1HT1S"},
 		{"P0.1YT0.1S", false, ": 'Y' & 'S' only the last field can have a fraction", "P0.1YT0.1S"},
 		{"P", false, ": expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator", "P"},
@@ -758,6 +759,11 @@ func TestNormaliseUnchanged(t *testing.T) {
 
 		{period64{years: 1, months: 1, days: 1, hours: 1, minutes: 1, seconds: 1, fraction: 1, fpart: Second}},
 
+		{period64{days: 1, hours: 7}},
+		{period64{days: 1, hours: 1, minutes: 1}},
+		{period64{days: 1, hours: 1, seconds: 1}},
+		{period64{months: 1, days: 1, hours: 1}},
+
 		{period64{minutes: 1, seconds: 10}},
 		{period64{hours: 1, minutes: 10}},
 		{period64{years: 1, months: 7}},
@@ -800,13 +806,7 @@ func TestNormaliseChanged(t *testing.T) {
 		{period64{minutes: 70}, Period{hours: 1, minutes: 10}, Period{hours: 1, minutes: 10}},
 		{period64{minutes: 699}, Period{hours: 11, minutes: 39}, Period{hours: 11, minutes: 39}},
 
-		// simplify 1 minute to seconds
-		{period64{minutes: 1, seconds: 9}, Period{seconds: 69}, Period{seconds: 69}},
-		{period64{minutes: 1, seconds: 9, fraction: 1, fpart: Second}, Period{seconds: 69, fraction: 1, fpart: Second}, Period{seconds: 69, fraction: 1, fpart: Second}},
-
 		// simplify 1 hour to minutes
-		{period64{hours: 1, minutes: 9}, Period{minutes: 69}, Period{minutes: 69}},
-		{period64{hours: 1, minutes: 9, fraction: 1, fpart: Minute}, Period{minutes: 69, fraction: 1, fpart: Minute}, Period{minutes: 69, fraction: 1, fpart: Minute}},
 		{period64{hours: 1, fraction: 25, fpart: Hour}, Period{hours: 1, minutes: 15}, Period{hours: 1, minutes: 15}},
 		{period64{hours: 1, fraction: 75, fpart: Hour}, Period{hours: 1, minutes: 45}, Period{hours: 1, minutes: 45}},
 
@@ -820,7 +820,7 @@ func TestNormaliseChanged(t *testing.T) {
 
 		// carry months to years
 		{period64{months: 12}, Period{years: 1}, Period{years: 1}},
-		{period64{months: 13}, Period{months: 13}, Period{months: 13}},
+		{period64{months: 13}, Period{years: 1, months: 1}, Period{years: 1, months: 1}},
 		{period64{months: 25}, Period{years: 2, months: 1}, Period{years: 2, months: 1}},
 
 		// carry days to prevent overflow
@@ -831,9 +831,7 @@ func TestNormaliseChanged(t *testing.T) {
 
 		// carry years to months
 		{period64{years: 1}, Period{years: 1}, Period{years: 1}},
-		{period64{years: 1, fraction: 25, fpart: Year}, Period{months: 15}, Period{months: 15}},
 		{period64{years: 1, fraction: 75, fpart: Year}, Period{years: 1, months: 9}, Period{years: 1, months: 9}},
-		{period64{years: 1, months: 6}, Period{months: 18}, Period{months: 18}},
 		{period64{years: 1, months: 7}, Period{years: 1, months: 7}, Period{years: 1, months: 7}},
 	}
 	for i, c := range cases {
@@ -857,6 +855,66 @@ func testNormaliseBothSigns(t *testing.T, i int, source period64, expected Perio
 	n2, err := source.normalise64(precise).toPeriod()
 	info2 := fmt.Sprintf("%d: %s.Normalise(%v) expected %s to equal %s", i, sstr, precise, n2, eneg)
 	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(n2).To(Equal(eneg), info2)
+}
+
+func TestSimplify(t *testing.T) {
+	cases := []struct {
+		source          Period
+		precise, approx Period
+	}{
+		// note: the negative cases are also covered (see below)
+
+		// simplify 1 minute to seconds
+		{Period{minutes: 1}, Period{minutes: 1}, Period{minutes: 1}},
+		{Period{minutes: 1, seconds: 31}, Period{minutes: 1, seconds: 31}, Period{minutes: 1, seconds: 31}},
+		{Period{minutes: 1, seconds: 30}, Period{seconds: 90}, Period{seconds: 90}},
+		{Period{minutes: 1, seconds: 30, fraction: 1, fpart: Second}, Period{seconds: 90, fraction: 1, fpart: Second}, Period{seconds: 90, fraction: 1, fpart: Second}},
+
+		// simplify 1 hour to minutes
+		{Period{hours: 1}, Period{hours: 1}, Period{hours: 1}},
+		{Period{hours: 1, minutes: 10}, Period{minutes: 70}, Period{minutes: 70}},
+		{Period{hours: 1, minutes: 11}, Period{hours: 1, minutes: 11}, Period{hours: 1, minutes: 11}},
+		{Period{hours: 1, minutes: 10, fraction: 1, fpart: Minute}, Period{minutes: 70, fraction: 1, fpart: Minute}, Period{minutes: 70, fraction: 1, fpart: Minute}},
+
+		// simplify days
+		{Period{days: 1, hours: 6}, Period{days: 1, hours: 6}, Period{hours: 30}},
+		{Period{days: 1, hours: 7}, Period{days: 1, hours: 7}, Period{days: 1, hours: 7}},
+		{Period{days: 1, hours: 6, fraction: 1, fpart: Hour}, Period{days: 1, hours: 6, fraction: 1, fpart: Hour}, Period{hours: 30, fraction: 1, fpart: Hour}},
+
+		// simplify months
+		{Period{years: 1}, Period{years: 1}, Period{years: 1}},
+		{Period{years: 1, months: 9}, Period{months: 21}, Period{months: 21}},
+		{Period{years: 1, months: 10}, Period{years: 1, months: 10}, Period{years: 1, months: 10}},
+		{Period{years: 1, months: 9, fraction: 1, fpart: Month}, Period{months: 21, fraction: 1, fpart: Month}, Period{months: 21, fraction: 1, fpart: Month}},
+
+		// fractional years don't simplify
+		{Period{years: 1, fraction: 1, fpart: Year}, Period{years: 1, fraction: 1, fpart: Year}, Period{years: 1, fraction: 1, fpart: Year}},
+	}
+	for i, c := range cases {
+		testSimplifyBothSigns(t, i, c.source, c.precise, true)
+		testSimplifyBothSigns(t, i, c.source, c.approx, false)
+	}
+
+	g := NewGomegaWithT(t)
+	g.Expect(Period{days: 1, hours: 7}.Simplify(false, 6, 7, 30)).To(Equal(Period{hours: 31}))
+	g.Expect(Period{hours: 1, minutes: 30}.Simplify(true, 6, 30)).To(Equal(Period{minutes: 90}))
+	g.Expect(Period{years: 1, months: 11}.Simplify(true, 11)).To(Equal(Period{months: 23}))
+	g.Expect(Period{years: 1, months: 6}.Simplify(true)).To(Equal(Period{months: 18}))
+}
+
+func testSimplifyBothSigns(t *testing.T, i int, source Period, expected Period, precise bool) {
+	g := NewGomegaWithT(t)
+	t.Helper()
+
+	sstr := source.String()
+	n1 := source.Simplify(precise, 9, 6, 10, 30)
+	info1 := fmt.Sprintf("%d: %s.Simplify(%v) expected %s to equal %s", i, sstr, precise, n1, expected)
+	g.Expect(n1).To(Equal(expected), info1)
+
+	eneg := expected.Negate()
+	n2 := source.Negate().Simplify(precise, 9, 6, 10, 30)
+	info2 := fmt.Sprintf("%d: %s.Simplify(%v) expected %s to equal %s", i, sstr, precise, n2, eneg)
 	g.Expect(n2).To(Equal(eneg), info2)
 }
 
@@ -906,13 +964,13 @@ func TestPeriodFormat(t *testing.T) {
 		{"P2.125D", "2.12 days", ""},
 
 		{"PT1H", "1 hour", ""},
-		{"PT1.1H", "66 minutes", ""},
+		{"PT1.1H", "1 hour, 6 minutes", ""},
 		{"PT2.5H", "2 hours, 30 minutes", ""},
 		{"PT2.15H", "2 hours, 9 minutes", ""},
 		{"PT2.125H", "2.12 hours", ""},
 
 		{"PT1M", "1 minute", ""},
-		{"PT1.1M", "66 seconds", ""},
+		{"PT1.1M", "1 minute, 6 seconds", ""},
 		{"PT2.5M", "2 minutes, 30 seconds", ""},
 		{"PT2.15M", "2 minutes, 9 seconds", ""},
 		{"PT2.125M", "2.12 minutes", ""},
