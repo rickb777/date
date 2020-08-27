@@ -93,8 +93,6 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 		years, months, days, hours, minutes, seconds))
 }
 
-// TODO NewFloat
-
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
 // Any time duration that spans more than ± 3276 hours will be approximated by assuming that there
 // are 24 hours per day, 365.2425 days per year (as per Gregorian calendar rules), and a month
@@ -327,145 +325,6 @@ func (period Period) Negate() Period {
 	}
 }
 
-// Add adds two periods together. Use this method along with Negate in order to subtract periods.
-//
-// The result is not normalised and may overflow arithmetically (to make this unlikely, use Normalise on
-// the inputs before adding them).
-func (period Period) Add(that Period) Period {
-	fpart := period.fpart
-	if period.fpart != that.fpart {
-		//TODO
-	}
-
-	fraction := period.fraction + that.fraction
-	if fraction == 0 {
-		fpart = NoFraction
-	}
-
-	return Period{
-		years:    period.years + that.years,
-		months:   period.months + that.months,
-		days:     period.days + that.days,
-		hours:    period.hours + that.hours,
-		minutes:  period.minutes + that.minutes,
-		seconds:  period.seconds + that.seconds,
-		fraction: fraction,
-		fpart:    fpart,
-	}
-}
-
-// Scale a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
-// and change the sign if negative. The result is normalised, but integer overflows are silently
-// ignored.
-//
-// Bear in mind that the internal representation is limited by fixed-point arithmetic with one
-// decimal place; each field is only int16.
-//
-// Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
-func (period Period) Scale(factor float32) Period {
-	result, _ := period.ScaleWithOverflowCheck(factor)
-	return result
-}
-
-// ScaleWithOverflowCheck a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
-// and change the sign if negative. The result is normalised. An error is returned if integer overflow
-// happened.
-//
-// Bear in mind that the internal representation is limited by fixed-point arithmetic with one
-// decimal place; each field is only int16.
-func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
-	ap, neg := period.absNeg()
-
-	cy := ap.centiYears()
-	cm := ap.centiMonths()
-	cd := ap.centiDays()
-	chh := ap.centiHours()
-	cmm := ap.centiMinutes()
-	css := ap.centiSeconds()
-
-	f64 := float64(factor)
-	fi, ff := math.Modf(f64)
-	if ff == 0 {
-		// simplest case: integer scale factor
-		fii := int64(fi)
-		p64 := &period64{
-			years:   (cy * fii) / 100,
-			months:  (cm * fii) / 100,
-			days:    (cd * fii) / 100,
-			hours:   (chh * fii) / 100,
-			minutes: (cmm * fii) / 100,
-			seconds: (css * fii) / 100,
-			neg:     neg,
-		}
-
-		return p64.normalise64(true).toPeriod()
-	}
-
-	ym := f64 * float64(cy*12+cm)
-	d := f64 * float64(cd)
-	hms := f64 * float64((chh*3600)+(cmm*60)+css)
-
-	ymi, ymf := math.Modf(ym)
-	di, df := math.Modf(d)
-	hmsi, hmsf := math.Modf(hms)
-
-	if ymf == 0 && df == 0 && hmsf == 0 {
-		// special case: scaled result is integral
-		return integralScaledResult(ymi, di, hmsi, neg)
-	}
-
-	// less accurate case involving fractional values
-	return approximateScaledResult(f64, ap, neg)
-}
-
-func integralScaledResult(ym, d, hms float64, neg bool) (Period, error) {
-	ymi := int64(ym)
-	di := int64(d)
-	hmsi := int64(hms)
-
-	p64 := &period64{
-		months:  ymi / 100,
-		days:    di / 100,
-		seconds: hmsi / 100,
-		neg:     neg,
-	}
-
-	ymf := ymi % 100
-	if ymf != 0 {
-		p64.fraction = int8(ymf)
-		p64.fpart = Month
-	}
-
-	df := di % 100
-	if df != 0 {
-		p64.fraction = int8(df)
-		p64.fpart = Day
-	}
-
-	sf := hmsi % 100
-	if sf != 0 {
-		p64.fraction = int8(sf)
-		p64.fpart = Second
-	}
-
-	return p64.normalise64(true).toPeriod()
-}
-
-func approximateScaledResult(factor float64, ap Period, neg bool) (Period, error) {
-	duration, pr1 := ap.Duration()
-	mul := float64(duration) * float64(factor)
-	// add 5ms to round half-up
-	p2, pr2 := NewOf(time.Duration(mul) + 5*time.Millisecond)
-	return p2.condNegate(neg).Normalise(pr1 && pr2), nil
-}
-
-func absInt16(v int16) int16 {
-	if v < 0 {
-		return -v
-	}
-	return v
-}
-
 //-------------------------------------------------------------------------------------------------
 
 // Years gets the whole number of years in the period.
@@ -502,12 +361,7 @@ func (period Period) Days() int {
 // ModuloDays calculates the whole number of days remaining after the whole number of weeks
 // has been excluded.
 func (period Period) ModuloDays() int {
-	days := absInt16(period.days) % 7
-	f := int(days)
-	if period.days < 0 {
-		return -f
-	}
-	return f
+	return int(period.days) % 7
 }
 
 // Hours gets the whole number of hours in the period.
@@ -571,18 +425,12 @@ func (period Period) HoursFloat() float32 {
 
 // MinutesFloat gets the number of minutes in the period.
 // The result is the number of minutes and does not include any other field.
-//
-// Note that after normalisation, whole multiple of 60 minutes are added to
-// the number of hours, so the number of minutes will be reduced correspondingly.
 func (period Period) MinutesFloat() float32 {
 	return float32(period.centiMinutes()) / 100
 }
 
 // SecondsFloat gets the number of seconds in the period.
 // The result is the number of seconds and does not include any other field.
-//
-// Note that after normalisation, whole multiple of 60 seconds are added to
-// the number of minutes, so the number of seconds will be reduced correspondingly.
 func (period Period) SecondsFloat() float32 {
 	return float32(period.centiSeconds()) / 100
 }
@@ -639,29 +487,6 @@ func (period Period) centiSeconds() int64 {
 
 //-------------------------------------------------------------------------------------------------
 
-// AddTo adds the period to a time, returning the result.
-// A flag is also returned that is true when the conversion was precise and false otherwise.
-//
-// When the period specifies hours, minutes and seconds only, the result is precise.
-// Also, when the period specifies whole years, months and days (i.e. without fractions), the
-// result is precise. However, when years, months or days contains fractions, the result
-// is only an approximation (it assumes that all days are 24 hours and every year is 365.2425
-// days, as per Gregorian calendar rules).
-func (period Period) AddTo(t time.Time) (time.Time, bool) {
-	wholeYears := period.fpart != Year
-	wholeMonths := period.fpart != Month
-	wholeDays := period.fpart != Day
-
-	if wholeYears && wholeMonths && wholeDays {
-		// in this case, time.AddDate provides an exact solution
-		t1 := t.AddDate(int(period.years), int(period.months), int(period.days))
-		return t1.Add(period.hmsDuration()), true
-	}
-
-	d, precise := period.Duration()
-	return t.Add(d), precise
-}
-
 // DurationApprox converts a period to the equivalent duration in nanoseconds.
 // When the period specifies hours, minutes and seconds only, the result is precise.
 // however, when the period specifies years, months and days, it is impossible to be precise
@@ -682,7 +507,6 @@ func (period Period) DurationApprox() time.Duration {
 // is estimated on the basis of a year being 365.2425 days as per Gregorian calendar rules)
 // and a month being 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
-	// remember that the fields are all fixed-point 1E1
 	tdE6 := time.Duration(period.totalDaysApproxE8() * 864)
 	stE3 := period.hmsDuration()
 	return tdE6*time.Microsecond + stE3, tdE6 == 0
@@ -701,6 +525,8 @@ func (period Period) totalDaysApproxE8() int64 {
 	ddE6 := period.centiDays() * oneE6
 	return ydE6 + mdE6 + ddE6
 }
+
+//-------------------------------------------------------------------------------------------------
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
 // a year is 365.2425 days as per Gregorian calendar rules) and a month is 1/12 of that. Whole
@@ -758,7 +584,13 @@ func (period Period) Normalise(precise bool) Period {
 // * PT1MnS becomes 60+n seconds for 0 < n <= 10
 //
 // At each step, if a fraction exists and would affect the calculation, the transformations
-// stop.
+// stop. Also, when not precise,
+//
+// * for at least ten years, month proper fractions are discarded
+// * for at least a year, day proper fractions are discarded
+// * for at least a month, hour proper fractions are discarded
+// * for at least a day, minute proper fractions are discarded
+// * for at least an hour, second proper fractions are discarded
 //
 // The thresholds can be set using the varargs th parameter. By default, the thresholds a,
 // b, c, d are 6 months, 6 hours, 10 minutes, 10 seconds respectively as listed in the rules
@@ -792,6 +624,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 
 	ap, neg := period.absNeg()
 
+	// single year is dropped if there are some months
 	if ap.years == 1 &&
 		0 < ap.months && ap.months <= a &&
 		ap.days == 0 {
@@ -799,7 +632,21 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		ap.years = 0
 	}
 
-	if ap.fpart.IsOneOf(Month, Day) {
+	if ap.fpart == Month {
+		// month fraction is dropped for periods of at least ten years (1:120)
+		if !precise && ap.years >= 10 && ap.months == 0 {
+			ap.fraction = 0
+			ap.fpart = NoFraction
+		}
+		return ap.condNegate(neg)
+	}
+
+	if ap.fpart == Day {
+		// day fraction is dropped for periods of at least a year (1:365)
+		if !precise && (ap.years > 0 || ap.months >= 12) && ap.days == 0 {
+			ap.fraction = 0
+			ap.fpart = NoFraction
+		}
 		return ap.condNegate(neg)
 	}
 
@@ -812,6 +659,11 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 	}
 
 	if ap.fpart == Hour {
+		// hour fraction is dropped for periods of at least a month (1:720)
+		if !precise && (ap.years > 0 || ap.months > 0 || ap.days >= 30) && ap.hours == 0 {
+			ap.fraction = 0
+			ap.fpart = NoFraction
+		}
 		return ap.condNegate(neg)
 	}
 
@@ -822,6 +674,11 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 	}
 
 	if ap.fpart == Minute {
+		// minute fraction is dropped for periods of at least a day (1:1440)
+		if !precise && (ap.years > 0 || ap.months > 0 || ap.days > 0 || ap.hours >= 24) && ap.minutes == 0 {
+			ap.fraction = 0
+			ap.fpart = NoFraction
+		}
 		return ap.condNegate(neg)
 	}
 
@@ -830,6 +687,15 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		0 < ap.seconds && ap.seconds <= d {
 		ap.seconds += 60
 		ap.minutes = 0
+	}
+
+	if ap.fpart == Second {
+		// second fraction is dropped for periods of at least an hour (1:3600)
+		if !precise && (ap.years > 0 || ap.months > 0 || ap.days > 0 || ap.hours > 0 || ap.minutes >= 60) && ap.seconds == 0 {
+			ap.fraction = 0
+			ap.fpart = NoFraction
+		}
+		return ap.condNegate(neg)
 	}
 
 	return ap.condNegate(neg)
