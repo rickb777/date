@@ -513,17 +513,24 @@ func (period Period) Duration() (time.Duration, bool) {
 }
 
 func (period Period) hmsDuration() time.Duration {
-	hhE3 := time.Duration(period.centiHours()) * 36000
-	mmE3 := time.Duration(period.centiMinutes()) * 600
-	ssE3 := time.Duration(period.centiSeconds()) * 10
-	return (hhE3 + mmE3 + ssE3) * time.Millisecond
+	return time.Duration(period.centiHMS()) * 10 * time.Millisecond
+}
+
+func (period Period) centiHMS() int64 {
+	hhE3 := period.centiHours() * 3600
+	mmE3 := period.centiMinutes() * 60
+	ssE3 := period.centiSeconds()
+	return hhE3 + mmE3 + ssE3
 }
 
 func (period Period) totalDaysApproxE8() int64 {
-	ydE6 := period.centiYears() * daysPerYearE6
-	mdE6 := period.centiMonths() * daysPerMonthE6
+	ymdE6 := period.centiYM() * daysPerMonthE6
 	ddE6 := period.centiDays() * oneE6
-	return ydE6 + mdE6 + ddE6
+	return ymdE6 + ddE6
+}
+
+func (period Period) centiYM() int64 {
+	return period.centiYears()*12 + period.centiMonths()
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -576,7 +583,7 @@ func (period Period) Normalise(precise bool) Period {
 // daylight savings transitions, during which there are more than or fewer than 24 hours
 // per day.
 //
-//The following transformation rules are applied in order:
+// The following transformation rules are applied in order:
 //
 // * P1YnM becomes 12+n months for 0 < n <= 6
 // * P1DTnH becomes 24+n hours for 0 < n <= 6 (unless precise is true)
@@ -586,11 +593,11 @@ func (period Period) Normalise(precise bool) Period {
 // At each step, if a fraction exists and would affect the calculation, the transformations
 // stop. Also, when not precise,
 //
-// * for at least ten years, month proper fractions are discarded
-// * for at least a year, day proper fractions are discarded
-// * for at least a month, hour proper fractions are discarded
-// * for at least a day, minute proper fractions are discarded
-// * for at least an hour, second proper fractions are discarded
+// * for periods of at least ten years, month proper fractions are discarded
+// * for periods of at least a year, day proper fractions are discarded
+// * for periods of at least a month, hour proper fractions are discarded
+// * for periods of at least a day, minute proper fractions are discarded
+// * for periods of at least an hour, second proper fractions are discarded
 //
 // The thresholds can be set using the varargs th parameter. By default, the thresholds a,
 // b, c, d are 6 months, 6 hours, 10 minutes, 10 seconds respectively as listed in the rules

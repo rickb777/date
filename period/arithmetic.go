@@ -75,15 +75,9 @@ func (period Period) simpleAdd(that Period) Period {
 func (period Period) nonTrivialAdd(that Period) Period {
 	ap, neg := period.absNeg()
 
-	cy := ap.centiYears()
-	cm := ap.centiMonths()
+	cym := ap.centiYM()
 	cd := ap.centiDays()
-	chh := ap.centiHours()
-	cmm := ap.centiMinutes()
-	css := ap.centiSeconds()
-
-	cym := cy*12 + cm
-	chms := (chh * 3600) + (cmm * 60) + css
+	chms := ap.centiHMS()
 
 	p64 := &period64{
 		months:  cym / 100,
@@ -169,15 +163,9 @@ func (period Period) RationalScale(multiplier, divisor int) (Period, error) {
 func (period Period) rationalScale64(m, d int64) (Period, error) {
 	ap, neg := period.absNeg()
 
-	cy := ap.centiYears()
-	cm := ap.centiMonths()
+	cym := ap.centiYM()
 	cd := ap.centiDays()
-	chh := ap.centiHours()
-	cmm := ap.centiMinutes()
-	css := ap.centiSeconds()
-
-	cym := cy*12 + cm
-	chms := (chh * 3600) + (cmm * 60) + css
+	chms := ap.centiHMS()
 
 	mcym := cym * m
 	mcd := cd * m
