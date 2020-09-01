@@ -12,8 +12,10 @@ import (
 
 // MustParse is as per Parse except that it panics if the string cannot be parsed.
 // This is intended for setup code; don't use it for user inputs.
-func MustParse(value string) Period {
-	d, err := Parse(value)
+// By default, the value is normalised.
+// Normalisation can be disabled using the optional flag.
+func MustParse(value string, normalise ...bool) Period {
+	d, err := Parse(value, normalise...)
 	if err != nil {
 		panic(err)
 	}
@@ -24,16 +26,18 @@ func MustParse(value string) Period {
 //
 // In addition, a plus or minus sign can precede the period, e.g. "-P10D"
 //
-// The value is normalised, e.g. multiple of 12 months become years so "P24M"
-// is the same as "P2Y". However, this is done without loss of precision, so
-// for example whole numbers of days do not contribute to the months tally
+// By default, the value is normalised, e.g. multiple of 12 months become years
+// so "P24M" is the same as "P2Y". However, this is done without loss of precision,
+// so for example whole numbers of days do not contribute to the months tally
 // because the number of days per month is variable.
+//
+// Normalisation can be disabled using the optional flag.
 //
 // The zero value can be represented in several ways: all of the following
 // are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
 // The canonical zero is "P0D".
-func Parse(period string) (Period, error) {
-	return ParseWithNormalise(period, true)
+func Parse(period string, normalise ...bool) (Period, error) {
+	return ParseWithNormalise(period, len(normalise) == 0 || normalise[0])
 }
 
 // ParseWithNormalise parses strings that specify periods using ISO-8601 rules
@@ -50,6 +54,9 @@ func Parse(period string) (Period, error) {
 // The zero value can be represented in several ways: all of the following
 // are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
 // The canonical zero is "P0D".
+//
+// This method is deprecated and should not be used. It may be removed in a
+// future version.
 func ParseWithNormalise(period string, normalise bool) (Period, error) {
 	if period == "" || period == "-" || period == "+" {
 		return Period{}, fmt.Errorf("cannot parse a blank string as a period")

@@ -41,23 +41,26 @@ func (period Period) toPeriod64(input string) *period64 {
 
 func (p64 *period64) toPeriod() (Period, error) {
 	var f []string
-	if p64.years > 32767 {
+	if p64.years > math.MaxInt16 {
 		f = append(f, "years")
 	}
-	if p64.months > 32767 {
+	if p64.months > math.MaxInt16 {
 		f = append(f, "months")
 	}
-	if p64.days > 32767 {
+	if p64.days > math.MaxInt16 {
 		f = append(f, "days")
 	}
-	if p64.hours > 32767 {
+	if p64.hours > math.MaxInt16 {
 		f = append(f, "hours")
 	}
-	if p64.minutes > 32767 {
+	if p64.minutes > math.MaxInt16 {
 		f = append(f, "minutes")
 	}
-	if p64.seconds > 32767 {
+	if p64.seconds > math.MaxInt16 {
 		f = append(f, "seconds")
+	}
+	if p64.fraction > 99 { // the fraction represents two decimal places
+		f = append(f, "fraction")
 	}
 
 	if len(f) > 0 {

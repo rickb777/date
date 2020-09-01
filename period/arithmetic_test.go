@@ -140,6 +140,7 @@ func TestPeriodAdd(t *testing.T) {
 		one, two string
 		expect   string
 	}{
+		// simple cases
 		{"P0D", "P0D", "P0D"},
 		{"P1D", "P1D", "P2D"},
 		{"P1M", "P1M", "P2M"},
@@ -149,10 +150,35 @@ func TestPeriodAdd(t *testing.T) {
 		{"PT1S", "PT1S", "PT2S"},
 		{"P1Y2M3DT4H5M6.70S", "P6Y5M4DT3H2M1.07S", "P7Y7M7DT7H7M7.77S"},
 		{"P7Y7M7DT7H7M7.77S", "-P7Y7M7DT7H7M7.77S", "P0D"},
+		{"PT1.5M", "PT1M", "PT2.5M"},
+
+		// non-trivial cases
+		//{"PT1.5M", "PT32.5S", "PT2M2.5S"},
+
+		// fraction handling - carry one
+		{"P1.7Y", "P1.8Y", "P3.5Y"},
+		{"P1.7M", "P1.8M", "P3.5M"},
+		{"P1.7D", "P1.8D", "P3.5D"},
+		{"PT1.7H", "PT1.8H", "PT3.5H"},
+		{"PT1.7M", "PT1.8M", "PT3.5M"},
+		{"PT1.7S", "PT1.8S", "PT3.5S"},
+
+		// fraction handling - integer result
+		{"P1.7Y", "P1.3Y", "P3Y"},
+		{"P1.7M", "P1.3M", "P3M"},
+		{"P1.7D", "P1.3D", "P3D"},
+		{"PT1.7H", "PT1.3H", "PT3H"},
+		{"PT1.7M", "PT1.3M", "PT3M"},
+		{"PT1.7S", "PT1.3S", "PT3S"},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one).Add(MustParse(c.two))
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
+		p1 := MustParse(c.one, false)
+		p2 := MustParse(c.two, false)
+		pe := MustParse(c.expect, false)
+
+		s := info(i, c.expect)
+		g.Expect(expectValid(t, p1.Add(p2), s)).To(Equal(pe), s)
+		g.Expect(expectValid(t, p1.Negate().Add(p2.Negate()), s)).To(Equal(pe.Negate()), s+" neg")
 	}
 }
 
@@ -206,4 +232,62 @@ func TestPeriodAddToTime(t *testing.T) {
 		g.Expect(t1).To(Equal(c.result), info(i, c.value))
 		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
 	}
+}
+
+func expectValid(t *testing.T, period Period, hint interface{}) Period {
+	t.Helper()
+	g := NewGomegaWithT(t)
+	info := fmt.Sprintf("%v: invalid: %#v", hint, period)
+
+	// check all the signs are consistent
+	nPoz := pos(period.years) + pos(period.months) + pos(period.days) + pos(period.hours) + pos(period.minutes) + pos(period.seconds) + pos(int16(period.fraction))
+	nNeg := neg(period.years) + neg(period.months) + neg(period.days) + neg(period.hours) + neg(period.minutes) + neg(period.seconds) + neg(int16(period.fraction))
+	if nPoz > 0 && nNeg > 0 {
+		t.Errorf("%s: inconsistent signs in\n%#v", info, period)
+	}
+
+	// check no intermediate fraction is present
+	switch period.fpart {
+	case NoFraction:
+		g.Expect(period.fraction).To(BeZero(), info)
+	case Minute:
+		g.Expect(period.seconds).To(BeZero(), info)
+	case Hour:
+		g.Expect(period.seconds).To(BeZero(), info)
+		g.Expect(period.minutes).To(BeZero(), info)
+	case Day:
+		g.Expect(period.seconds).To(BeZero(), info)
+		g.Expect(period.minutes).To(BeZero(), info)
+		g.Expect(period.hours).To(BeZero(), info)
+	case Month:
+		g.Expect(period.seconds).To(BeZero(), info)
+		g.Expect(period.minutes).To(BeZero(), info)
+		g.Expect(period.hours).To(BeZero(), info)
+		g.Expect(period.days).To(BeZero(), info)
+	case Year:
+		g.Expect(period.seconds).To(BeZero(), info)
+		g.Expect(period.minutes).To(BeZero(), info)
+		g.Expect(period.hours).To(BeZero(), info)
+		g.Expect(period.days).To(BeZero(), info)
+		g.Expect(period.months).To(BeZero(), info)
+	}
+
+	// the fraction must be in the range -99 to +99
+	g.Expect(period.fraction).To(BeNumerically("<", 100), info)
+	g.Expect(period.fraction).To(BeNumerically(">", -100), info)
+	return period
+}
+
+func pos(i int16) int {
+	if i > 0 {
+		return 1
+	}
+	return 0
+}
+
+func neg(i int16) int {
+	if i < 0 {
+		return 1
+	}
+	return 0
 }

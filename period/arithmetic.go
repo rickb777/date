@@ -15,12 +15,47 @@ import (
 // The result is not normalised and may overflow arithmetically (to make this unlikely, use Normalise on
 // the inputs before adding them).
 func (period Period) Add(that Period) Period {
-	fpart := period.fpart
-	if period.fpart != that.fpart {
-		//TODO
+	if period.fpart == that.fpart || period.fpart == NoFraction || that.fpart == NoFraction {
+		return period.simpleAdd(that)
 	}
 
-	fraction := period.fraction + that.fraction
+	return period.nonTrivialAdd(that)
+}
+
+func (period Period) simpleAdd(that Period) Period {
+	fraction := 0
+	fpart := period.fpart
+
+	if period.fpart == NoFraction {
+		fraction = int(that.fraction)
+		fpart = that.fpart
+
+	} else if that.fpart == NoFraction {
+		fraction = int(period.fraction)
+		fpart = period.fpart
+
+	} else {
+		fraction = int(period.fraction) + int(that.fraction)
+		if fraction > 99 || fraction < -99 {
+			one := int16(period.Sign()) // +/- 1
+			switch fpart {
+			case Year:
+				period.years += one
+			case Month:
+				period.months += one
+			case Day:
+				period.days += one
+			case Hour:
+				period.hours += one
+			case Minute:
+				period.minutes += one
+			case Second:
+				period.seconds += one
+			}
+			fraction %= 100
+		}
+	}
+
 	if fraction == 0 {
 		fpart = NoFraction
 	}
@@ -32,9 +67,33 @@ func (period Period) Add(that Period) Period {
 		hours:    period.hours + that.hours,
 		minutes:  period.minutes + that.minutes,
 		seconds:  period.seconds + that.seconds,
-		fraction: fraction,
+		fraction: int8(fraction),
 		fpart:    fpart,
 	}
+}
+
+func (period Period) nonTrivialAdd(that Period) Period {
+	ap, neg := period.absNeg()
+
+	cy := ap.centiYears()
+	cm := ap.centiMonths()
+	cd := ap.centiDays()
+	chh := ap.centiHours()
+	cmm := ap.centiMinutes()
+	css := ap.centiSeconds()
+
+	cym := cy*12 + cm
+	chms := (chh * 3600) + (cmm * 60) + css
+
+	p64 := &period64{
+		months:  cym / 100,
+		days:    cd / 100,
+		seconds: chms / 100,
+		neg:     neg,
+	}
+
+	r, _ := p64.normalise64(true).toPeriod()
+	panic(r)
 }
 
 //-------------------------------------------------------------------------------------------------

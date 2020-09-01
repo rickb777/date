@@ -33,12 +33,12 @@
 //
 // * "P2DT12H" is 2 days and 12 hours.
 //
-// Also, decimal fractions are supported to one decimal place. To comply with
+// Also, decimal fractions are supported to two decimal places. To comply with
 // the standard, only the last non-zero component is allowed to have a fraction.
 // For example
 //
 // * "P2.5Y" is 2.5 years.
 //
-// * "PT12M7.5S" is 12 minutes and 7.5 seconds.
+// * "PT12M7.35S" is 12 minutes and 7.35 seconds.
 //
 package period

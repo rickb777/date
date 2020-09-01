@@ -53,11 +53,11 @@ func TestParseErrors(t *testing.T) {
 		{"PT103412160000S", false, ": integer overflow occurred in seconds", "PT103412160000S"},
 	}
 	for i, c := range cases {
-		_, ep := ParseWithNormalise(c.value, c.normalise)
+		_, ep := Parse(c.value, c.normalise)
 		g.Expect(ep).To(HaveOccurred(), info(i, c.value))
 		g.Expect(ep.Error()).To(Equal(c.expvalue+c.expected), info(i, c.value))
 
-		_, en := ParseWithNormalise("-"+c.value, c.normalise)
+		_, en := Parse("-"+c.value, c.normalise)
 		g.Expect(en).To(HaveOccurred(), info(i, c.value))
 		if c.expvalue != "" {
 			g.Expect(en.Error()).To(Equal("-"+c.expvalue+c.expected), info(i, c.value))
@@ -97,10 +97,12 @@ func TestParsePeriodWithNormalise(t *testing.T) {
 	}
 	for i, c := range cases {
 		p, err := Parse(c.value)
-		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
-		g.Expect(p).To(Equal(c.period), info(i, c.value))
+		s := info(i, c.value)
+		g.Expect(err).NotTo(HaveOccurred(), s)
+		expectValid(t, p, s)
+		g.Expect(p).To(Equal(c.period), s)
 		// reversal is expected not to be an identity
-		g.Expect(p.String()).To(Equal(c.reversed), info(i, c.value)+" reversed")
+		g.Expect(p.String()).To(Equal(c.reversed), s+" reversed")
 	}
 }
 
@@ -179,11 +181,13 @@ func TestParsePeriodWithoutNormalise(t *testing.T) {
 		{"P1Y14M35DT48H125M800S", "P1Y14M5WT48H125M800S", Period{years: 1, months: 14, days: 35, hours: 48, minutes: 125, seconds: 800}},
 	}
 	for i, c := range cases {
-		p, err := ParseWithNormalise(c.value, false)
-		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
-		g.Expect(p).To(Equal(c.period), info(i, c.value))
+		p, err := Parse(c.value, false)
+		s := info(i, c.value)
+		g.Expect(err).NotTo(HaveOccurred(), s)
+		expectValid(t, p, s)
+		g.Expect(p).To(Equal(c.period), s)
 		// reversal is usually expected to be an identity
-		g.Expect(p.String()).To(Equal(c.reversed), info(i, c.value)+" reversed")
+		g.Expect(p.String()).To(Equal(c.reversed), s+" reversed")
 	}
 }
 
@@ -336,7 +340,7 @@ func TestPeriodFloatComponents(t *testing.T) {
 		{value: "PT5S", ss: 5},
 	}
 	for i, c := range cases {
-		pp, _ := ParseWithNormalise(c.value, false)
+		pp, _ := Parse(c.value, false)
 		g.Expect(pp.YearsFloat()).To(Equal(c.y), info(i, pp))
 		g.Expect(pp.MonthsFloat()).To(Equal(c.m), info(i, pp))
 		g.Expect(pp.WeeksFloat()).To(Equal(c.w), info(i, pp))
@@ -419,17 +423,29 @@ func TestSignPositiveNegative(t *testing.T) {
 	}{
 		{"P0D", false, false, 0},
 		{"PT1S", true, false, 1},
+		{"PT0.1S", true, false, 1},
 		{"-PT1S", false, true, -1},
+		{"-PT0.1S", false, true, -1},
 		{"PT1M", true, false, 1},
+		{"PT0.1M", true, false, 1},
 		{"-PT1M", false, true, -1},
+		{"-PT0.1M", false, true, -1},
 		{"PT1H", true, false, 1},
+		{"PT0.1H", true, false, 1},
 		{"-PT1H", false, true, -1},
+		{"-PT0.1H", false, true, -1},
 		{"P1D", true, false, 1},
+		{"P10.D", true, false, 1},
 		{"-P1D", false, true, -1},
+		{"-P0.1D", false, true, -1},
 		{"P1M", true, false, 1},
+		{"P0.1M", true, false, 1},
 		{"-P1M", false, true, -1},
+		{"-P0.1M", false, true, -1},
 		{"P1Y", true, false, 1},
+		{"P0.1Y", true, false, 1},
 		{"-P1Y", false, true, -1},
+		{"-P0.1Y", false, true, -1},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
@@ -524,8 +540,9 @@ func TestNewPeriod(t *testing.T) {
 		{period: "P100Y222M700D", years: 100, months: 222, days: 700},
 	}
 	for i, c := range cases {
-		ep, _ := ParseWithNormalise(c.period, false)
+		ep, _ := Parse(c.period, false)
 		pp := New(c.years, c.months, c.days, c.hours, c.minutes, c.seconds)
+		expectValid(t, pp, info(i, c.period))
 		g.Expect(pp).To(Equal(ep), info(i, c.period))
 		g.Expect(pp.Years()).To(Equal(c.years), info(i, c.period))
 		g.Expect(pp.Months()).To(Equal(c.months), info(i, c.period))
@@ -533,6 +550,7 @@ func TestNewPeriod(t *testing.T) {
 
 		pn := New(-c.years, -c.months, -c.days, -c.hours, -c.minutes, -c.seconds)
 		en := ep.Negate()
+		expectValid(t, pn, info(i, en))
 		g.Expect(pn).To(Equal(en), info(i, en))
 		g.Expect(pn.Years()).To(Equal(-c.years), info(i, en))
 		g.Expect(pn.Months()).To(Equal(-c.months), info(i, en))
@@ -561,6 +579,7 @@ func TestNewHMS(t *testing.T) {
 	}
 	for i, c := range cases {
 		pp := NewHMS(c.hours, c.minutes, c.seconds)
+		expectValid(t, pp, info(i, c.period))
 		g.Expect(pp).To(Equal(c.period), info(i, c.period))
 		g.Expect(pp.Hours()).To(Equal(c.hours), info(i, c.period))
 		g.Expect(pp.Minutes()).To(Equal(c.minutes), info(i, c.period))
@@ -568,6 +587,7 @@ func TestNewHMS(t *testing.T) {
 
 		pn := NewHMS(-c.hours, -c.minutes, -c.seconds)
 		en := c.period.Negate()
+		expectValid(t, pn, info(i, en))
 		g.Expect(pn).To(Equal(en), info(i, en))
 		g.Expect(pn.Hours()).To(Equal(-c.hours), info(i, en))
 		g.Expect(pn.Minutes()).To(Equal(-c.minutes), info(i, en))
@@ -596,6 +616,7 @@ func TestNewYMD(t *testing.T) {
 	}
 	for i, c := range cases {
 		pp := NewYMD(c.years, c.months, c.days)
+		expectValid(t, pp, info(i, c.period))
 		g.Expect(pp).To(Equal(c.period), info(i, c.period))
 		g.Expect(pp.Years()).To(Equal(c.years), info(i, c.period))
 		g.Expect(pp.Months()).To(Equal(c.months), info(i, c.period))
@@ -603,6 +624,7 @@ func TestNewYMD(t *testing.T) {
 
 		pn := NewYMD(-c.years, -c.months, -c.days)
 		en := c.period.Negate()
+		expectValid(t, pn, info(i, en))
 		g.Expect(pn).To(Equal(en), info(i, en))
 		g.Expect(pn.Years()).To(Equal(-c.years), info(i, en))
 		g.Expect(pn.Months()).To(Equal(-c.months), info(i, en))
@@ -648,6 +670,7 @@ func testNewOf1(t *testing.T, i int, source time.Duration, expected Period, prec
 	n, p := NewOf(source)
 	rev, _ := expected.Duration()
 	info := fmt.Sprintf("%d: source %v expected %+v precise %v rev %v", i, source, expected, precise, rev)
+	expectValid(t, n, info)
 	g.Expect(n).To(Equal(expected), info)
 	g.Expect(p).To(Equal(precise), info)
 	if precise {
@@ -811,7 +834,7 @@ func TestNormaliseChanged(t *testing.T) {
 		{period64{days: 32768}, Period{years: 89, months: 8, days: 17, hours: 22, minutes: 8}, Period{years: 89, months: 8, days: 17, hours: 22, minutes: 8}},
 
 		// full ripple up
-		{period64{months: 121, days: 305, hours: 239, minutes: 591, seconds: 601}, Period{years: 10, months: 1, days: 305, hours: 249, minutes: 1, seconds: 1}, Period{years: 10, months: 1, days: 315, hours: 9, minutes: 1, seconds: 1}},
+		{period64{months: 121, days: 305, hours: 240, minutes: 60, seconds: 61}, Period{years: 10, months: 1, days: 305, hours: 241, minutes: 1, seconds: 1}, Period{years: 10, months: 1, days: 315, hours: 1, minutes: 1, seconds: 1}},
 
 		// carry years to months
 		{period64{years: 1}, Period{years: 1}, Period{years: 1}},
@@ -831,6 +854,7 @@ func testNormaliseBothSigns(t *testing.T, i int, source period64, expected Perio
 	sstr := source.String()
 	n1, err := source.normalise64(precise).toPeriod()
 	info1 := fmt.Sprintf("%d: %s.Normalise(%v) expected %s to equal %s", i, sstr, precise, n1, expected)
+	expectValid(t, n1, info1)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(n1).To(Equal(expected), info1)
 
@@ -838,6 +862,7 @@ func testNormaliseBothSigns(t *testing.T, i int, source period64, expected Perio
 	eneg := expected.Negate()
 	n2, err := source.normalise64(precise).toPeriod()
 	info2 := fmt.Sprintf("%d: %s.Normalise(%v) expected %s to equal %s", i, sstr, precise, n2, eneg)
+	expectValid(t, n2, info2)
 	g.Expect(err).NotTo(HaveOccurred())
 	g.Expect(n2).To(Equal(eneg), info2)
 }
@@ -915,11 +940,13 @@ func testSimplifyBothSigns(t *testing.T, i int, source Period, expected Period, 
 	sstr := source.String()
 	n1 := source.Simplify(precise, 9, 6, 10, 30)
 	info1 := fmt.Sprintf("%d: %s.Simplify(%v) expected %s to equal %s", i, sstr, precise, n1, expected)
+	expectValid(t, n1, info1)
 	g.Expect(n1).To(Equal(expected), info1)
 
 	eneg := expected.Negate()
 	n2 := source.Negate().Simplify(precise, 9, 6, 10, 30)
 	info2 := fmt.Sprintf("%d: %s.Simplify(%v) expected %s to equal %s", i, sstr, precise, n2, eneg)
+	expectValid(t, n2, info2)
 	g.Expect(n2).To(Equal(eneg), info2)
 }
 
@@ -1004,7 +1031,7 @@ func TestPeriodFormat(t *testing.T) {
 
 //-------------------------------------------------------------------------------------------------
 
-func TestPeriodParseOnlyYMD(t *testing.T) {
+func TestPeriodOnlyYMD(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -1020,7 +1047,7 @@ func TestPeriodParseOnlyYMD(t *testing.T) {
 	}
 }
 
-func TestPeriodParseOnlyHMS(t *testing.T) {
+func TestPeriodOnlyHMS(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
