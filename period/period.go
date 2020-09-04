@@ -143,13 +143,13 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 // computations applied to the period can only be precise if they concern either the date (year, month,
 // day) part, or the clock (hour, minute, second) part, but not both.
 func Between(t1, t2 time.Time) (p Period) {
-	if t1.Location() != t2.Location() {
-		t2 = t2.In(t1.Location())
-	}
-
 	sign := 1
 	if t2.Before(t1) {
 		t1, t2, sign = t2, t1, -1
+	}
+
+	if t1.Location() != t2.Location() {
+		t2 = t2.In(t1.Location())
 	}
 
 	year, month, day, hour, min, sec, hundredth := daysDiff(t1, t2)

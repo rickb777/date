@@ -248,6 +248,8 @@ func TestPeriodString(t *testing.T) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestPeriodIntComponents(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -285,6 +287,8 @@ func TestPeriodIntComponents(t *testing.T) {
 		g.Expect(p.Seconds()).To(Equal(c.ss), info(i, c.value))
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestPeriodFloatComponents(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -342,6 +346,8 @@ func TestPeriodFloatComponents(t *testing.T) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestPeriodToDuration(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -386,7 +392,9 @@ func TestPeriodToDuration(t *testing.T) {
 	}
 }
 
-func TestSignPotisitveNegative(t *testing.T) {
+//-------------------------------------------------------------------------------------------------
+
+func TestSignPositiveNegative(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -417,6 +425,8 @@ func TestSignPotisitveNegative(t *testing.T) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestPeriodApproxDays(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -438,6 +448,8 @@ func TestPeriodApproxDays(t *testing.T) {
 		g.Expect(td).To(Equal(c.approxDays), info(i, c.value))
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestPeriodApproxMonths(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -467,6 +479,8 @@ func TestPeriodApproxMonths(t *testing.T) {
 		g.Expect(td).To(Equal(c.approxMonths), info(i, c.value))
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestNewPeriod(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -502,6 +516,8 @@ func TestNewPeriod(t *testing.T) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestNewHMS(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -527,6 +543,8 @@ func TestNewHMS(t *testing.T) {
 		g.Expect(p.Seconds()).To(Equal(c.seconds), info(i, c.period))
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestNewYMD(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -554,6 +572,8 @@ func TestNewYMD(t *testing.T) {
 		g.Expect(p.Days()).To(Equal(c.days), info(i, c.period))
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestNewOf(t *testing.T) {
 	// HMS tests
@@ -598,6 +618,8 @@ func testNewOf1(t *testing.T, source time.Duration, expected Period, precise boo
 	//g.Expect(rev).To(Equal(source), info)
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestBetween(t *testing.T) {
 	g := NewGomegaWithT(t)
 	now := time.Now()
@@ -606,7 +628,9 @@ func TestBetween(t *testing.T) {
 		a, b     time.Time
 		expected Period
 	}{
-		{now, now, Period{0, 0, 0, 0, 0, 0}},
+		// note: the negative cases are also covered (see below)
+
+		{now, now, Period{}},
 
 		// simple positive date calculations
 		{utc(2015, 1, 1, 0, 0, 0, 0), utc(2015, 1, 1, 0, 0, 0, 100), Period{seconds: 1}},
@@ -630,11 +654,6 @@ func TestBetween(t *testing.T) {
 		// BST drops an hour at the daylight-saving transition
 		{utc(2015, 1, 1, 0, 0, 0, 0), bst(2015, 7, 2, 1, 1, 1, 1), Period{days: 1820, minutes: 10, seconds: 10}},
 
-		// negative date calculation
-		{utc(2015, 1, 1, 0, 0, 0, 100), utc(2015, 1, 1, 0, 0, 0, 0), Period{seconds: -1}},
-		{utc(2015, 6, 2, 0, 0, 0, 0), utc(2015, 5, 1, 0, 0, 0, 0), Period{days: -320}},
-		{utc(2015, 6, 2, 1, 1, 1, 1), utc(2015, 5, 1, 0, 0, 0, 0), Period{days: -320, hours: -10, minutes: -10, seconds: -10}},
-
 		// daytime only
 		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 2, 3, 4, 500), Period{seconds: 5}},
 		{utc(2015, 1, 1, 2, 3, 4, 0), utc(2015, 1, 1, 4, 4, 7, 500), Period{hours: 20, minutes: 10, seconds: 35}},
@@ -651,12 +670,19 @@ func TestBetween(t *testing.T) {
 		// larger ranges
 		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{days: 29210, seconds: 10}},
 		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{years: 80, months: 110, days: 300, seconds: 10}},
+		{utc(1900, 1, 1, 0, 0, 1, 0), utc(2009, 12, 31, 0, 0, 2, 0), Period{years: 1090, months: 110, days: 300, seconds: 10}},
 	}
 	for i, c := range cases {
-		n := Between(c.a, c.b)
-		g.Expect(n).To(Equal(c.expected), info(i, c.expected))
+		pp := Between(c.a, c.b)
+		g.Expect(pp).To(Equal(c.expected), info(i, c.expected))
+
+		pn := Between(c.b, c.a)
+		en := c.expected.Negate()
+		g.Expect(pn).To(Equal(en), info(i, en))
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestNormalise(t *testing.T) {
 	cases := []struct {
@@ -730,6 +756,8 @@ func testNormaliseBothSigns(t *testing.T, i int, source, expected Period, precis
 	g.Expect(n2).To(Equal(eneg))
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestPeriodFormat(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -768,6 +796,8 @@ func TestPeriodFormat(t *testing.T) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func TestPeriodFormatWithoutWeeks(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -803,7 +833,9 @@ func TestPeriodFormatWithoutWeeks(t *testing.T) {
 	}
 }
 
-func TestPeriodParseOnlyYMD(t *testing.T) {
+//-------------------------------------------------------------------------------------------------
+
+func TestPeriodOnlyYMD(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -819,7 +851,7 @@ func TestPeriodParseOnlyYMD(t *testing.T) {
 	}
 }
 
-func TestPeriodParseOnlyHMS(t *testing.T) {
+func TestPeriodOnlyHMS(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	cases := []struct {
@@ -835,6 +867,8 @@ func TestPeriodParseOnlyHMS(t *testing.T) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
+
 func utc(year int, month time.Month, day, hour, min, sec, msec int) time.Time {
 	return time.Date(year, month, day, hour, min, sec, msec*int(time.Millisecond), time.UTC)
 }
@@ -849,6 +883,10 @@ func init() {
 	london, _ = time.LoadLocation("Europe/London")
 }
 
-func info(i int, m interface{}) string {
-	return fmt.Sprintf("%d %v", i, m)
+func info(i int, m ...interface{}) string {
+	if s, ok := m[0].(string); ok {
+		m[0] = i
+		return fmt.Sprintf("%d "+s, m...)
+	}
+	return fmt.Sprintf("%d %v", i, m[0])
 }
