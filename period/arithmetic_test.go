@@ -76,6 +76,7 @@ func TestPeriodAdd(t *testing.T) {
 	}
 	for i, c := range cases {
 		s := MustParse(c.one).Add(MustParse(c.two))
+		expectValid(t, s, info(i, c.expect))
 		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
 	}
 }
@@ -138,24 +139,43 @@ func expectValid(t *testing.T, period Period, hint interface{}) Period {
 	// check all the signs are consistent
 	nPoz := pos(period.years) + pos(period.months) + pos(period.days) + pos(period.hours) + pos(period.minutes) + pos(period.seconds)
 	nNeg := neg(period.years) + neg(period.months) + neg(period.days) + neg(period.hours) + neg(period.minutes) + neg(period.seconds)
-	if nPoz > 0 && nNeg > 0 {
-		t.Errorf("%s: inconsistent signs in\n%#v", info, period)
-	}
+	g.Expect(nPoz == 0 || nNeg == 0).To(BeTrue(), info+" inconsistent signs")
 
 	// only one field must have a fraction
 	yearsFraction := fraction(period.years)
-	//monthsFraction := fraction(period.months)
-	//daysFraction := fraction(period.days)
-	//hoursFraction := fraction(period.hours)
-	//minutesFraction := fraction(period.minutes)
-	//secondsFraction := fraction(period.seconds)
+	monthsFraction := fraction(period.months)
+	daysFraction := fraction(period.days)
+	hoursFraction := fraction(period.hours)
+	minutesFraction := fraction(period.minutes)
 
-	if yearsFraction > 0 {
-		g.Expect(period.months).To(BeZero(), info)
-		g.Expect(period.days).To(BeZero(), info)
-		g.Expect(period.hours).To(BeZero(), info)
-		g.Expect(period.minutes).To(BeZero(), info)
-		g.Expect(period.seconds).To(BeZero(), info)
+	if yearsFraction != 0 {
+		g.Expect(period.months).To(BeZero(), info+" year fraction exists")
+		g.Expect(period.days).To(BeZero(), info+" year fraction exists")
+		g.Expect(period.hours).To(BeZero(), info+" year fraction exists")
+		g.Expect(period.minutes).To(BeZero(), info+" year fraction exists")
+		g.Expect(period.seconds).To(BeZero(), info+" year fraction exists")
+	}
+
+	if monthsFraction != 0 {
+		g.Expect(period.days).To(BeZero(), info+" month fraction exists")
+		g.Expect(period.hours).To(BeZero(), info+" month fraction exists")
+		g.Expect(period.minutes).To(BeZero(), info+" month fraction exists")
+		g.Expect(period.seconds).To(BeZero(), info+" month fraction exists")
+	}
+
+	if daysFraction != 0 {
+		g.Expect(period.hours).To(BeZero(), info+" day fraction exists")
+		g.Expect(period.minutes).To(BeZero(), info+" day fraction exists")
+		g.Expect(period.seconds).To(BeZero(), info+" day fraction exists")
+	}
+
+	if hoursFraction != 0 {
+		g.Expect(period.minutes).To(BeZero(), info+" hour fraction exists")
+		g.Expect(period.seconds).To(BeZero(), info+" hour fraction exists")
+	}
+
+	if minutesFraction != 0 {
+		g.Expect(period.seconds).To(BeZero(), info+" minute fraction exists")
 	}
 
 	return period

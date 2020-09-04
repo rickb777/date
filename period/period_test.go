@@ -736,6 +736,7 @@ func TestBetween(t *testing.T) {
 		g.Expect(pp).To(Equal(c.expected), info(i, c.expected))
 
 		pn := Between(c.b, c.a)
+		expectValid(t, pn, info(i, c.expected))
 		en := c.expected.Negate()
 		g.Expect(pn).To(Equal(en), info(i, en))
 	}
@@ -875,40 +876,6 @@ func testNormalise(t *testing.T, i int, source period64, expected Period, precis
 		d2, pr2 := expected.Duration()
 		g.Expect(pr1).To(Equal(pr2), info)
 		g.Expect(d1).To(Equal(d2), info)
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-
-// FIXME
-func TestNormaliseWithBorrow(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	cases := []struct {
-		source          period64
-		precise, approx Period
-	}{
-		// borrow seconds from minutes
-		//{period64{days: 2, hours: -250}, Period{days: 1, hours: 23, minutes: 59, seconds: 10}, Period{days: 1, hours: 23, minutes: 59, seconds: 10}},
-		//{period64{days: 2, seconds: -50}, Period{days: 1, hours: 23, minutes: 59, seconds: 10}, Period{days: 1, hours: 23, minutes: 59, seconds: 10}},
-		//{period64{minutes: 2, seconds: -50}, Period{minutes: 1, seconds: 10}, Period{minutes: 1, seconds: 10}},
-		//{period64{minutes: 2, seconds: -70}, Period{seconds: 50}, Period{seconds: 50}},
-		//{period64{hours: 2, seconds: -50}, Period{hours: 1, minutes: 59, seconds: 10}, Period{hours: 1, minutes: 59, seconds: 10}},
-	}
-	for i, c := range cases {
-		p1 := c.source // copy before normalise - note the pointer receiver
-		n1, err := p1.normalise64(true).toPeriod()
-		info1 := fmt.Sprintf("%d: %s.Normalise(true) expected %s to equal %s", i, c.source, n1, c.precise)
-		expectValid(t, n1, info1)
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(n1).To(Equal(c.precise), info1)
-
-		p2 := c.source
-		n2, err := p2.normalise64(false).toPeriod()
-		info2 := fmt.Sprintf("%d: %s.Normalise(false) expected %s to equal %s", i, c.source, n2, c.approx)
-		expectValid(t, n2, info2)
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(n2).To(Equal(c.approx), info2)
 	}
 }
 
