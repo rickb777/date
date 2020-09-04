@@ -13,8 +13,15 @@ import (
 )
 
 // Format converts the period to human-readable form using the default localisation.
+// Multiples of 7 days are shown as weeks.
 func (period Period) Format() string {
 	return period.FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, PeriodWeekNames, PeriodDayNames, PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
+}
+
+// FormatWithoutWeeks converts the period to human-readable form using the default localisation.
+// Multiples of 7 days are not shown as weeks.
+func (period Period) FormatWithoutWeeks() string {
+	return period.FormatWithPeriodNames(PeriodYearNames, PeriodMonthNames, plural.Plurals{}, PeriodDayNames, PeriodHourNames, PeriodMinuteNames, PeriodSecondNames)
 }
 
 // FormatWithPeriodNames converts the period to human-readable form in a localisable way.
@@ -94,14 +101,14 @@ func (p64 period64) String() string {
 
 	buf.WriteByte('P')
 
-	writeField64(buf, p64.years, 'Y')
-	writeField64(buf, p64.months, 'M')
+	writeField64(buf, p64.years, byte(Year))
+	writeField64(buf, p64.months, byte(Month))
 
 	if p64.days != 0 {
 		if p64.days%70 == 0 {
-			writeField64(buf, p64.days/7, 'W')
+			writeField64(buf, p64.days/7, byte(Week))
 		} else {
-			writeField64(buf, p64.days, 'D')
+			writeField64(buf, p64.days, byte(Day))
 		}
 	}
 
@@ -109,9 +116,9 @@ func (p64 period64) String() string {
 		buf.WriteByte('T')
 	}
 
-	writeField64(buf, p64.hours, 'H')
-	writeField64(buf, p64.minutes, 'M')
-	writeField64(buf, p64.seconds, 'S')
+	writeField64(buf, p64.hours, byte(Hour))
+	writeField64(buf, p64.minutes, byte(Minute))
+	writeField64(buf, p64.seconds, byte(Second))
 
 	return buf.String()
 }

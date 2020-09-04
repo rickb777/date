@@ -335,58 +335,6 @@ func TestPeriodFloatComponents(t *testing.T) {
 	}
 }
 
-func TestPeriodAddToTime(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	const ms = 1000000
-	const sec = 1000 * ms
-	const min = 60 * sec
-	const hr = 60 * min
-
-	// A conveniently round number (14 July 2017 @ 2:40am UTC)
-	var t0 = time.Unix(1500000000, 0).UTC()
-
-	cases := []struct {
-		value   string
-		result  time.Time
-		precise bool
-	}{
-		// precise cases
-		{"P0D", t0, true},
-		{"PT1S", t0.Add(sec), true},
-		{"PT0.1S", t0.Add(100 * ms), true},
-		{"-PT0.1S", t0.Add(-100 * ms), true},
-		{"PT3276S", t0.Add(3276 * sec), true},
-		{"PT1M", t0.Add(60 * sec), true},
-		{"PT0.1M", t0.Add(6 * sec), true},
-		{"PT3276M", t0.Add(3276 * min), true},
-		{"PT1H", t0.Add(hr), true},
-		{"PT0.1H", t0.Add(6 * min), true},
-		{"PT3276H", t0.Add(3276 * hr), true},
-		{"P1D", t0.AddDate(0, 0, 1), true},
-		{"P3276D", t0.AddDate(0, 0, 3276), true},
-		{"P1M", t0.AddDate(0, 1, 0), true},
-		{"P3276M", t0.AddDate(0, 3276, 0), true},
-		{"P1Y", t0.AddDate(1, 0, 0), true},
-		{"-P1Y", t0.AddDate(-1, 0, 0), true},
-		{"P3276Y", t0.AddDate(3276, 0, 0), true},   // near the upper limit of range
-		{"-P3276Y", t0.AddDate(-3276, 0, 0), true}, // near the lower limit of range
-		// approximate cases
-		{"P0.1D", t0.Add(144 * min), false},
-		{"-P0.1D", t0.Add(-144 * min), false},
-		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
-		{"P0.1Y", t0.Add(oneYearApprox / 10), false},
-		// after normalisation, this period is one month and 9.2 days
-		{"-P0.1Y0.1M0.1D", t0.Add(-oneMonthApprox - (13248 * min)), false},
-	}
-	for i, c := range cases {
-		p := MustParse(c.value)
-		t1, prec := p.AddTo(t0)
-		g.Expect(t1).To(Equal(c.result), info(i, c.value))
-		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
-	}
-}
-
 func TestPeriodToDuration(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -810,74 +758,6 @@ func TestPeriodFormat(t *testing.T) {
 	for i, c := range cases {
 		s := MustParse(c.period).Format()
 		g.Expect(s).To(Equal(c.expect), info(i, c.expect))
-	}
-}
-
-func TestPeriodScale(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	cases := []struct {
-		one    string
-		m      float32
-		expect string
-	}{
-		{"P0D", 2, "P0D"},
-		{"P1D", 2, "P2D"},
-		{"P1D", 0, "P0D"},
-		{"P1D", 365, "P365D"},
-		{"P1M", 2, "P2M"},
-		{"P1M", 12, "P1Y"},
-		//TODO {"P1Y3M", 1.0/15, "P1M"},
-		{"P1Y", 2, "P2Y"},
-		{"PT1H", 2, "PT2H"},
-		{"PT1M", 2, "PT2M"},
-		{"PT1S", 2, "PT2S"},
-		{"P1D", 0.5, "P0.5D"},
-		{"P1M", 0.5, "P0.5M"},
-		{"P1Y", 0.5, "P0.5Y"},
-		{"PT1H", 0.5, "PT0.5H"},
-		{"PT1H", 0.1, "PT6M"},
-		//TODO {"PT1H", 0.01, "PT36S"},
-		{"PT1M", 0.5, "PT0.5M"},
-		{"PT1S", 0.5, "PT0.5S"},
-		{"PT1H", 1.0 / 3600, "PT1S"},
-		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
-		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
-		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
-		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
-		{"PT1M", 60, "PT1H"},
-		{"PT1S", 60, "PT1M"},
-		{"PT1S", 86400, "PT24H"},
-		{"PT1S", 86400000, "P1000D"},
-		{"P365.5D", 10, "P10Y2.5D"},
-		//{"P365.5D", 0.1, "P36DT12H"},
-	}
-	for i, c := range cases {
-		s := MustParse(c.one).Scale(c.m)
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
-	}
-}
-
-func TestPeriodAdd(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	cases := []struct {
-		one, two string
-		expect   string
-	}{
-		{"P0D", "P0D", "P0D"},
-		{"P1D", "P1D", "P2D"},
-		{"P1M", "P1M", "P2M"},
-		{"P1Y", "P1Y", "P2Y"},
-		{"PT1H", "PT1H", "PT2H"},
-		{"PT1M", "PT1M", "PT2M"},
-		{"PT1S", "PT1S", "PT2S"},
-		{"P1Y2M3DT4H5M6S", "P6Y5M4DT3H2M1S", "P7Y7M7DT7H7M7S"},
-		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
-	}
-	for i, c := range cases {
-		s := MustParse(c.one).Add(MustParse(c.two))
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
 	}
 }
 

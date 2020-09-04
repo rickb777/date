@@ -51,6 +51,8 @@ type Period struct {
 // need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
+// Because this implementation uses int16 internally, the paramters must
+// be within the range ± 2^16 / 10.
 func NewYMD(years, months, days int) Period {
 	return New(years, months, days, 0, 0, 0)
 }
@@ -60,6 +62,8 @@ func NewYMD(years, months, days int) Period {
 // if you need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
+// Because this implementation uses int16 internally, the paramters must
+// be within the range ± 2^16 / 10.
 func NewHMS(hours, minutes, seconds int) Period {
 	return New(0, 0, 0, hours, minutes, seconds)
 }
@@ -80,8 +84,6 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dDT%dH%dM%dS",
 		years, months, days, hours, minutes, seconds))
 }
-
-// TODO NewFloat
 
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
 // Any time duration that spans more than ± 3276 hours will be approximated by assuming that there
@@ -258,66 +260,16 @@ func (period Period) absNeg() (Period, bool) {
 	return period, false
 }
 
+func (period Period) condNegate(neg bool) Period {
+	if neg {
+		return period.Negate()
+	}
+	return period
+}
+
 // Negate changes the sign of the period.
 func (period Period) Negate() Period {
 	return Period{-period.years, -period.months, -period.days, -period.hours, -period.minutes, -period.seconds}
-}
-
-// Add adds two periods together. Use this method along with Negate in order to subtract periods.
-//
-// The result is not normalised and may overflow arithmetically (to make this unlikely, use Normalise on
-// the inputs before adding them).
-func (period Period) Add(that Period) Period {
-	return Period{
-		period.years + that.years,
-		period.months + that.months,
-		period.days + that.days,
-		period.hours + that.hours,
-		period.minutes + that.minutes,
-		period.seconds + that.seconds,
-	}
-}
-
-// Scale a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
-// and change the sign if negative. The result is normalised, but integer overflows are silently
-// ignored.
-//
-// Bear in mind that the internal representation is limited by fixed-point arithmetic with one
-// decimal place; each field is only int16.
-//
-// Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
-func (period Period) Scale(factor float32) Period {
-	result, _ := period.ScaleWithOverflowCheck(factor)
-	return result
-}
-
-// ScaleWithOverflowCheck a period by a multiplication factor. Obviously, this can both enlarge and shrink it,
-// and change the sign if negative. The result is normalised. An error is returned if integer overflow
-// happened.
-//
-// Bear in mind that the internal representation is limited by fixed-point arithmetic with one
-// decimal place; each field is only int16.
-//
-// Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
-func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
-	ap, neg := period.absNeg()
-
-	if -0.5 < factor && factor < 0.5 {
-		d, pr1 := ap.Duration()
-		mul := float64(d) * float64(factor)
-		p2, pr2 := NewOf(time.Duration(mul))
-		return p2.Normalise(pr1 && pr2), nil
-	}
-
-	y := int64(float32(ap.years) * factor)
-	m := int64(float32(ap.months) * factor)
-	d := int64(float32(ap.days) * factor)
-	hh := int64(float32(ap.hours) * factor)
-	mm := int64(float32(ap.minutes) * factor)
-	ss := int64(float32(ap.seconds) * factor)
-
-	p64 := &period64{years: y, months: m, days: d, hours: hh, minutes: mm, seconds: ss, neg: neg}
-	return p64.normalise64(true).toPeriod()
 }
 
 func absInt16(v int16) int16 {
@@ -444,29 +396,7 @@ func (period Period) SecondsFloat() float32 {
 	return float32(period.seconds) / 10
 }
 
-// AddTo adds the period to a time, returning the result.
-// A flag is also returned that is true when the conversion was precise and false otherwise.
-//
-// When the period specifies hours, minutes and seconds only, the result is precise.
-// Also, when the period specifies whole years, months and days (i.e. without fractions), the
-// result is precise. However, when years, months or days contains fractions, the result
-// is only an approximation (it assumes that all days are 24 hours and every year is 365.2425
-// days, as per Gregorian calendar rules).
-func (period Period) AddTo(t time.Time) (time.Time, bool) {
-	wholeYears := (period.years % 10) == 0
-	wholeMonths := (period.months % 10) == 0
-	wholeDays := (period.days % 10) == 0
-
-	if wholeYears && wholeMonths && wholeDays {
-		// in this case, time.AddDate provides an exact solution
-		stE3 := totalSecondsE3(period)
-		t1 := t.AddDate(int(period.years/10), int(period.months/10), int(period.days/10))
-		return t1.Add(stE3 * time.Millisecond), true
-	}
-
-	d, precise := period.Duration()
-	return t.Add(d), precise
-}
+//-------------------------------------------------------------------------------------------------
 
 // DurationApprox converts a period to the equivalent duration in nanoseconds.
 // When the period specifies hours, minutes and seconds only, the result is precise.
