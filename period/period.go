@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-const daysPerYearE4 int64 = 3652425   // 365.2425 days by the Gregorian rule
-const daysPerMonthE4 int64 = 304369   // 30.4369 days per month
-const daysPerMonthE6 int64 = 30436875 // 30.436875 days per month
+const daysPerYearE4 = 3652425   // 365.2425 days by the Gregorian rule
+const daysPerMonthE4 = 304369   // 30.4369 days per month
+const daysPerMonthE6 = 30436875 // 30.436875 days per month
 
-const oneE4 int64 = 10000
-const oneE6 int64 = 1000000
-const oneE7 int64 = 10000000
+const oneE4 = 10000
+const oneE6 = 1000000
+const oneE7 = 10000000
 
 const hundredMs = 100 * time.Millisecond
 

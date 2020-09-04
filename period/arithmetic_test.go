@@ -5,6 +5,7 @@
 package period
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -120,8 +121,6 @@ func TestPeriodAddToTime(t *testing.T) {
 		{"-P0.1D", t0.Add(-144 * min), false},
 		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
 		{"P0.1Y", t0.Add(oneYearApprox / 10), false},
-		// after normalisation, this period is one month and 9.2 days
-		{"-P0.1Y0.1M0.1D", t0.Add(-oneMonthApprox - (13248 * min)), false},
 	}
 	for i, c := range cases {
 		p := MustParse(c.value)
@@ -129,4 +128,53 @@ func TestPeriodAddToTime(t *testing.T) {
 		g.Expect(t1).To(Equal(c.result), info(i, c.value))
 		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
 	}
+}
+
+func expectValid(t *testing.T, period Period, hint interface{}) Period {
+	t.Helper()
+	g := NewGomegaWithT(t)
+	info := fmt.Sprintf("%v: invalid: %#v", hint, period)
+
+	// check all the signs are consistent
+	nPoz := pos(period.years) + pos(period.months) + pos(period.days) + pos(period.hours) + pos(period.minutes) + pos(period.seconds)
+	nNeg := neg(period.years) + neg(period.months) + neg(period.days) + neg(period.hours) + neg(period.minutes) + neg(period.seconds)
+	if nPoz > 0 && nNeg > 0 {
+		t.Errorf("%s: inconsistent signs in\n%#v", info, period)
+	}
+
+	// only one field must have a fraction
+	yearsFraction := fraction(period.years)
+	//monthsFraction := fraction(period.months)
+	//daysFraction := fraction(period.days)
+	//hoursFraction := fraction(period.hours)
+	//minutesFraction := fraction(period.minutes)
+	//secondsFraction := fraction(period.seconds)
+
+	if yearsFraction > 0 {
+		g.Expect(period.months).To(BeZero(), info)
+		g.Expect(period.days).To(BeZero(), info)
+		g.Expect(period.hours).To(BeZero(), info)
+		g.Expect(period.minutes).To(BeZero(), info)
+		g.Expect(period.seconds).To(BeZero(), info)
+	}
+
+	return period
+}
+
+func fraction(i int16) int {
+	return int(i) % 10
+}
+
+func pos(i int16) int {
+	if i > 0 {
+		return 1
+	}
+	return 0
+}
+
+func neg(i int16) int {
+	if i < 0 {
+		return 1
+	}
+	return 0
 }

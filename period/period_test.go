@@ -27,45 +27,48 @@ func TestParseErrors(t *testing.T) {
 		expvalue  string
 	}{
 		{"", false, "cannot parse a blank string as a period", ""},
-		{"XY", false, "expected 'P' period mark at the start: ", "XY"},
-		{"PxY", false, "expected a number before the 'Y' designator: ", "PxY"},
-		{"PxW", false, "expected a number before the 'W' designator: ", "PxW"},
-		{"PxD", false, "expected a number before the 'D' designator: ", "PxD"},
-		{"PTxH", false, "expected a number before the 'H' designator: ", "PTxH"},
-		{"PTxM", false, "expected a number before the 'M' designator: ", "PTxM"},
-		{"PTxS", false, "expected a number before the 'S' designator: ", "PTxS"},
-		{"P1HT1M", false, "unexpected remaining components 1H: ", "P1HT1M"},
-		{"PT1Y", false, "unexpected remaining components 1Y: ", "PT1Y"},
-		{"P1S", false, "unexpected remaining components 1S: ", "P1S"},
+		{`P000`, false, `: missing designator at the end`, "P000"},
+		{"XY", false, ": expected 'P' period mark at the start", "XY"},
+		{"PxY", false, ": expected a number but found 'x'", "PxY"},
+		{"PxW", false, ": expected a number but found 'x'", "PxW"},
+		{"PxD", false, ": expected a number but found 'x'", "PxD"},
+		{"PTxH", false, ": expected a number but found 'x'", "PTxH"},
+		{"PTxM", false, ": expected a number but found 'x'", "PTxM"},
+		{"PTxS", false, ": expected a number but found 'x'", "PTxS"},
+		{"P1HT1M", false, ": 'H' designator cannot occur here", "P1HT1M"},
+		{"PT1Y", false, ": 'Y' designator cannot occur here", "PT1Y"},
+		{"P1S", false, ": 'S' designator cannot occur here", "P1S"},
+		{"P1D2D", false, ": 'D' designator cannot occur more than once", "P1D2D"},
+		{"PT1HT1S", false, ": 'T' designator cannot occur more than once", "PT1HT1S"},
+		{"P0.1YT0.1S", false, ": 'Y' & 'S' only the last field can have a fraction", "P0.1YT0.1S"},
+		{"P", false, ": expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator", "P"},
 		// integer overflow
-		{"P32768Y", false, "integer overflow occurred in years: ", "P32768Y"},
-		{"P32768M", false, "integer overflow occurred in months: ", "P32768M"},
-		{"P32768D", false, "integer overflow occurred in days: ", "P32768D"},
-		{"PT32768H", false, "integer overflow occurred in hours: ", "PT32768H"},
-		{"PT32768M", false, "integer overflow occurred in minutes: ", "PT32768M"},
-		{"PT32768S", false, "integer overflow occurred in seconds: ", "PT32768S"},
-		{"PT32768H32768M32768S", false, "integer overflow occurred in hours,minutes,seconds: ", "PT32768H32768M32768S"},
-		{"PT103412160000S", false, "integer overflow occurred in seconds: ", "PT103412160000S"},
-		{"P39324M", true, "integer overflow occurred in years: ", "P39324M"},
-		{"P1196900D", true, "integer overflow occurred in years: ", "P1196900D"},
-		{"PT28725600H", true, "integer overflow occurred in years: ", "PT28725600H"},
-		{"PT1723536000M", true, "integer overflow occurred in years: ", "PT1723536000M"},
-		{"PT103412160000S", true, "integer overflow occurred in years: ", "PT103412160000S"},
+		{"P32768Y", false, ": integer overflow occurred in years", "P32768Y"},
+		{"P32768M", false, ": integer overflow occurred in months", "P32768M"},
+		{"P32768W", false, ": integer overflow occurred in days", "P32768W"},
+		{"P32768D", false, ": integer overflow occurred in days", "P32768D"},
+		{"PT32768H", false, ": integer overflow occurred in hours", "PT32768H"},
+		{"PT32768M", false, ": integer overflow occurred in minutes", "PT32768M"},
+		{"PT32768S", false, ": integer overflow occurred in seconds", "PT32768S"},
+		{"PT32768H32768M32768S", false, ": integer overflow occurred in hours,minutes,seconds", "PT32768H32768M32768S"},
+		{"PT103412160000S", false, ": integer overflow occurred in seconds", "PT103412160000S"},
 	}
 	for i, c := range cases {
-		_, ep := ParseWithNormalise(c.value, c.normalise)
+		_, ep := Parse(c.value, c.normalise)
 		g.Expect(ep).To(HaveOccurred(), info(i, c.value))
-		g.Expect(ep.Error()).To(Equal(c.expected+c.expvalue), info(i, c.value))
+		g.Expect(ep.Error()).To(Equal(c.expvalue+c.expected), info(i, c.value))
 
-		_, en := ParseWithNormalise("-"+c.value, c.normalise)
+		_, en := Parse("-"+c.value, c.normalise)
 		g.Expect(en).To(HaveOccurred(), info(i, c.value))
 		if c.expvalue != "" {
-			g.Expect(en.Error()).To(Equal(c.expected+"-"+c.expvalue), info(i, c.value))
+			g.Expect(en.Error()).To(Equal("-"+c.expvalue+c.expected), info(i, c.value))
 		} else {
 			g.Expect(en.Error()).To(Equal(c.expected), info(i, c.value))
 		}
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestParsePeriodWithNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -95,12 +98,16 @@ func TestParsePeriodWithNormalise(t *testing.T) {
 	}
 	for i, c := range cases {
 		p, err := Parse(c.value)
-		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
-		g.Expect(p).To(Equal(c.period), info(i, c.value))
+		s := info(i, c.value)
+		g.Expect(err).NotTo(HaveOccurred(), s)
+		expectValid(t, p, s)
+		g.Expect(p).To(Equal(c.period), s)
 		// reversal is expected not to be an identity
-		g.Expect(p.String()).To(Equal(c.reversed), info(i, c.value)+" reversed")
+		g.Expect(p.String()).To(Equal(c.reversed), s+" reversed")
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestParsePeriodWithoutNormalise(t *testing.T) {
 	g := NewGomegaWithT(t)
@@ -163,13 +170,9 @@ func TestParsePeriodWithoutNormalise(t *testing.T) {
 		{"P2.Y", "P2Y", Period{years: 20}},
 		{"P2.5Y", "P2.5Y", Period{years: 25}},
 		{"P2.15Y", "P2.1Y", Period{years: 21}},
-		{"P2.125Y", "P2.1Y", Period{years: 21}},
 		{"P1Y2.M", "P1Y2M", Period{years: 10, months: 20}},
 		{"P1Y2.5M", "P1Y2.5M", Period{years: 10, months: 25}},
 		{"P1Y2.15M", "P1Y2.1M", Period{years: 10, months: 21}},
-		{"P1Y2.125M", "P1Y2.1M", Period{years: 10, months: 21}},
-		{"P3276.7Y", "P3276.7Y", Period{years: 32767}},
-		{"-P3276.7Y", "-P3276.7Y", Period{years: -32767}},
 		// others
 		{"P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 30, months: 60, days: 390, hours: 120, minutes: 400, seconds: 50}},
 		{"+P3Y6M5W4DT12H40M5S", "P3Y6M39DT12H40M5S", Period{years: 30, months: 60, days: 390, hours: 120, minutes: 400, seconds: 50}},
@@ -177,13 +180,17 @@ func TestParsePeriodWithoutNormalise(t *testing.T) {
 		{"P1Y14M35DT48H125M800S", "P1Y14M5WT48H125M800S", Period{years: 10, months: 140, days: 350, hours: 480, minutes: 1250, seconds: 8000}},
 	}
 	for i, c := range cases {
-		p, err := ParseWithNormalise(c.value, false)
-		g.Expect(err).NotTo(HaveOccurred(), info(i, c.value))
-		g.Expect(p).To(Equal(c.period), info(i, c.value))
+		p, err := Parse(c.value, false)
+		s := info(i, c.value)
+		g.Expect(err).NotTo(HaveOccurred(), s)
+		expectValid(t, p, s)
+		g.Expect(p).To(Equal(c.period), s)
 		// reversal is usually expected to be an identity
-		g.Expect(p.String()).To(Equal(c.reversed), info(i, c.value)+" reversed")
+		g.Expect(p.String()).To(Equal(c.reversed), s+" reversed")
 	}
 }
+
+//-------------------------------------------------------------------------------------------------
 
 func TestPeriodString(t *testing.T) {
 	g := NewGomegaWithT(t)

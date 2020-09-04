@@ -82,12 +82,12 @@ func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
 		return p2.Normalise(pr1 && pr2), nil
 	}
 
-	y := int64(float32(ap.years) * factor)
-	m := int64(float32(ap.months) * factor)
-	d := int64(float32(ap.days) * factor)
-	hh := int64(float32(ap.hours) * factor)
-	mm := int64(float32(ap.minutes) * factor)
-	ss := int64(float32(ap.seconds) * factor)
+	y := int(float32(ap.years) * factor)
+	m := int(float32(ap.months) * factor)
+	d := int(float32(ap.days) * factor)
+	hh := int(float32(ap.hours) * factor)
+	mm := int(float32(ap.minutes) * factor)
+	ss := int(float32(ap.seconds) * factor)
 
 	p64 := &period64{years: y, months: m, days: d, hours: hh, minutes: mm, seconds: ss, neg: neg}
 	return p64.normalise64(true).toPeriod()
