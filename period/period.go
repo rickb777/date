@@ -14,6 +14,7 @@ const daysPerMonthE4 = 304369   // 30.4369 days per month
 const daysPerMonthE6 = 30436875 // 30.436875 days per month
 
 const oneE4 = 10000
+const oneE5 = 100000
 const oneE6 = 1000000
 const oneE7 = 10000000
 
@@ -480,91 +481,6 @@ func (period Period) TotalMonthsApprox() int {
 //
 // Note that leap seconds are disregarded: every minute is assumed to have 60 seconds.
 func (period Period) Normalise(precise bool) Period {
-	n, _ := normalise(period, "", precise)
+	n, _ := period.toPeriod64("").normalise64(precise).toPeriod()
 	return n
-}
-
-func normalise(period Period, input string, precise bool) (Period, error) {
-	const limit = 32670 - (32670 / 60)
-
-	// can we use a quicker algorithm for HHMMSS with int16 arithmetic?
-	if period.years == 0 && period.months == 0 &&
-		(!precise || period.days == 0) &&
-		period.hours > -limit && period.hours < limit {
-
-		return period.normaliseHHMMSS(precise), nil
-	}
-
-	// can we use a quicker algorithm for YYMM with int16 arithmetic?
-	if (period.years != 0 || period.months != 0) &&
-		period.days == 0 && period.hours == 0 && period.minutes == 0 && period.seconds == 0 {
-
-		return period.normaliseYYMM(), nil
-	}
-
-	// do things the no-nonsense way using int64 arithmetic
-	return period.toPeriod64(input).normalise64(precise).toPeriod()
-}
-
-func (period Period) normaliseHHMMSS(precise bool) Period {
-	ap, neg := period.absNeg()
-
-	// remember that the fields are all fixed-point 1E1
-	ap.minutes += (ap.seconds / 600) * 10
-	ap.seconds = ap.seconds % 600
-
-	ap.hours += (ap.minutes / 600) * 10
-	ap.minutes = ap.minutes % 600
-
-	// up to 36 hours stays as hours
-	if !precise && ap.hours > 360 {
-		ap.days += (ap.hours / 240) * 10
-		ap.hours = ap.hours % 240
-	}
-
-	d10 := ap.days % 10
-	if d10 != 0 && (ap.hours != 0 || ap.minutes != 0 || ap.seconds != 0) {
-		ap.hours += d10 * 24
-		ap.days -= d10
-	}
-
-	hh10 := ap.hours % 10
-	if hh10 != 0 {
-		ap.minutes += hh10 * 60
-		ap.hours -= hh10
-	}
-
-	mm10 := ap.minutes % 10
-	if mm10 != 0 {
-		ap.seconds += mm10 * 60
-		ap.minutes -= mm10
-	}
-
-	if neg {
-		return ap.Negate()
-	}
-	return ap
-}
-
-func (period Period) normaliseYYMM() Period {
-	// remember that the fields are all fixed-point 1E1
-	ap, neg := period.absNeg()
-
-	// bubble month to years
-	if ap.months > 129 { //TODO 119???
-		ap.years += (ap.months / 120) * 10
-		ap.months = ap.months % 120
-	}
-
-	// push year-fraction down
-	y10 := ap.years % 10
-	if y10 != 0 && (ap.years < 10 || ap.months != 0) {
-		ap.months += y10 * 12
-		ap.years -= y10
-	}
-
-	if neg {
-		return ap.Negate()
-	}
-	return ap
 }
