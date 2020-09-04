@@ -15,7 +15,7 @@ import (
 // The result is not normalised and may overflow arithmetically (to make this unlikely, use Normalise on
 // the inputs before adding them).
 func (period Period) Add(that Period) Period {
-	if period.fpart == that.fpart || period.fpart == NoFraction || that.fpart == NoFraction {
+	if (period.fpart == that.fpart || period.fpart == NoFraction || that.fpart == NoFraction) && (period.Sign() == that.Sign()) {
 		return period.simpleAdd(that)
 	}
 
@@ -73,21 +73,23 @@ func (period Period) simpleAdd(that Period) Period {
 }
 
 func (period Period) nonTrivialAdd(that Period) Period {
-	ap, neg := period.absNeg()
+	neg := false
+	cym := period.centiYM() + that.centiYM()
+	cd := period.centiDays() + that.centiDays()
+	chms := period.centiHMS() + that.centiHMS()
 
-	cym := ap.centiYM()
-	cd := ap.centiDays()
-	chms := ap.centiHMS()
-
-	p64 := &period64{
-		months:  cym / 100,
-		days:    cd / 100,
-		seconds: chms / 100,
-		neg:     neg,
+	if cym >= 0 && cd >= 0 && chms >= 0 {
+		p, _ := p64Of(cym, cd, chms, false).toPeriod()
+		return p
 	}
 
-	r, _ := p64.normalise64(true).toPeriod()
-	panic(r)
+	cym = -cym
+	cd = -cd
+	chms = -chms
+	neg = true
+
+	p, _ := p64Of(cym, cd, chms, neg).toPeriod()
+	return p
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -182,7 +184,7 @@ func (period Period) rationalScale64(m, d int64) (Period, error) {
 			mchms = mcd * 24
 			mcd = 0
 		}
-		return integralScaledResult(mcym/d, scd, mchms/d, neg)
+		return p64Of(mcym/d, scd, mchms/d, neg).toPeriod()
 	}
 
 	// fall back on reliable but approximate algorithm
@@ -195,33 +197,4 @@ func (period Period) rationalScale64(m, d int64) (Period, error) {
 	p2, pr2 := NewOf(time.Duration(mul) + 5*time.Millisecond)
 	precise := pr1 && pr2
 	return p2.condNegate(neg).Normalise(precise).Simplify(precise), nil
-}
-
-func integralScaledResult(ymi, di, hmsi int64, neg bool) (Period, error) {
-	p64 := &period64{
-		months:  ymi / 100,
-		days:    di / 100,
-		seconds: hmsi / 100,
-		neg:     neg,
-	}
-
-	ymf := ymi % 100
-	if ymf != 0 {
-		p64.fraction = int8(ymf)
-		p64.fpart = Month
-	}
-
-	df := di % 100
-	if df != 0 {
-		p64.fraction = int8(df)
-		p64.fpart = Day
-	}
-
-	sf := hmsi % 100
-	if sf != 0 {
-		p64.fraction = int8(sf)
-		p64.fpart = Second
-	}
-
-	return p64.normalise64(true).toPeriod()
 }

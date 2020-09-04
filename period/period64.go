@@ -19,6 +19,35 @@ type period64 struct {
 	input string
 }
 
+func p64Of(cym, cd, chms int64, neg bool) *period64 {
+	p64 := &period64{
+		months:  cym / 100,
+		days:    cd / 100,
+		seconds: chms / 100,
+		neg:     neg,
+	}
+
+	ymf := cym % 100
+	if ymf != 0 {
+		p64.fraction = int8(ymf)
+		p64.fpart = Month
+	}
+
+	df := cd % 100
+	if df != 0 {
+		p64.fraction = int8(df)
+		p64.fpart = Day
+	}
+
+	sf := chms % 100
+	if sf != 0 {
+		p64.fraction = int8(sf)
+		p64.fpart = Second
+	}
+
+	return p64.normalise64(true)
+}
+
 func (period Period) toPeriod64(input string) *period64 {
 	if period.IsNegative() {
 		return &period64{
@@ -87,6 +116,7 @@ func (p64 *period64) toPeriod() (Period, error) {
 	}, nil
 }
 
+// normalise64 operates on values in which all fields are positive
 func (p64 *period64) normalise64(precise bool) *period64 {
 	return p64.rippleUp(precise).
 		reduceYearsFraction().
@@ -96,24 +126,29 @@ func (p64 *period64) normalise64(precise bool) *period64 {
 }
 
 func (p64 *period64) rippleUp(precise bool) *period64 {
-	if p64.seconds != 0 {
-		p64.minutes += p64.seconds / 60
-		p64.seconds %= 60
+	hms := (p64.hours * 3600) + (p64.minutes * 60) + p64.seconds
+
+	if hms < 0 {
+		dd := (hms / 86400) - 1
+		p64.days += dd
+		hms -= dd * 86400
 	}
 
-	if p64.minutes != 0 {
-		p64.hours += p64.minutes / 60
-		p64.minutes %= 60
-	}
+	p64.hours = hms / 3600
+	p64.minutes = (hms / 60) - (p64.hours * 60)
+	p64.seconds = hms % 60
 
 	if !precise || p64.hours > math.MaxInt16 {
 		p64.days += p64.hours / 24
 		p64.hours %= 24
+		if p64.hours < 0 {
+			p64.hours = -p64.hours
+		}
 	}
 
 	// this section can introduce small arithmetic errors so
 	// it is only used prevent overflow
-	if p64.days > math.MaxInt16 {
+	if p64.days > math.MaxInt16 || p64.days < 0 {
 		totalHours := float64((p64.days * 24) + p64.hours)
 		deltaMonthsF := totalHours / hoursPerMonthF
 		deltaMonths, remMonthsF := math.Modf(deltaMonthsF)
