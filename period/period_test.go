@@ -979,6 +979,114 @@ func TestPeriodOnlyHMS(t *testing.T) {
 
 //-------------------------------------------------------------------------------------------------
 
+func TestSimplify(t *testing.T) {
+	cases := []struct {
+		source, precise, approx string
+	}{
+		// note: the negative cases are also covered (see below)
+
+		// simplify 1 year to months (a = 9)
+		{source: "P1Y"},
+		{source: "P1Y10M"},
+		{source: "P1Y9M", precise: "P21M"},
+		{source: "P1Y8.9M", precise: "P20.9M"},
+
+		// simplify 1 day to hours (approx only) (b = 6)
+		{source: "P1DT6H", precise: "P1DT6H", approx: "PT30H"},
+		{source: "P1DT7H"},
+		{source: "P1DT5.9H", precise: "P1DT5.9H", approx: "PT29.9H"},
+
+		// simplify 1 hour to minutes (c = 10)
+		{source: "PT1H"},
+		{source: "PT1H21M"},
+		{source: "PT1H10M", precise: "PT70M"},
+		{source: "PT1H9.9M", precise: "PT69.9M"},
+
+		// simplify 1 minute to seconds (d = 30)
+		{source: "PT1M"},    // unchanged
+		{source: "PT1M31S"}, // ditto
+		{source: "PT1M30S", precise: "PT90S"},
+		{source: "PT1M29.9S", precise: "PT89.9S"},
+
+		// fractional years don't simplify
+		{source: "P1.1Y"},
+
+		// retained proper fractions
+		{source: "P1Y0.1D"},
+		{source: "P12M0.1D"},
+		{source: "P1YT0.1H"},
+		{source: "P1MT0.1H"},
+		{source: "P1Y0.1M", precise: "P12.1M"},
+		{source: "P1DT0.1H", precise: "P1DT0.1H", approx: "PT24.1H"},
+		{source: "P1YT0.1M"},
+		{source: "P1MT0.1M"},
+		{source: "P1DT0.1M"},
+
+		// discard proper fractions - months
+		{source: "P10Y0.1M", precise: "P10Y0.1M", approx: "P10Y"},
+		// discard proper fractions - days
+		{source: "P1Y0.1D", precise: "P1Y0.1D", approx: "P1Y"},
+		{source: "P12M0.1D", precise: "P12M0.1D", approx: "P12M"},
+		// discard proper fractions - hours
+		{source: "P1YT0.1H", precise: "P1YT0.1H", approx: "P1Y"},
+		{source: "P1MT0.1H", precise: "P1MT0.1H", approx: "P1M"},
+		{source: "P30DT0.1H", precise: "P30DT0.1H", approx: "P30D"},
+		// discard proper fractions - minutes
+		{source: "P1YT0.1M", precise: "P1YT0.1M", approx: "P1Y"},
+		{source: "P1MT0.1M", precise: "P1MT0.1M", approx: "P1M"},
+		{source: "P1DT0.1M", precise: "P1DT0.1M", approx: "P1D"},
+		{source: "PT24H0.1M", precise: "PT24H0.1M", approx: "PT24H"},
+		// discard proper fractions - seconds
+		{source: "P1YT0.1S", precise: "P1YT0.1S", approx: "P1Y"},
+		{source: "P1MT0.1S", precise: "P1MT0.1S", approx: "P1M"},
+		{source: "P1DT0.1S", precise: "P1DT0.1S", approx: "P1D"},
+		{source: "PT1H0.1S", precise: "PT1H0.1S", approx: "PT1H"},
+		{source: "PT60M0.1S", precise: "PT60M0.1S", approx: "PT60M"},
+	}
+	for i, c := range cases {
+		p := MustParse(nospace(c.source), false)
+		if c.precise == "" {
+			// unchanged cases
+			testSimplify(t, i, p, p, true)
+			testSimplify(t, i, p.Negate(), p.Negate(), true)
+
+		} else if c.approx == "" {
+			// changed but precise/approx has same result
+			ep := MustParse(nospace(c.precise), false)
+			testSimplify(t, i, p, ep, true)
+			testSimplify(t, i, p.Negate(), ep.Negate(), true)
+
+		} else {
+			// changed and precise/approx have different results
+			ep := MustParse(nospace(c.precise), false)
+			ea := MustParse(nospace(c.approx), false)
+			testSimplify(t, i, p, ep, true)
+			testSimplify(t, i, p.Negate(), ep.Negate(), true)
+			testSimplify(t, i, p, ea, false)
+			testSimplify(t, i, p.Negate(), ea.Negate(), false)
+		}
+	}
+
+	g := NewGomegaWithT(t)
+	g.Expect(Period{days: 10, hours: 70}.Simplify(false, 6, 7, 30)).To(Equal(Period{hours: 310}))
+	g.Expect(Period{hours: 10, minutes: 300}.Simplify(true, 6, 30)).To(Equal(Period{minutes: 900}))
+	g.Expect(Period{years: 10, months: 110}.Simplify(true, 11)).To(Equal(Period{months: 230}))
+	g.Expect(Period{days: 10, hours: 60}.Simplify(false)).To(Equal(Period{hours: 300}))
+}
+
+func testSimplify(t *testing.T, i int, source Period, expected Period, precise bool) {
+	g := NewGomegaWithT(t)
+	t.Helper()
+
+	sstr := source.String()
+	n := source.Simplify(precise, 9, 6, 10, 30)
+	info := fmt.Sprintf("%d: %s.Simplify(%v) expected %s to equal %s", i, sstr, precise, n, expected)
+	expectValid(t, n, info)
+	g.Expect(n).To(Equal(expected), info)
+}
+
+//-------------------------------------------------------------------------------------------------
+
 func utc(year int, month time.Month, day, hour, min, sec, msec int) time.Time {
 	return time.Date(year, month, day, hour, min, sec, msec*int(time.Millisecond), time.UTC)
 }

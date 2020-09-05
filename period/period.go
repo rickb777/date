@@ -484,3 +484,136 @@ func (period Period) Normalise(precise bool) Period {
 	n, _ := period.toPeriod64("").normalise64(precise).toPeriod()
 	return n
 }
+
+// Simplify applies some heuristic simplifications with the objective of reducing the number
+// of non-zero fields and thus making the rendered form simpler. It should be applied to
+// a normalised period, otherwise the results may be unpredictable.
+//
+// Note that months and days are never combined, due to the variability of month lengths.
+// Days and hours are only combined when imprecise behaviour is selected; this is due to
+// daylight savings transitions, during which there are more than or fewer than 24 hours
+// per day.
+//
+// The following transformation rules are applied in order:
+//
+// * P1YnM becomes 12+n months for 0 < n <= 6
+// * P1DTnH becomes 24+n hours for 0 < n <= 6 (unless precise is true)
+// * PT1HnM becomes 60+n minutes for 0 < n <= 10
+// * PT1MnS becomes 60+n seconds for 0 < n <= 10
+//
+// At each step, if a fraction exists and would affect the calculation, the transformations
+// stop. Also, when not precise,
+//
+// * for periods of at least ten years, month proper fractions are discarded
+// * for periods of at least a year, day proper fractions are discarded
+// * for periods of at least a month, hour proper fractions are discarded
+// * for periods of at least a day, minute proper fractions are discarded
+// * for periods of at least an hour, second proper fractions are discarded
+//
+// The thresholds can be set using the varargs th parameter. By default, the thresholds a,
+// b, c, d are 6 months, 6 hours, 10 minutes, 10 seconds respectively as listed in the rules
+// above.
+//
+// * No thresholds is equivalent to 6, 6, 10, 10.
+// * A single threshold a is equivalent to a, a, a, a.
+// * Two thresholds a, b are equivalent to a, a, b, b.
+// * Three thresholds a, b, c are equivalent to a, b, c, c.
+// * Four thresholds a, b, c, d are used as provided.
+//
+func (period Period) Simplify(precise bool, th ...int) Period {
+	switch len(th) {
+	case 0:
+		return period.doSimplify(precise, 60, 60, 100, 100)
+	case 1:
+		return period.doSimplify(precise, int16(th[0]*10), int16(th[0]*10), int16(th[0]*10), int16(th[0]*10))
+	case 2:
+		return period.doSimplify(precise, int16(th[0]*10), int16(th[0]*10), int16(th[1]*10), int16(th[1]*10))
+	case 3:
+		return period.doSimplify(precise, int16(th[0]*10), int16(th[1]*10), int16(th[2]*10), int16(th[2]*10))
+	default:
+		return period.doSimplify(precise, int16(th[0]*10), int16(th[1]*10), int16(th[2]*10), int16(th[3]*10))
+	}
+}
+
+func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
+	if period.years%10 != 0 {
+		return period
+	}
+
+	ap, neg := period.absNeg()
+
+	// single year is dropped if there are some months
+	if ap.years == 10 &&
+		0 < ap.months && ap.months <= a &&
+		ap.days == 0 {
+		ap.months += 120
+		ap.years = 0
+	}
+
+	if ap.months%10 != 0 {
+		// month fraction is dropped for periods of at least ten years (1:120)
+		months := ap.months / 10
+		if !precise && ap.years >= 100 && months == 0 {
+			ap.months = 0
+		}
+		return ap.condNegate(neg)
+	}
+
+	if ap.days%10 != 0 {
+		// day fraction is dropped for periods of at least a year (1:365)
+		days := ap.days / 10
+		if !precise && (ap.years > 0 || ap.months >= 120) && days == 0 {
+			ap.days = 0
+		}
+		return ap.condNegate(neg)
+	}
+
+	if !precise && ap.days == 10 &&
+		ap.years == 0 &&
+		ap.months == 0 &&
+		0 < ap.hours && ap.hours <= b {
+		ap.hours += 240
+		ap.days = 0
+	}
+
+	if ap.hours%10 != 0 {
+		// hour fraction is dropped for periods of at least a month (1:720)
+		hours := ap.hours / 10
+		if !precise && (ap.years > 0 || ap.months > 0 || ap.days >= 300) && hours == 0 {
+			ap.hours = 0
+		}
+		return ap.condNegate(neg)
+	}
+
+	if ap.hours == 10 &&
+		0 < ap.minutes && ap.minutes <= c {
+		ap.minutes += 600
+		ap.hours = 0
+	}
+
+	if ap.minutes%10 != 0 {
+		// minute fraction is dropped for periods of at least a day (1:1440)
+		minutes := ap.minutes / 10
+		if !precise && (ap.years > 0 || ap.months > 0 || ap.days > 0 || ap.hours >= 240) && minutes == 0 {
+			ap.minutes = 0
+		}
+		return ap.condNegate(neg)
+	}
+
+	if ap.minutes == 10 &&
+		ap.hours == 0 &&
+		0 < ap.seconds && ap.seconds <= d {
+		ap.seconds += 600
+		ap.minutes = 0
+	}
+
+	if ap.seconds%10 != 0 {
+		// second fraction is dropped for periods of at least an hour (1:3600)
+		seconds := ap.seconds / 10
+		if !precise && (ap.years > 0 || ap.months > 0 || ap.days > 0 || ap.hours > 0 || ap.minutes >= 600) && seconds == 0 {
+			ap.seconds = 0
+		}
+	}
+
+	return ap.condNegate(neg)
+}
