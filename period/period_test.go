@@ -779,13 +779,8 @@ func TestNormaliseUnchanged(t *testing.T) {
 		{period64{minutes: 11}},
 		{period64{seconds: 11}},
 
-		// don't carry days to months...
-		{period64{days: 304}},
-		//{period64{days: 32767}},
-
-		// don't carry MaxInt16 - 1 where it would cause small arithmetic errors
-		//{period64{years: 32767}},
-		//{period64{days: 32767}},
+		// don't carry days to months
+		// don't carry months to years
 	}
 	for i, c := range cases {
 		p, err := c.source.toPeriod()
@@ -817,33 +812,26 @@ func TestNormaliseChanged(t *testing.T) {
 		{source: period64{minutes: 700}, precise: "PT1H10M"},
 		{source: period64{minutes: 6990}, precise: "PT11H39M"},
 
-		// simplify 1 hour to minutes
-		//{period64{hours: 12}, Period{hours: 10, minutes: 120}, Period{hours: 10, minutes: 120}},
-		//{period64{hours: 18}, Period{hours: 10, minutes: 480}, Period{hours: 10, minutes: 480}},
-
 		// carry hours to days
 		{source: period64{hours: 480}, precise: "PT48H", approx: "P2D"},
 		{source: period64{hours: 490}, precise: "PT49H", approx: "P2D T1H"},
-		{source: period64{hours: 32767}, precise: "PT3276.7H", approx: "P4M 14D T 17.5H"},
+		{source: period64{hours: 32761}, precise: "PT3276.1H", approx: "P4M 14D T 16.9H"},
 		{source: period64{years: 10, months: 20, days: 30, hours: 32767}, precise: "P1Y 2M 3D T3276.7H", approx: "P1Y 6M 17D T17.5H"},
 		{source: period64{hours: 32768}, precise: "P136DT12.8H", approx: "P4M 14D T17.6H"},
 		{source: period64{years: 10, months: 20, days: 30, hours: 32768}, precise: "P1Y 2M 139D T12.8H", approx: "P1Y 6M 17D T17.6H"},
 
+		// carry days to months
+		{source: period64{days: 310}, precise: "P31D", approx: "P1M 0.5D"},
+		{source: period64{days: 32760}, precise: "P3276D", approx: "P8Y 11M 19.2D"},
+		{source: period64{days: 32761}, precise: "P8Y 11M 19.3D"},
+
 		// carry months to years
 		{source: period64{months: 120}, precise: "P1Y"},
-		{source: period64{months: 130}, precise: "P1Y 1M"},
+		{source: period64{months: 132}, precise: "P1Y 1.2M"},
 		{source: period64{months: 250}, precise: "P2Y 1M"},
-
-		// carry days to prevent overflow
-		{source: period64{days: 32768}, precise: "P8Y 11M 20D"},
 
 		// full ripple up
 		{source: period64{months: 130, days: 310, hours: 240, minutes: 600, seconds: 611}, precise: "P1Y 1M 31D T25H 1M 1.1S", approx: "P1Y 2M 1D T13H 1M 1.1S"},
-
-		// carry years to months
-		{source: period64{years: 10}, precise: "P1Y"},
-		{source: period64{years: 17}, precise: "P1.7Y"},
-		{source: period64{years: 10, months: 70}, precise: "P1Y7M"},
 	}
 	for i, c := range cases {
 		if c.approx == "" {
