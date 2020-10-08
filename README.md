@@ -1,6 +1,6 @@
 # date
 
-[![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg?style=flat-square)](https://godoc.org/github.com/rickb777/date)
+[![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg)](https://pkg.go.dev/github.com/rickb777/date)
 [![Build Status](https://api.travis-ci.org/rickb777/date.svg?branch=master)](https://travis-ci.org/rickb777/date)
 [![Coverage Status](https://coveralls.io/repos/rickb777/date/badge.svg?branch=master&service=github)](https://coveralls.io/github/rickb777/date?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rickb777/date)](https://goreportcard.com/report/github.com/rickb777/date)
