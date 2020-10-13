@@ -123,7 +123,7 @@ func (p64 period64) String() string {
 	return buf.String()
 }
 
-func writeField64(w io.Writer, field int, designator byte) {
+func writeField64(w io.Writer, field int64, designator byte) {
 	if field != 0 {
 		if field%10 != 0 {
 			fmt.Fprintf(w, "%g", float32(field)/10)

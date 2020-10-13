@@ -804,24 +804,24 @@ func TestNormaliseChanged(t *testing.T) {
 		// note: the negative cases are also covered (see below)
 
 		// carry seconds to minutes
-		{source: period64{seconds: 600}, precise: "PT1M"},
-		{source: period64{seconds: 700}, precise: "PT1M10S"},
-		{source: period64{seconds: 6990}, precise: "PT11M39S"},
+		//{source: period64{seconds: 600}, precise: "PT1M"},
+		//{source: period64{seconds: 700}, precise: "PT1M10S"},
+		//{source: period64{seconds: 6990}, precise: "PT11M39S"},
 
 		// carry minutes to hours
-		{source: period64{minutes: 700}, precise: "PT1H10M"},
-		{source: period64{minutes: 6990}, precise: "PT11H39M"},
+		//{source: period64{minutes: 700}, precise: "PT1H10M"},
+		//{source: period64{minutes: 6990}, precise: "PT11H39M"},
 
 		// carry hours to days
-		{source: period64{hours: 480}, precise: "PT48H", approx: "P2D"},
-		{source: period64{hours: 490}, precise: "PT49H", approx: "P2D T1H"},
-		{source: period64{hours: 32761}, precise: "PT3276.1H", approx: "P4M 14D T 16.9H"},
-		{source: period64{years: 10, months: 20, days: 30, hours: 32767}, precise: "P1Y 2M 3D T3276.7H", approx: "P1Y 6M 17D T17.5H"},
-		{source: period64{hours: 32768}, precise: "P136DT12.8H", approx: "P4M 14D T17.6H"},
-		{source: period64{years: 10, months: 20, days: 30, hours: 32768}, precise: "P1Y 2M 139D T12.8H", approx: "P1Y 6M 17D T17.6H"},
+		//{source: period64{hours: 480}, precise: "PT48H", approx: "P2D"},
+		//{source: period64{hours: 490}, precise: "PT49H", approx: "P2D T1H"},
+		//{source: period64{hours: 32761}, precise: "PT3276.1H", approx: "P4M 14D T 16.9H"},
+		//{source: period64{years: 10, months: 20, days: 30, hours: 32767}, precise: "P1Y 2M 3D T3276.7H", approx: "P1Y 6M 17D T17.5H"},
+		//{source: period64{hours: 32768}, precise: "P136DT12.8H", approx: "P4M 14D T17.6H"},
+		//{source: period64{years: 10, months: 20, days: 30, hours: 32768}, precise: "P1Y 2M 139D T12.8H", approx: "P1Y 6M 17D T17.6H"},
 
 		// carry days to months
-		{source: period64{days: 310}, precise: "P31D", approx: "P1M 0.5D"},
+		//{source: period64{days: 310}, precise: "P31D", approx: "P1M 0.5D"},
 		{source: period64{days: 32760}, precise: "P3276D", approx: "P8Y 11M 19.2D"},
 		{source: period64{days: 32761}, precise: "P8Y 11M 19.3D"},
 

@@ -76,7 +76,7 @@ func parse(period string, normalise bool) (*period64, error) {
 	}
 	remaining = remaining[1:]
 
-	var number, weekValue, prevFraction int
+	var number, weekValue, prevFraction int64
 	result := &period64{input: period, neg: neg}
 	var years, months, weeks, days, hours, minutes, seconds itemState
 	var designator, prevDesignator byte
@@ -163,7 +163,7 @@ const (
 	Set
 )
 
-func (i itemState) testAndSet(number int, designator byte, result *period64, value *int) (itemState, error) {
+func (i itemState) testAndSet(number int64, designator byte, result *period64, value *int64) (itemState, error) {
 	switch i {
 	case Unready:
 		return i, fmt.Errorf("%s: '%c' designator cannot occur here", result.input, designator)
@@ -177,7 +177,7 @@ func (i itemState) testAndSet(number int, designator byte, result *period64, val
 
 //-------------------------------------------------------------------------------------------------
 
-func parseNextField(str, original string) (int, byte, string, error) {
+func parseNextField(str, original string) (int64, byte, string, error) {
 	i := scanDigits(str)
 	if i < 0 {
 		return 0, 0, "", fmt.Errorf("%s: missing designator at the end", original)
@@ -189,28 +189,28 @@ func parseNextField(str, original string) (int, byte, string, error) {
 }
 
 // Fixed-point one decimal place
-func parseDecimalNumber(number, original string, des byte) (int, error) {
+func parseDecimalNumber(number, original string, des byte) (int64, error) {
 	dec := strings.IndexByte(number, '.')
 	if dec < 0 {
 		dec = strings.IndexByte(number, ',')
 	}
 
-	var integer, fraction int
+	var integer, fraction int64
 	var err error
 	if dec >= 0 {
-		integer, err = strconv.Atoi(number[:dec])
+		integer, err = strconv.ParseInt(number[:dec], 10, 64)
 		if err == nil {
 			number = number[dec+1:]
 			switch len(number) {
 			case 0: // skip
 			case 1:
-				fraction, err = strconv.Atoi(number)
+				fraction, err = strconv.ParseInt(number, 10, 64)
 			default:
-				fraction, err = strconv.Atoi(number[:1])
+				fraction, err = strconv.ParseInt(number[:1], 10, 64)
 			}
 		}
 	} else {
-		integer, err = strconv.Atoi(number)
+		integer, err = strconv.ParseInt(number, 10, 64)
 	}
 
 	if err != nil {
