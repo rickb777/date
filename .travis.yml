@@ -8,5 +8,6 @@ install:
   - go get github.com/mattn/goveralls
 
 script:
-  - ./build+test.sh
+  - ./build+test.sh amd64
+  - ./build+test.sh 386
 
