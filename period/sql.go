@@ -9,9 +9,9 @@ import (
 	"fmt"
 )
 
-// Scan parses some value, which can be either string ot []byte.
+// Scan parses some value, which can be either string or []byte.
 // It implements sql.Scanner, https://golang.org/pkg/database/sql/#Scanner
-func (p *Period) Scan(value interface{}) (err error) {
+func (period *Period) Scan(value interface{}) (err error) {
 	if value == nil {
 		return nil
 	}
@@ -19,9 +19,9 @@ func (p *Period) Scan(value interface{}) (err error) {
 	err = nil
 	switch v := value.(type) {
 	case []byte:
-		*p, err = Parse(string(v))
+		*period, err = Parse(string(v))
 	case string:
-		*p, err = Parse(v)
+		*period, err = Parse(v)
 	default:
 		err = fmt.Errorf("%T %+v is not a meaningful period", value, value)
 	}
@@ -29,8 +29,8 @@ func (p *Period) Scan(value interface{}) (err error) {
 	return err
 }
 
-// Value converts the value to a string. It implements driver.Valuer,
+// Value converts the period to a string. It implements driver.Valuer,
 // https://golang.org/pkg/database/sql/driver/#Valuer
-func (p Period) Value() (driver.Value, error) {
-	return p.String(), nil
+func (period Period) Value() (driver.Value, error) {
+	return period.String(), nil
 }
