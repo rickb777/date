@@ -19,9 +19,9 @@ func (period *Period) Scan(value interface{}) (err error) {
 	err = nil
 	switch v := value.(type) {
 	case []byte:
-		*period, err = Parse(string(v))
+		*period, err = Parse(string(v), false)
 	case string:
-		*period, err = Parse(v)
+		*period, err = Parse(v, false)
 	default:
 		err = fmt.Errorf("%T %+v is not a meaningful period", value, value)
 	}

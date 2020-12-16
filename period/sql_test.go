@@ -18,8 +18,13 @@ func TestPeriodScan(t *testing.T) {
 		v        interface{}
 		expected Period
 	}{
-		{[]byte("P1Y3M"), MustParse("P1Y3M")},
-		{"P1Y3M", MustParse("P1Y3M")},
+		{[]byte("P1Y3M"), MustParse("P1Y3M", false)},
+		{"P1Y3M", MustParse("P1Y3M", false)},
+
+		// normalise should be disabled so that the retrieved value exactly
+		// matches the stored value
+		{[]byte("P48M"), MustParse("P48M", false)},
+		{"P48M", MustParse("P48M", false)},
 	}
 
 	for _, c := range cases {
