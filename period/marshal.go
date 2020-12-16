@@ -26,7 +26,7 @@ func (period Period) MarshalText() ([]byte, error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface for Periods.
 // This also provides support for JSON decoding.
 func (period *Period) UnmarshalText(data []byte) (err error) {
-	u, err := Parse(string(data))
+	u, err := Parse(string(data), false)
 	if err == nil {
 		*period = u
 	}

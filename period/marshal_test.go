@@ -32,9 +32,10 @@ func TestGobEncoding(t *testing.T) {
 		"-P2Y3M4W5D",
 		"P2Y3M4W5DT1H7M9S",
 		"-P2Y3M4W5DT1H7M9S",
+		"P48M",
 	}
 	for i, c := range cases {
-		period := MustParse(c)
+		period := MustParse(c, false)
 		var p Period
 		err := encoder.Encode(&period)
 		g.Expect(err).NotTo(HaveOccurred(), info(i, c))

@@ -52,8 +52,8 @@ func TestPeriodScale(t *testing.T) {
 		//{"P365.5D", 0.1, "P36DT12H"},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one).Scale(c.m)
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
+		s := MustParse(c.one, false).Scale(c.m)
+		g.Expect(s).To(Equal(MustParse(c.expect, false)), info(i, c.expect))
 	}
 }
 
@@ -75,9 +75,9 @@ func TestPeriodAdd(t *testing.T) {
 		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one).Add(MustParse(c.two))
+		s := MustParse(c.one, false).Add(MustParse(c.two, false))
 		expectValid(t, s, info(i, c.expect))
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
+		g.Expect(s).To(Equal(MustParse(c.expect, false)), info(i, c.expect))
 	}
 }
 

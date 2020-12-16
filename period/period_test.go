@@ -262,16 +262,16 @@ func TestPeriodIntComponents(t *testing.T) {
 		{value: "P1Y", y: 1},
 		{value: "P1W", w: 1, d: 7},
 		{value: "P6M", m: 6},
-		{value: "P12M", y: 1},
+		{value: "P12M", m: 12},
 		{value: "P39D", w: 5, d: 39, dx: 4},
 		{value: "P4D", d: 4, dx: 4},
 		{value: "PT12H", hh: 12},
-		{value: "PT60M", hh: 1},
+		{value: "PT60M", mm: 60},
 		{value: "PT30M", mm: 30},
 		{value: "PT5S", ss: 5},
 	}
 	for i, c := range cases {
-		pp := MustParse(c.value)
+		pp := MustParse(c.value, false)
 		g.Expect(pp.Years()).To(Equal(c.y), info(i, pp))
 		g.Expect(pp.Months()).To(Equal(c.m), info(i, pp))
 		g.Expect(pp.Weeks()).To(Equal(c.w), info(i, pp))
@@ -395,7 +395,7 @@ func testPeriodToDuration(t *testing.T, i int, value string, duration time.Durat
 	t.Helper()
 	g := NewGomegaWithT(t)
 	hint := info(i, "%s %s %v", value, duration, precise)
-	pp := MustParse(value)
+	pp := MustParse(value, false)
 	d1, prec := pp.Duration()
 	g.Expect(d1).To(Equal(duration), hint)
 	g.Expect(prec).To(Equal(precise), hint)
@@ -443,7 +443,7 @@ func TestSignPositiveNegative(t *testing.T) {
 		{"-P0.1Y", false, true, -1},
 	}
 	for i, c := range cases {
-		p := MustParse(c.value)
+		p := MustParse(c.value, false)
 		g.Expect(p.IsPositive()).To(Equal(c.positive), info(i, c.value))
 		g.Expect(p.IsNegative()).To(Equal(c.negative), info(i, c.value))
 		g.Expect(p.Sign()).To(Equal(c.sign), info(i, c.value))
@@ -469,7 +469,7 @@ func TestPeriodApproxDays(t *testing.T) {
 		{"P1Y", 365},
 	}
 	for i, c := range cases {
-		p := MustParse(c.value)
+		p := MustParse(c.value, false)
 		td1 := p.TotalDaysApprox()
 		g.Expect(td1).To(Equal(c.approxDays), info(i, c.value))
 
@@ -504,7 +504,7 @@ func TestPeriodApproxMonths(t *testing.T) {
 		{"PT744H", 1},
 	}
 	for i, c := range cases {
-		p := MustParse(c.value)
+		p := MustParse(c.value, false)
 		td1 := p.TotalMonthsApprox()
 		g.Expect(td1).To(Equal(c.approxMonths), info(i, c.value))
 
@@ -837,8 +837,8 @@ func TestNormaliseChanged(t *testing.T) {
 		if c.approx == "" {
 			c.approx = c.precise
 		}
-		pp := MustParse(nospace(c.precise))
-		pa := MustParse(nospace(c.approx))
+		pp := MustParse(nospace(c.precise), false)
+		pa := MustParse(nospace(c.approx), false)
 		testNormalise(t, i, c.source, pp, true)
 		testNormalise(t, i, c.source, pa, false)
 		c.source.neg = true
@@ -916,7 +916,7 @@ func TestPeriodFormat(t *testing.T) {
 		{"PT1.1S", "1.1 seconds", ""},
 	}
 	for i, c := range cases {
-		p := MustParse(c.period)
+		p := MustParse(c.period, false)
 		sp := p.Format()
 		g.Expect(sp).To(Equal(c.expectW), info(i, "%s -> %s", p, c.expectW))
 
@@ -925,7 +925,7 @@ func TestPeriodFormat(t *testing.T) {
 		g.Expect(sn).To(Equal(c.expectW), info(i, "%s -> %s", en, c.expectW))
 
 		if c.expectD != "" {
-			s := MustParse(c.period).FormatWithoutWeeks()
+			s := MustParse(c.period, false).FormatWithoutWeeks()
 			g.Expect(s).To(Equal(c.expectD), info(i, "%s -> %s", p, c.expectD))
 		}
 	}
@@ -944,8 +944,8 @@ func TestPeriodOnlyYMD(t *testing.T) {
 		{"-P6Y5M4DT3H2M1S", "-P6Y5M4D"},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one).OnlyYMD()
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
+		s := MustParse(c.one, false).OnlyYMD()
+		g.Expect(s).To(Equal(MustParse(c.expect, false)), info(i, c.expect))
 	}
 }
 
@@ -960,8 +960,8 @@ func TestPeriodOnlyHMS(t *testing.T) {
 		{"-P6Y5M4DT3H2M1S", "-PT3H2M1S"},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one).OnlyHMS()
-		g.Expect(s).To(Equal(MustParse(c.expect)), info(i, c.expect))
+		s := MustParse(c.one, false).OnlyHMS()
+		g.Expect(s).To(Equal(MustParse(c.expect, false)), info(i, c.expect))
 	}
 }
 
