@@ -44,7 +44,7 @@ const hundredMs = 100 * time.Millisecond
 // This is because the number of weeks is always inferred from the number of days.
 //
 type Period struct {
-	years, months, days, hours, minutes, seconds int16
+	years, months, weeks, days, hours, minutes, seconds int16
 }
 
 // NewYMD creates a simple period without any fractional parts. The fields are initialised verbatim
@@ -78,7 +78,7 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
 		(years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
 		return Period{
-			int16(years) * 10, int16(months) * 10, int16(days) * 10,
+			int16(years) * 10, int16(months) * 10, 0, int16(days) * 10,
 			int16(hours) * 10, int16(minutes) * 10, int16(seconds) * 10,
 		}
 	}
@@ -112,7 +112,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		// simple HMS case
 		minutes := d % time.Hour / time.Minute
 		seconds := d % time.Minute / hundredMs
-		return Period{0, 0, 0, sign10 * int16(totalHours), sign10 * int16(minutes), sign * int16(seconds)}, true
+		return Period{0, 0, 0, 0, sign10 * int16(totalHours), sign10 * int16(minutes), sign * int16(seconds)}, true
 	}
 
 	totalDays := totalHours / 24 // ignoring daylight savings adjustments
@@ -121,7 +121,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		hours := totalHours - totalDays*24
 		minutes := d % time.Hour / time.Minute
 		seconds := d % time.Minute / hundredMs
-		return Period{0, 0, sign10 * int16(totalDays), sign10 * int16(hours), sign10 * int16(minutes), sign * int16(seconds)}, false
+		return Period{0, 0, 0, sign10 * int16(totalDays), sign10 * int16(hours), sign10 * int16(minutes), sign * int16(seconds)}, false
 	}
 
 	// TODO it is uncertain whether this is too imprecise and should be improved
@@ -129,7 +129,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 	months := ((oneE4 * totalDays) / daysPerMonthE4) - (12 * years)
 	hours := totalHours - totalDays*24
 	totalDays = ((totalDays * oneE4) - (daysPerMonthE4 * months) - (daysPerYearE4 * years)) / oneE4
-	return Period{sign10 * int16(years), sign10 * int16(months), sign10 * int16(totalDays), sign10 * int16(hours), 0, 0}, false
+	return Period{sign10 * int16(years), sign10 * int16(months), 0, sign10 * int16(totalDays), sign10 * int16(hours), 0, 0}, false
 }
 
 // Between converts the span between two times to a period. Based on the Gregorian conversion
@@ -239,13 +239,13 @@ func (period Period) Sign() int {
 // OnlyYMD returns a new Period with only the year, month and day fields. The hour,
 // minute and second fields are zeroed.
 func (period Period) OnlyYMD() Period {
-	return Period{period.years, period.months, period.days, 0, 0, 0}
+	return Period{period.years, period.months, 0, period.days, 0, 0, 0}
 }
 
 // OnlyHMS returns a new Period with only the hour, minute and second fields. The year,
 // month and day fields are zeroed.
 func (period Period) OnlyHMS() Period {
-	return Period{0, 0, 0, period.hours, period.minutes, period.seconds}
+	return Period{0, 0, 0, 0, period.hours, period.minutes, period.seconds}
 }
 
 // Abs converts a negative period to a positive one.
@@ -270,7 +270,7 @@ func (period Period) condNegate(neg bool) Period {
 
 // Negate changes the sign of the period.
 func (period Period) Negate() Period {
-	return Period{-period.years, -period.months, -period.days, -period.hours, -period.minutes, -period.seconds}
+	return Period{-period.years, -period.months, 0, -period.days, -period.hours, -period.minutes, -period.seconds}
 }
 
 func absInt16(v int16) int16 {

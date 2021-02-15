@@ -16,6 +16,7 @@ func (period Period) Add(that Period) Period {
 	return Period{
 		period.years + that.years,
 		period.months + that.months,
+		0,
 		period.days + that.days,
 		period.hours + that.hours,
 		period.minutes + that.minutes,

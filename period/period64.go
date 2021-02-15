@@ -9,7 +9,7 @@ import (
 // used for stages in arithmetic
 type period64 struct {
 	// always positive values
-	years, months, days, hours, minutes, seconds int64
+	years, months, weeks, days, hours, minutes, seconds int64
 	// true if the period is negative
 	neg   bool
 	input string
@@ -61,13 +61,13 @@ func (p64 *period64) toPeriod() (Period, error) {
 
 	if p64.neg {
 		return Period{
-			int16(-p64.years), int16(-p64.months), int16(-p64.days),
+			int16(-p64.years), int16(-p64.months), 0, int16(-p64.days),
 			int16(-p64.hours), int16(-p64.minutes), int16(-p64.seconds),
 		}, nil
 	}
 
 	return Period{
-		int16(p64.years), int16(p64.months), int16(p64.days),
+		int16(p64.years), int16(p64.months), 0, int16(p64.days),
 		int16(p64.hours), int16(p64.minutes), int16(p64.seconds),
 	}, nil
 }
