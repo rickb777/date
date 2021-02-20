@@ -9,9 +9,11 @@ import (
 	"time"
 )
 
-const daysPerYearE4 = 3652425   // 365.2425 days by the Gregorian rule
-const daysPerMonthE4 = 304369   // 30.4369 days per month
-const daysPerMonthE6 = 30436875 // 30.436875 days per month
+const daysPerYearE4 = 3652425              // 365.2425 days by the Gregorian rule
+const daysPerYearE6 = 365242500            // 365.2425 days by the Gregorian rule
+const daysPerMonthE4 = 304369              // 30.4369 days per month
+const daysPerMonthE6 = daysPerYearE6 / 12  // 30.436875 days per month
+const weeksPerMonthE6 = daysPerMonthE6 / 7 // 4.348125 weeks per month (52.1775 weeks per year)
 
 const oneE4 = 10000
 const oneE5 = 100000
@@ -45,6 +47,7 @@ const hundredMs = 100 * time.Millisecond
 //
 type Period struct {
 	years, months, weeks, days, hours, minutes, seconds int16
+	denormal                                            bool
 }
 
 // NewYMD creates a simple period without any fractional parts. The fields are initialised verbatim
@@ -75,11 +78,18 @@ func NewHMS(hours, minutes, seconds int) Period {
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
 func New(years, months, days, hours, minutes, seconds int) Period {
-	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
-		(years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
+	if years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0 {
 		return Period{
-			int16(years) * 10, int16(months) * 10, 0, int16(days) * 10,
-			int16(hours) * 10, int16(minutes) * 10, int16(seconds) * 10,
+			years: int16(years) * 10, months: int16(months) * 10, days: int16(days) * 10,
+			hours: int16(hours) * 10, minutes: int16(minutes) * 10, seconds: int16(seconds) * 10,
+			denormal: months >= 12 || days > 30 || hours >= 24 || minutes >= 60 || seconds >= 60,
+		}
+	}
+	if years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0 {
+		return Period{
+			years: int16(years) * 10, months: int16(months) * 10, days: int16(days) * 10,
+			hours: int16(hours) * 10, minutes: int16(minutes) * 10, seconds: int16(seconds) * 10,
+			denormal: months <= -12 || days < -30 || hours <= -24 || minutes <= -60 || seconds <= -60,
 		}
 	}
 	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dDT%dH%dM%dS",
@@ -112,7 +122,10 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		// simple HMS case
 		minutes := d % time.Hour / time.Minute
 		seconds := d % time.Minute / hundredMs
-		return Period{0, 0, 0, 0, sign10 * int16(totalHours), sign10 * int16(minutes), sign * int16(seconds)}, true
+		return Period{
+			hours: sign10 * int16(totalHours), minutes: sign10 * int16(minutes), seconds: sign * int16(seconds),
+			denormal: false,
+		}, true
 	}
 
 	totalDays := totalHours / 24 // ignoring daylight savings adjustments
@@ -121,7 +134,11 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		hours := totalHours - totalDays*24
 		minutes := d % time.Hour / time.Minute
 		seconds := d % time.Minute / hundredMs
-		return Period{0, 0, 0, sign10 * int16(totalDays), sign10 * int16(hours), sign10 * int16(minutes), sign * int16(seconds)}, false
+		return Period{
+			days:  sign10 * int16(totalDays),
+			hours: sign10 * int16(hours), minutes: sign10 * int16(minutes), seconds: sign * int16(seconds),
+			denormal: false,
+		}, false
 	}
 
 	// TODO it is uncertain whether this is too imprecise and should be improved
@@ -129,7 +146,11 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 	months := ((oneE4 * totalDays) / daysPerMonthE4) - (12 * years)
 	hours := totalHours - totalDays*24
 	totalDays = ((totalDays * oneE4) - (daysPerMonthE4 * months) - (daysPerYearE4 * years)) / oneE4
-	return Period{sign10 * int16(years), sign10 * int16(months), 0, sign10 * int16(totalDays), sign10 * int16(hours), 0, 0}, false
+	return Period{
+		years: sign10 * int16(years), months: sign10 * int16(months), days: sign10 * int16(totalDays),
+		hours:    sign10 * int16(hours),
+		denormal: false,
+	}, false
 }
 
 // Between converts the span between two times to a period. Based on the Gregorian conversion
@@ -214,14 +235,14 @@ func (period Period) IsZero() bool {
 // IsPositive returns true if any field is greater than zero. By design, this also implies that
 // all the other fields are greater than or equal to zero.
 func (period Period) IsPositive() bool {
-	return period.years > 0 || period.months > 0 || period.days > 0 ||
+	return period.years > 0 || period.months > 0 || period.weeks > 0 || period.days > 0 ||
 		period.hours > 0 || period.minutes > 0 || period.seconds > 0
 }
 
 // IsNegative returns true if any field is negative. By design, this also implies that
 // all the other fields are negative or zero.
 func (period Period) IsNegative() bool {
-	return period.years < 0 || period.months < 0 || period.days < 0 ||
+	return period.years < 0 || period.months < 0 || period.weeks < 0 || period.days < 0 ||
 		period.hours < 0 || period.minutes < 0 || period.seconds < 0
 }
 
@@ -236,16 +257,16 @@ func (period Period) Sign() int {
 	return 1
 }
 
-// OnlyYMD returns a new Period with only the year, month and day fields. The hour,
+// OnlyYMD returns a new Period with only the year, month, week and day fields. The hour,
 // minute and second fields are zeroed.
 func (period Period) OnlyYMD() Period {
-	return Period{period.years, period.months, 0, period.days, 0, 0, 0}
+	return Period{years: period.years, months: period.months, weeks: period.weeks, days: period.days, denormal: period.denormal}
 }
 
 // OnlyHMS returns a new Period with only the hour, minute and second fields. The year,
-// month and day fields are zeroed.
+// month, week and day fields are zeroed.
 func (period Period) OnlyHMS() Period {
-	return Period{0, 0, 0, 0, period.hours, period.minutes, period.seconds}
+	return Period{hours: period.hours, minutes: period.minutes, seconds: period.seconds, denormal: period.denormal}
 }
 
 // Abs converts a negative period to a positive one.
@@ -270,7 +291,11 @@ func (period Period) condNegate(neg bool) Period {
 
 // Negate changes the sign of the period.
 func (period Period) Negate() Period {
-	return Period{-period.years, -period.months, 0, -period.days, -period.hours, -period.minutes, -period.seconds}
+	return Period{
+		years: -period.years, months: -period.months, weeks: -period.weeks, days: -period.days,
+		hours: -period.hours, minutes: -period.minutes, seconds: -period.seconds,
+		denormal: period.denormal,
+	}
 }
 
 func absInt16(v int16) int16 {
@@ -283,7 +308,7 @@ func absInt16(v int16) int16 {
 // Years gets the whole number of years in the period.
 // The result is the number of years and does not include any other field.
 func (period Period) Years() int {
-	return int(period.YearsFloat())
+	return int(period.years) / 10
 }
 
 // YearsFloat gets the number of years in the period, including a fraction if any is present.
@@ -298,7 +323,7 @@ func (period Period) YearsFloat() float32 {
 // Note that after normalisation, whole multiple of 12 months are added to
 // the number of years, so the number of months will be reduced correspondingly.
 func (period Period) Months() int {
-	return int(period.MonthsFloat())
+	return int(period.months) / 10
 }
 
 // MonthsFloat gets the number of months in the period.
@@ -310,32 +335,35 @@ func (period Period) MonthsFloat() float32 {
 	return float32(period.months) / 10
 }
 
-// Days gets the whole number of days in the period. This includes the implied
-// number of weeks but does not include any other field.
-func (period Period) Days() int {
-	return int(period.DaysFloat())
-}
-
-// DaysFloat gets the number of days in the period. This includes the implied
-// number of weeks but does not include any other field.
-func (period Period) DaysFloat() float32 {
-	return float32(period.days) / 10
-}
-
-// Weeks calculates the number of whole weeks from the number of days. If the result
-// would contain a fraction, it is truncated.
+// Weeks gets the whole number of weeks in the period.
 // The result is the number of weeks and does not include any other field.
-//
-// Note that weeks are synthetic: they are internally represented using days.
-// See ModuloDays(), which returns the number of days excluding whole weeks.
 func (period Period) Weeks() int {
-	return int(period.days) / 70
+	return int(period.weeks) / 10
 }
 
-// WeeksFloat calculates the number of weeks from the number of days.
+// WeeksFloat gets the whole number of weeks in the period.
 // The result is the number of weeks and does not include any other field.
 func (period Period) WeeksFloat() float32 {
-	return float32(period.days) / 70
+	return float32(period.weeks) / 10
+}
+
+// DaysAndWeekss gets the whole number of days in the period, including
+// the days of the weeks field.
+// The result does not include any other field.
+func (period Period) DaysAndWeeks() int {
+	return (7*int(period.weeks) + int(period.days)) / 10
+}
+
+// Days gets the whole number of days in the period.
+// The result is the number of days and does not include any other field.
+func (period Period) Days() int {
+	return int(period.days) / 10
+}
+
+// DaysFloat gets the number of days in the period.
+// The result is the number of days and does not include any other field.
+func (period Period) DaysFloat() float32 {
+	return float32(period.days) / 10
 }
 
 // ModuloDays calculates the whole number of days remaining after the whole number of weeks
@@ -352,7 +380,7 @@ func (period Period) ModuloDays() int {
 // Hours gets the whole number of hours in the period.
 // The result is the number of hours and does not include any other field.
 func (period Period) Hours() int {
-	return int(period.HoursFloat())
+	return int(period.hours) / 10
 }
 
 // HoursFloat gets the number of hours in the period.
@@ -363,36 +391,24 @@ func (period Period) HoursFloat() float32 {
 
 // Minutes gets the whole number of minutes in the period.
 // The result is the number of minutes and does not include any other field.
-//
-// Note that after normalisation, whole multiple of 60 minutes are added to
-// the number of hours, so the number of minutes will be reduced correspondingly.
 func (period Period) Minutes() int {
-	return int(period.MinutesFloat())
+	return int(period.minutes) / 10
 }
 
 // MinutesFloat gets the number of minutes in the period.
 // The result is the number of minutes and does not include any other field.
-//
-// Note that after normalisation, whole multiple of 60 minutes are added to
-// the number of hours, so the number of minutes will be reduced correspondingly.
 func (period Period) MinutesFloat() float32 {
 	return float32(period.minutes) / 10
 }
 
 // Seconds gets the whole number of seconds in the period.
 // The result is the number of seconds and does not include any other field.
-//
-// Note that after normalisation, whole multiple of 60 seconds are added to
-// the number of minutes, so the number of seconds will be reduced correspondingly.
 func (period Period) Seconds() int {
-	return int(period.SecondsFloat())
+	return int(period.seconds) / 10
 }
 
 // SecondsFloat gets the number of seconds in the period.
 // The result is the number of seconds and does not include any other field.
-//
-// Note that after normalisation, whole multiple of 60 seconds are added to
-// the number of minutes, so the number of seconds will be reduced correspondingly.
 func (period Period) SecondsFloat() float32 {
 	return float32(period.seconds) / 10
 }
@@ -438,8 +454,9 @@ func totalDaysApproxE7(period Period) int64 {
 	// remember that the fields are all fixed-point 1E1
 	ydE6 := int64(period.years) * (daysPerYearE4 * 100)
 	mdE6 := int64(period.months) * daysPerMonthE6
+	wdE6 := int64(period.weeks) * 7 * oneE6
 	ddE6 := int64(period.days) * oneE6
-	return ydE6 + mdE6 + ddE6
+	return ydE6 + mdE6 + wdE6 + ddE6
 }
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
@@ -448,8 +465,8 @@ func totalDaysApproxE7(period Period) int64 {
 func (period Period) TotalDaysApprox() int {
 	pn := period.Normalise(false)
 	tdE6 := totalDaysApproxE7(pn)
-	hE6 := (int64(pn.hours) * oneE6) / 24
-	return int((tdE6 + hE6) / oneE7)
+	ttE6 := 1000 * int64(totalSecondsE3(period)) / (24 * 3600)
+	return int((tdE6 + ttE6) / oneE7)
 }
 
 // TotalMonthsApprox gets the approximate total number of months in the period. The days component
@@ -457,10 +474,11 @@ func (period Period) TotalDaysApprox() int {
 // and a month is 1/12 of that. Whole multiples of 24 hours are also included in the calculation.
 func (period Period) TotalMonthsApprox() int {
 	pn := period.Normalise(false)
-	mE1 := int64(pn.years)*12 + int64(pn.months)
-	hE1 := int64(pn.hours) / 24
-	dE1 := ((int64(pn.days) + hE1) * oneE6) / daysPerMonthE6
-	return int((mE1 + dE1) / 10)
+	mE2 := int64(pn.years)*120 + int64(pn.months)*10
+	wE2 := int64(pn.weeks) * 1e7 / weeksPerMonthE6
+	hE2 := int64(pn.hours) * 10 / 24
+	dE2 := ((int64(pn.days)*10 + hE2) * oneE6) / daysPerMonthE6
+	return int((mE2 + wE2 + dE2) / 100)
 }
 
 // Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
@@ -473,6 +491,7 @@ func (period Period) TotalMonthsApprox() int {
 // In precise mode:
 // Multiples of 60 seconds become minutes.
 // Multiples of 60 minutes become hours.
+// Multiples of 7 days become weeks.
 // Multiples of 12 months become years.
 //
 // Additionally, in imprecise mode:
@@ -481,8 +500,7 @@ func (period Period) TotalMonthsApprox() int {
 //
 // Note that leap seconds are disregarded: every minute is assumed to have 60 seconds.
 func (period Period) Normalise(precise bool) Period {
-	n, _ := period.toPeriod64("").normalise64(precise).toPeriod()
-	return n
+	return period.toPeriod64("").normalise64(precise).toPeriod()
 }
 
 // Simplify applies some heuristic simplifications with the objective of reducing the number
@@ -548,6 +566,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		ap.days == 0 {
 		ap.months += 120
 		ap.years = 0
+		ap.denormal = true
 	}
 
 	if ap.months%10 != 0 {
@@ -574,6 +593,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		0 < ap.hours && ap.hours <= b {
 		ap.hours += 240
 		ap.days = 0
+		ap.denormal = true
 	}
 
 	if ap.hours%10 != 0 {
@@ -589,6 +609,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		0 < ap.minutes && ap.minutes <= c {
 		ap.minutes += 600
 		ap.hours = 0
+		ap.denormal = true
 	}
 
 	if ap.minutes%10 != 0 {
@@ -605,6 +626,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		0 < ap.seconds && ap.seconds <= d {
 		ap.seconds += 600
 		ap.minutes = 0
+		ap.denormal = true
 	}
 
 	if ap.seconds%10 != 0 {

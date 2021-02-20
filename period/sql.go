@@ -11,6 +11,7 @@ import (
 
 // Scan parses some value, which can be either string or []byte.
 // It implements sql.Scanner, https://golang.org/pkg/database/sql/#Scanner
+// Normalisation is constrained (see Constrained).
 func (period *Period) Scan(value interface{}) (err error) {
 	if value == nil {
 		return nil
@@ -19,9 +20,9 @@ func (period *Period) Scan(value interface{}) (err error) {
 	err = nil
 	switch v := value.(type) {
 	case []byte:
-		*period, err = Parse(string(v), false)
+		*period, err = Parse(string(v), Constrained)
 	case string:
-		*period, err = Parse(v, false)
+		*period, err = Parse(v, Constrained)
 	default:
 		err = fmt.Errorf("%T %+v is not a meaningful period", value, value)
 	}

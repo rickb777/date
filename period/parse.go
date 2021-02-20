@@ -10,11 +10,48 @@ import (
 	"strings"
 )
 
+type NormalisationMode int
+
+const (
+	// Verbatim is the mode that disables normalisation during parsing. Parsing
+	// will fail for inputs that do not fit the numeric range (int16 using one
+	// fixed decimal place), which means +-3276.7
+	Verbatim NormalisationMode = iota
+
+	// Constrained is the mode that only allows normalisation if it is essential to
+	// avoid numeric overflow. Otherwise it is like Verbatim. This is the default mode.
+	Constrained
+
+	// Normalised is the main normalisation mode: this is done without loss of
+	// precision, so for example multiples of 60 seconds become minutes, and multiples
+	// of sixty minutes become hours.
+	//
+	// However, whole multiples of days or weeks do not contribute to the months
+	// tally because the number of days per month is variable. Also note that the
+	// number of hours per day is not always 24, due to daylight savings changes,
+	// so multiples of 24 hours do not contribute to days.
+	//
+	// Normalisation also has heuristics to minimise fractions where they can be
+	// carried right into a less-significant field.
+	Normalised
+
+	// Imprecise is the normalisation mode that aggressively normalises input values
+	// making assumptions that days are all 24 hours and that multiples of days and
+	// weeks can be carried to months and years according to the Gregorian rule of
+	// 365.2425 days per year.
+	Imprecise
+)
+
+// DefaultNormalisation is Constrained but you can change this.
+var DefaultNormalisation = Constrained
+
+//-------------------------------------------------------------------------------------------------
+
 // MustParse is as per Parse except that it panics if the string cannot be parsed.
 // This is intended for setup code; don't use it for user inputs.
 // By default, the value is normalised.
 // Normalisation can be disabled using the optional flag.
-func MustParse(value string, normalise ...bool) Period {
+func MustParse(value string, normalise ...NormalisationMode) Period {
 	d, err := Parse(value, normalise...)
 	if err != nil {
 		panic(err)
@@ -26,26 +63,18 @@ func MustParse(value string, normalise ...bool) Period {
 //
 // In addition, a plus or minus sign can precede the period, e.g. "-P10D"
 //
-// By default, the value is normalised, e.g. multiple of 12 months become years
-// so "P24M" is the same as "P2Y". However, this is done without loss of precision,
-// so for example whole numbers of days do not contribute to the months tally
-// because the number of days per month is variable.
-//
-// Normalisation can be disabled using the optional flag.
+// Normalisation is controlled by the optional parameter and the value of
+// DefaultNormalisation.
 //
 // The zero value can be represented in several ways: all of the following
 // are equivalent: "P0Y", "P0M", "P0W", "P0D", "PT0H", PT0M", PT0S", and "P0".
 // The canonical zero is "P0D".
-func Parse(period string, normalise ...bool) (Period, error) {
-	return ParseWithNormalise(period, len(normalise) == 0 || normalise[0])
-}
+func Parse(period string, normaliseOpt ...NormalisationMode) (Period, error) {
+	normalise := DefaultNormalisation
+	if len(normaliseOpt) > 0 {
+		normalise = normaliseOpt[0]
+	}
 
-// ParseWithNormalise parses strings that specify periods using ISO-8601 rules
-// with an option to specify whether to normalise parsed period components.
-//
-// This method is deprecated and should not be used. It may be removed in a
-// future version.
-func ParseWithNormalise(period string, normalise bool) (Period, error) {
 	if period == "" || period == "-" || period == "+" {
 		return Period{}, fmt.Errorf("cannot parse a blank string as a period")
 	}
@@ -54,14 +83,23 @@ func ParseWithNormalise(period string, normalise bool) (Period, error) {
 		return Period{}, nil
 	}
 
-	p64, err := parse(period, normalise)
+	p64, err := parse(period)
 	if err != nil {
 		return Period{}, err
 	}
-	return p64.toPeriod()
+
+	if normalise == Constrained && p64.checkOverflow() != nil {
+		normalise = Normalised // bump it up
+	}
+
+	if normalise >= Normalised {
+		p64 = p64.normalise64(normalise < Imprecise)
+	}
+
+	return p64.toPeriod(), p64.checkOverflow()
 }
 
-func parse(period string, normalise bool) (*period64, error) {
+func parse(period string) (*period64, error) {
 	neg := false
 	remaining := period
 	if remaining[0] == '-' {
@@ -76,8 +114,9 @@ func parse(period string, normalise bool) (*period64, error) {
 	}
 	remaining = remaining[1:]
 
-	var number, weekValue, prevFraction int64
-	result := &period64{input: period, neg: neg}
+	p64 := &period64{input: period, neg: neg}
+
+	var number, prevFraction int64
 	var years, months, weeks, days, hours, minutes, seconds itemState
 	var designator, prevDesignator byte
 	var err error
@@ -111,23 +150,23 @@ func parse(period string, normalise bool) (*period64, error) {
 
 			switch designator {
 			case 'Y':
-				years, err = years.testAndSet(number, 'Y', result, &result.years)
+				years, err = years.testAndSet(number, 'Y', p64, &p64.years)
 			case 'W':
-				weeks, err = weeks.testAndSet(number, 'W', result, &weekValue)
+				weeks, err = weeks.testAndSet(number, 'W', p64, &p64.weeks)
 			case 'D':
-				days, err = days.testAndSet(number, 'D', result, &result.days)
+				days, err = days.testAndSet(number, 'D', p64, &p64.days)
 			case 'H':
-				hours, err = hours.testAndSet(number, 'H', result, &result.hours)
+				hours, err = hours.testAndSet(number, 'H', p64, &p64.hours)
 			case 'S':
-				seconds, err = seconds.testAndSet(number, 'S', result, &result.seconds)
+				seconds, err = seconds.testAndSet(number, 'S', p64, &p64.seconds)
 			case 'M':
 				if isHMS {
-					minutes, err = minutes.testAndSet(number, 'M', result, &result.minutes)
+					minutes, err = minutes.testAndSet(number, 'M', p64, &p64.minutes)
 				} else {
-					months, err = months.testAndSet(number, 'M', result, &result.months)
+					months, err = months.testAndSet(number, 'M', p64, &p64.months)
 				}
 			default:
-				return nil, fmt.Errorf("%s: expected a number not '%c'", period, designator)
+				return nil, fmt.Errorf("%s: expected a designator Y, M, W, D, H, or S not '%c'", period, designator)
 			}
 			nComponents++
 
@@ -144,13 +183,10 @@ func parse(period string, normalise bool) (*period64, error) {
 		return nil, fmt.Errorf("%s: expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator", period)
 	}
 
-	result.days += weekValue * 7
+	p64.denormal = p64.months >= 120 || p64.weeks >= 520 || p64.days >= 70 ||
+		p64.hours >= 240 || p64.minutes >= 600 || p64.seconds >= 600
 
-	if normalise {
-		result = result.normalise64(true)
-	}
-
-	return result, nil
+	return p64, nil
 }
 
 //-------------------------------------------------------------------------------------------------

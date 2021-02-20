@@ -35,7 +35,7 @@ func TestGobEncoding(t *testing.T) {
 		"P48M",
 	}
 	for i, c := range cases {
-		period := MustParse(c, false)
+		period := MustParse(c, Verbatim)
 		var p Period
 		err := encoder.Encode(&period)
 		g.Expect(err).NotTo(HaveOccurred(), info(i, c))

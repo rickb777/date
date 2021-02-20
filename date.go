@@ -259,7 +259,7 @@ func (d Date) AddDate(years, months, days int) Date {
 //
 // See the description for AddDate.
 func (d Date) AddPeriod(delta period.Period) Date {
-	return d.AddDate(delta.Years(), delta.Months(), delta.Days())
+	return d.AddDate(delta.Years(), delta.Months(), delta.DaysAndWeeks())
 }
 
 // Sub returns d-u as the number of days between the two dates.

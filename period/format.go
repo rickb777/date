@@ -26,30 +26,40 @@ func (period Period) FormatWithoutWeeks() string {
 
 // FormatWithPeriodNames converts the period to human-readable form in a localisable way.
 func (period Period) FormatWithPeriodNames(yearNames, monthNames, weekNames, dayNames, hourNames, minNames, secNames plural.Plurals) string {
-	period = period.Abs()
+	p64 := period.toPeriod64("")
 
-	parts := make([]string, 0)
-	parts = appendNonBlank(parts, yearNames.FormatFloat(float10(period.years)))
-	parts = appendNonBlank(parts, monthNames.FormatFloat(float10(period.months)))
-
-	if period.days > 0 || (period.IsZero()) {
-		if len(weekNames) > 0 {
-			weeks := period.days / 70
-			mdays := period.days % 70
-			//fmt.Printf("%v %#v - %d %d\n", period, period, weeks, mdays)
-			if weeks > 0 {
-				parts = appendNonBlank(parts, weekNames.FormatInt(int(weeks)))
-			}
-			if mdays > 0 || weeks == 0 {
-				parts = appendNonBlank(parts, dayNames.FormatFloat(float10(mdays)))
-			}
-		} else {
-			parts = appendNonBlank(parts, dayNames.FormatFloat(float10(period.days)))
-		}
+	parts := make([]string, 0, 7)
+	if len(yearNames) == 0 {
+		p64.months += p64.years * 12
+	} else {
+		parts = appendNonBlank(parts, yearNames.FormatFloat(float10(p64.years)))
 	}
-	parts = appendNonBlank(parts, hourNames.FormatFloat(float10(period.hours)))
-	parts = appendNonBlank(parts, minNames.FormatFloat(float10(period.minutes)))
-	parts = appendNonBlank(parts, secNames.FormatFloat(float10(period.seconds)))
+
+	parts = appendNonBlank(parts, monthNames.FormatFloat(float10(p64.months)))
+
+	if len(weekNames) == 0 {
+		p64.days += p64.weeks * 7
+	} else {
+		parts = appendNonBlank(parts, weekNames.FormatFloat(float10(p64.weeks)))
+	}
+
+	if p64.days > 0 || (period.IsZero()) {
+		parts = appendNonBlank(parts, dayNames.FormatFloat(float10(p64.days)))
+	}
+
+	if len(hourNames) == 0 {
+		p64.minutes += p64.hours * 12
+	} else {
+		parts = appendNonBlank(parts, hourNames.FormatFloat(float10(p64.hours)))
+	}
+
+	if len(minNames) == 0 {
+		p64.seconds += p64.minutes * 12
+	} else {
+		parts = appendNonBlank(parts, minNames.FormatFloat(float10(p64.minutes)))
+	}
+
+	parts = appendNonBlank(parts, secNames.FormatFloat(float10(p64.seconds)))
 
 	return strings.Join(parts, ", ")
 }
@@ -103,14 +113,8 @@ func (p64 period64) String() string {
 
 	writeField64(buf, p64.years, byte(Year))
 	writeField64(buf, p64.months, byte(Month))
-
-	if p64.days != 0 {
-		if p64.days%70 == 0 {
-			writeField64(buf, p64.days/7, byte(Week))
-		} else {
-			writeField64(buf, p64.days, byte(Day))
-		}
-	}
+	writeField64(buf, p64.weeks, byte(Week))
+	writeField64(buf, p64.days, byte(Day))
 
 	if p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0 {
 		buf.WriteByte('T')
@@ -134,6 +138,6 @@ func writeField64(w io.Writer, field int64, designator byte) {
 	}
 }
 
-func float10(v int16) float32 {
+func float10(v int64) float32 {
 	return float32(v) / 10
 }

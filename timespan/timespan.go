@@ -249,7 +249,7 @@ func ParseRFC5545InLocation(text string, loc *time.Location) (TimeSpan, error) {
 	}
 
 	if rest[0] == 'P' {
-		pe, e2 := period.Parse(rest)
+		pe, e2 := period.Parse(rest, period.Constrained)
 		if e2 != nil {
 			return TimeSpan{}, fmt.Errorf("cannot parse period in %q: %s", text, e2.Error())
 		}
@@ -259,7 +259,7 @@ func ParseRFC5545InLocation(text string, loc *time.Location) (TimeSpan, error) {
 			return TimeSpan{st, du}, nil
 		}
 
-		et := st.AddDate(pe.Years(), pe.Months(), pe.Days())
+		et := st.AddDate(pe.Years(), pe.Months(), pe.DaysAndWeeks())
 		return NewTimeSpan(st, et), nil
 	}
 

@@ -18,42 +18,68 @@ func TestPeriodScale(t *testing.T) {
 	cases := []struct {
 		one    string
 		m      float32
-		expect string
+		expect Period
 	}{
-		{"P0D", 2, "P0D"},
-		{"P1D", 2, "P2D"},
-		{"P1D", 0, "P0D"},
-		{"P1D", 365, "P365D"},
-		{"P1M", 2, "P2M"},
-		{"P1M", 12, "P1Y"},
+		{"P0D", 2, Period{}},
+		{"P1D", 2, Period{days: 20}},
+		{"P1D", 0, Period{}},
+		{"P1D", 365, Period{weeks: 520, days: 10}},
+		{"P1W", 2, Period{weeks: 20}},
+		{"P1M", 2, Period{months: 20}},
+		{"P1M", 12, Period{years: 10}},
 		//TODO {"P1Y3M", 1.0/15, "P1M"},
-		{"P1Y", 2, "P2Y"},
-		{"PT1H", 2, "PT2H"},
-		{"PT1M", 2, "PT2M"},
-		{"PT1S", 2, "PT2S"},
-		{"P1D", 0.5, "P0.5D"},
-		{"P1M", 0.5, "P0.5M"},
-		{"P1Y", 0.5, "P0.5Y"},
-		{"PT1H", 0.5, "PT0.5H"},
-		{"PT1H", 0.1, "PT6M"},
-		//TODO {"PT1H", 0.01, "PT36S"},
-		{"PT1M", 0.5, "PT0.5M"},
-		{"PT1S", 0.5, "PT0.5S"},
-		{"PT1H", 1.0 / 3600, "PT1S"},
-		{"P1Y2M3DT4H5M6S", 2, "P2Y4M6DT8H10M12S"},
-		{"P2Y4M6DT8H10M12S", -0.5, "-P1Y2M3DT4H5M6S"},
-		{"-P2Y4M6DT8H10M12S", 0.5, "-P1Y2M3DT4H5M6S"},
-		{"-P2Y4M6DT8H10M12S", -0.5, "P1Y2M3DT4H5M6S"},
-		{"PT1M", 60, "PT1H"},
-		{"PT1S", 60, "PT1M"},
-		{"PT1S", 86400, "PT24H"},
-		{"PT1S", 86400000, "P1000D"},
-		{"P365.5D", 10, "P10Y2.5D"},
-		//{"P365.5D", 0.1, "P36DT12H"},
+		{"P1Y", 2, Period{years: 20}},
+		{"PT1H", 2, Period{hours: 20}},
+		{"PT1M", 2, Period{minutes: 20}},
+		{"PT1S", 2, Period{seconds: 20}},
+		{"P1D", 0.5, Period{days: 5}},
+		{"P1W", 0.5, Period{weeks: 5}},
+		{"P1M", 0.5, Period{months: 5}},
+		{"P1Y", 0.5, Period{years: 5}},
+		{"PT1H", 0.5, Period{hours: 5}},
+		{"PT1H", 0.1, Period{minutes: 60}},
+		{"PT1H", 0.01, Period{seconds: 359}}, // rounding error
+		{"PT1M", 0.5, Period{minutes: 5}},
+		{"PT1S", 0.5, Period{seconds: 5}},
+		{"PT1H", 1.0 / 3600, Period{seconds: 10}},
+		{"P1Y2M3W1DT5H6M7S", 2, Period{years: 20, months: 40, weeks: 60, days: 20, hours: 100, minutes: 120, seconds: 140}},
+		{"P2Y4M6W2DT10H12M14S", -0.5, Period{years: -10, months: -20, weeks: -30, days: -10, hours: -50, minutes: -60, seconds: -70}},
+		{"-P2Y4M6W2DT10H12M14S", 0.5, Period{years: -10, months: -20, weeks: -30, days: -10, hours: -50, minutes: -60, seconds: -70}},
+		{"-P2Y4M6W2DT10H12M14S", -0.5, Period{years: 10, months: 20, weeks: 30, days: 10, hours: 50, minutes: 60, seconds: 70}},
+		{"PT1M", 60, Period{hours: 10}},
+		{"PT1S", 60, Period{minutes: 10}},
+		{"PT1S", 86400, Period{hours: 240}},
+		{"PT1S", 86400000, Period{weeks: 1420, days: 60}},
+		{"P365.5D", 10, Period{weeks: 5220, days: 10}},
+		{"P365.5D", 0.1, Period{hours: 8770, minutes: 120}},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one, false).Scale(c.m)
-		g.Expect(s).To(Equal(MustParse(c.expect, false)), info(i, c.expect))
+		p := MustParse(c.one, Verbatim)
+		s := p.Scale(c.m)
+		g.Expect(s).To(Equal(c.expect), info(i, "%s x %v = %s", c.one, c.m, c.expect))
+
+		_, err := p.ScaleWithOverflowCheck(c.m)
+		g.Expect(err).NotTo(HaveOccurred(), info(i, "%s x %v = %s", c.one, c.m, c.expect))
+	}
+}
+func TestPeriodScale_overflow(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	cases := []struct {
+		one string
+		m   float32
+	}{
+		{"PT1S", 1e12},
+		{"PT1M", 1e10},
+		{"PT1H", 1e8},
+		{"P1D", 1e7},
+		{"P1W", 1e6},
+		{"P1M", 1e5},
+		{"P1Y", 1e4},
+	}
+	for i, c := range cases {
+		s, err := MustParse(c.one, Verbatim).ScaleWithOverflowCheck(c.m)
+		g.Expect(err).To(HaveOccurred(), info(i, "%s x %v = %s", c.one, c.m, s))
 	}
 }
 
@@ -62,22 +88,23 @@ func TestPeriodAdd(t *testing.T) {
 
 	cases := []struct {
 		one, two string
-		expect   string
+		expect   Period
 	}{
-		{"P0D", "P0D", "P0D"},
-		{"P1D", "P1D", "P2D"},
-		{"P1M", "P1M", "P2M"},
-		{"P1Y", "P1Y", "P2Y"},
-		{"PT1H", "PT1H", "PT2H"},
-		{"PT1M", "PT1M", "PT2M"},
-		{"PT1S", "PT1S", "PT2S"},
-		{"P1Y2M3DT4H5M6S", "P6Y5M4DT3H2M1S", "P7Y7M7DT7H7M7S"},
-		{"P7Y7M7DT7H7M7S", "-P7Y7M7DT7H7M7S", "P0D"},
+		{"P0D", "P0D", Period{}},
+		{"P1D", "P1D", Period{days: 20}},
+		{"P1W", "P1W", Period{weeks: 20}},
+		{"P1M", "P1M", Period{months: 20}},
+		{"P1Y", "P1Y", Period{years: 20}},
+		{"PT1H", "PT1H", Period{hours: 20}},
+		{"PT1M", "PT1M", Period{minutes: 20}},
+		{"PT1S", "PT1S", Period{seconds: 20}},
+		{"P1Y2M3W4DT5H6M7S", "P7Y6M5W4DT3H2M1S", Period{years: 80, months: 80, weeks: 80, days: 80, hours: 80, minutes: 80, seconds: 80}},
+		{"P7Y7M7W7DT7H7M7S", "-P7Y7M7W7DT7H7M7S", Period{}},
 	}
 	for i, c := range cases {
-		s := MustParse(c.one, false).Add(MustParse(c.two, false))
+		s := MustParse(c.one, Verbatim).Add(MustParse(c.two, Verbatim))
 		expectValid(t, s, info(i, c.expect))
-		g.Expect(s).To(Equal(MustParse(c.expect, false)), info(i, c.expect))
+		g.Expect(s).To(Equal(c.expect), info(i, c.expect))
 	}
 }
 
