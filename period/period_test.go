@@ -831,6 +831,11 @@ func TestSimplify(t *testing.T) {
 		{source: "P1Y9M", precise: Period{months: 210, denormal: true}},
 		{source: "P1Y8.9M", precise: Period{months: 209, denormal: true}},
 
+		// simplify 1 week to days (approx only) (b = 6)
+		{source: "P1W2D", precise: Period{days: 90, denormal: true}},
+		{source: "P2W1D"},
+		{source: "P1W5.9D", precise: Period{days: 129, denormal: true}},
+
 		// simplify 1 day to hours (approx only) (b = 6)
 		{source: "P1DT6H", precise: Period{days: 10, hours: 60}, approx: Period{hours: 300, denormal: true}},
 		{source: "P1DT7H"},
@@ -848,26 +853,26 @@ func TestSimplify(t *testing.T) {
 		{source: "PT1M30S", precise: Period{seconds: 900, denormal: true}},
 		{source: "PT1M29.9S", precise: Period{seconds: 899, denormal: true}},
 
+		// fractional years don't simplify
+		{source: "P1.1Y"},
+
+		// retained proper fractions
+		{source: "P1Y0.1D"},
+		{source: "P12M0.1D"},
+		{source: "P1YT0.1H"},
+		{source: "P1MT0.1H"},
+		{source: "P1Y0.1M", precise: Period{months: 121, denormal: true}},
+		{source: "P1DT0.1H", precise: Period{days: 10, hours: 1}, approx: Period{hours: 241, denormal: true}},
+		{source: "P1YT0.1M"},
+		{source: "P1MT0.1M"},
+		{source: "P1DT0.1M"},
+
+		// discard proper fractions - months
+		{source: "P10Y0.1M", precise: Period{years: 100, months: 1}, approx: Period{years: 100}},
+		// discard proper fractions - days
+		{source: "P1Y0.1D", precise: Period{years: 10, days: 1}, approx: Period{years: 10}},
+		{source: "P12M0.1D", precise: Period{months: 120, days: 1, denormal: true}, approx: Period{months: 120, denormal: true}},
 		//TODO
-		//// fractional years don't simplify
-		//{source: "P1.1Y"},
-		//
-		//// retained proper fractions
-		//{source: "P1Y0.1D"},
-		//{source: "P12M0.1D"},
-		//{source: "P1YT0.1H"},
-		//{source: "P1MT0.1H"},
-		//{source: "P1Y0.1M", precise: "P12.1M"},
-		//{source: "P1DT0.1H", precise: "P1DT0.1H", approx: "PT24.1H"},
-		//{source: "P1YT0.1M"},
-		//{source: "P1MT0.1M"},
-		//{source: "P1DT0.1M"},
-		//
-		//// discard proper fractions - months
-		//{source: "P10Y0.1M", precise: "P10Y0.1M", approx: "P10Y"},
-		//// discard proper fractions - days
-		//{source: "P1Y0.1D", precise: "P1Y0.1D", approx: "P1Y"},
-		//{source: "P12M0.1D", precise: "P12M0.1D", approx: "P12M"},
 		//// discard proper fractions - hours
 		//{source: "P1YT0.1H", precise: "P1YT0.1H", approx: "P1Y"},
 		//{source: "P1MT0.1H", precise: "P1MT0.1H", approx: "P1M"},

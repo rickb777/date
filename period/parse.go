@@ -15,7 +15,7 @@ type NormalisationMode int
 const (
 	// Verbatim is the mode that disables normalisation during parsing. Parsing
 	// will fail for inputs that do not fit the numeric range (int16 using one
-	// fixed decimal place), which means +-3276.7
+	// fixed decimal place), which means ± 2^16 / 10 (i.e. ±3276.7).
 	Verbatim NormalisationMode = iota
 
 	// Constrained is the mode that only allows normalisation if it is essential to

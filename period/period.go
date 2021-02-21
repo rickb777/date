@@ -25,25 +25,18 @@ const hundredMs = 100 * time.Millisecond
 // reminder: int64 overflow is after 9,223,372,036,854,775,807 (math.MaxInt64)
 
 // Period holds a period of time and provides conversion to/from ISO-8601 representations.
-// Therefore there are six fields: years, months, days, hours, minutes, and seconds.
+// Therefore there are seven fields: years, months, weeks, days, hours, minutes, and seconds.
 //
 // In the ISO representation, decimal fractions are supported, although only the last non-zero
 // component is allowed to have a fraction according to the Standard. For example "P2.5Y"
 // is 2.5 years.
 //
 // However, in this implementation, the precision is limited to one decimal place only, by
-// means of integers with fixed point arithmetic. (This avoids using float32 in the struct,
-// so there are no problems testing equality using ==.)
+// means of integers with fixed point arithmetic. This avoids using float32 in the struct,
+// so there are no problems testing equality using ==.
 //
 // The implementation limits the range of possible values to ± 2^16 / 10 in each field.
 // Note in particular that the range of years is limited to approximately ± 3276.
-//
-// The concept of weeks exists in string representations of periods, but otherwise weeks
-// are unimportant. The period contains a number of days from which the number of weeks can
-// be calculated when needed.
-//
-// Note that although fractional weeks can be parsed, they will never be returned via String().
-// This is because the number of weeks is always inferred from the number of days.
 //
 type Period struct {
 	years, months, weeks, days, hours, minutes, seconds int16
@@ -58,7 +51,18 @@ type Period struct {
 // Because this implementation uses int16 internally, the paramters must
 // be within the range ± 2^16 / 10.
 func NewYMD(years, months, days int) Period {
-	return New(years, months, days, 0, 0, 0)
+	return New2(years, months, 0, days, 0, 0, 0)
+}
+
+// NewYMWD creates a simple period without any fractional parts. The fields are initialised verbatim
+// without any normalisation; e.g. 12 months will not become 1 year. Use the Normalise method if you
+// need to.
+//
+// All the parameters must have the same sign (otherwise a panic occurs).
+// Because this implementation uses int16 internally, the paramters must
+// be within the range ± 2^16 / 10.
+func NewYMWD(years, months, weeks, days int) Period {
+	return New2(years, months, weeks, days, 0, 0, 0)
 }
 
 // NewHMS creates a simple period without any fractional parts. The fields are initialised verbatim
@@ -69,31 +73,42 @@ func NewYMD(years, months, days int) Period {
 // Because this implementation uses int16 internally, the paramters must
 // be within the range ± 2^16 / 10.
 func NewHMS(hours, minutes, seconds int) Period {
-	return New(0, 0, 0, hours, minutes, seconds)
+	return New2(0, 0, 0, 0, hours, minutes, seconds)
 }
 
 // New creates a simple period without any fractional parts. The fields are initialised verbatim
 // without any normalisation; e.g. 120 seconds will not become 2 minutes. Use the Normalise method
 // if you need to.
 //
+// Unlike New2, this does not have a weeks parameter.
+//
 // All the parameters must have the same sign (otherwise a panic occurs).
 func New(years, months, days, hours, minutes, seconds int) Period {
-	if years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0 {
+	return New2(years, months, 0, days, hours, minutes, seconds)
+}
+
+// New2 creates a simple period without any fractional parts. The fields are initialised verbatim
+// without any normalisation; e.g. 120 seconds will not become 2 minutes. Use the Normalise method
+// if you need to.
+//
+// All the parameters must have the same sign (otherwise a panic occurs).
+func New2(years, months, weeks, days, hours, minutes, seconds int) Period {
+	if years >= 0 && months >= 0 && weeks >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0 {
 		return Period{
-			years: int16(years) * 10, months: int16(months) * 10, days: int16(days) * 10,
+			years: int16(years) * 10, months: int16(months) * 10, weeks: int16(weeks) * 10, days: int16(days) * 10,
 			hours: int16(hours) * 10, minutes: int16(minutes) * 10, seconds: int16(seconds) * 10,
-			denormal: months >= 12 || days > 30 || hours >= 24 || minutes >= 60 || seconds >= 60,
+			denormal: months >= 12 || weeks > 52 || days > 30 || hours >= 24 || minutes >= 60 || seconds >= 60,
 		}
 	}
-	if years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0 {
+	if years <= 0 && months <= 0 && weeks <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0 {
 		return Period{
-			years: int16(years) * 10, months: int16(months) * 10, days: int16(days) * 10,
+			years: int16(years) * 10, months: int16(months) * 10, weeks: int16(weeks) * 10, days: int16(days) * 10,
 			hours: int16(hours) * 10, minutes: int16(minutes) * 10, seconds: int16(seconds) * 10,
 			denormal: months <= -12 || days < -30 || hours <= -24 || minutes <= -60 || seconds <= -60,
 		}
 	}
-	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dDT%dH%dM%dS",
-		years, months, days, hours, minutes, seconds))
+	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dW%dDT%dH%dM%dS",
+		years, months, weeks, days, hours, minutes, seconds))
 }
 
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
@@ -177,10 +192,10 @@ func Between(t1, t2 time.Time) (p Period) {
 	year, month, day, hour, min, sec, hundredth := daysDiff(t1, t2)
 
 	if sign < 0 {
-		p = New(-year, -month, -day, -hour, -min, -sec)
+		p = New2(-year, -month, 0, -day, -hour, -min, -sec)
 		p.seconds -= int16(hundredth)
 	} else {
-		p = New(year, month, day, hour, min, sec)
+		p = New2(year, month, 0, day, hour, min, sec)
 		p.seconds += int16(hundredth)
 	}
 	return
@@ -427,12 +442,12 @@ func (period Period) DurationApprox() time.Duration {
 }
 
 // Duration converts a period to the equivalent duration in nanoseconds.
-// A flag is also returned that is true when the conversion was precise and false otherwise.
+// A flag is also returned that is true when the conversion was precise, and false otherwise.
 //
 // When the period specifies hours, minutes and seconds only, the result is precise.
-// however, when the period specifies years, months and days, it is impossible to be precise
+// However, when the period specifies years, months and days, it is impossible to be precise
 // because the result may depend on knowing date and timezone information, so the duration
-// is estimated on the basis of a year being 365.2425 days as per Gregorian calendar rules)
+// is estimated on the basis of a year being 365.2425 days (as per Gregorian calendar rules)
 // and a month being 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
@@ -460,7 +475,7 @@ func totalDaysApproxE7(period Period) int64 {
 }
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
-// a year is 365.2425 days as per Gregorian calendar rules) and a month is 1/12 of that. Whole
+// a year is 365.2425 days (as per Gregorian calendar rules) and a month is 1/12 of that. Whole
 // multiples of 24 hours are also included in the calculation.
 func (period Period) TotalDaysApprox() int {
 	pn := period.Normalise(false)
@@ -481,7 +496,8 @@ func (period Period) TotalMonthsApprox() int {
 	return int((mE2 + wE2 + dE2) / 100)
 }
 
-// Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
+// Normalise attempts to simplify the fields by carrying left whole units to the more significant
+// field. It operates in either precise or imprecise mode.
 //
 // Because the number of hours per day is imprecise (due to daylight savings etc), and because
 // the number of days per month is variable in the Gregorian calendar, there is a reluctance
@@ -489,14 +505,20 @@ func (period Period) TotalMonthsApprox() int {
 // element. To give control over this, there are two modes.
 //
 // In precise mode:
-// Multiples of 60 seconds become minutes.
-// Multiples of 60 minutes become hours.
-// Multiples of 7 days become weeks.
-// Multiples of 12 months become years.
+//
+// ⚬ Multiples of 60 seconds become minutes.
+//
+// ⚬ Multiples of 60 minutes become hours.
+//
+// ⚬ Multiples of 7 days become weeks.
+//
+// ⚬ Multiples of 12 months become years.
 //
 // Additionally, in imprecise mode:
-// Multiples of 24 hours become days.
-// Multiples of approx. 30.4 days become months.
+//
+// ⚬ Multiples of 24 hours become days.
+//
+// ⚬ Multiples of approx. 30.4 days become months.
 //
 // Note that leap seconds are disregarded: every minute is assumed to have 60 seconds.
 func (period Period) Normalise(precise bool) Period {
@@ -514,29 +536,42 @@ func (period Period) Normalise(precise bool) Period {
 //
 // The following transformation rules are applied in order:
 //
-// * P1YnM becomes 12+n months for 0 < n <= 6
-// * P1DTnH becomes 24+n hours for 0 < n <= 6 (unless precise is true)
-// * PT1HnM becomes 60+n minutes for 0 < n <= 10
-// * PT1MnS becomes 60+n seconds for 0 < n <= 10
+// ⚬ P1YnM becomes 12+n months for 0 < n <= 6
+//
+// ⚬ P1WnD becomes 7*n days for 0 < n <= 6
+//
+// ⚬ P1DTnH becomes 24*n hours for 0 < n <= 6 (unless precise is true)
+//
+// ⚬ PT1HnM becomes 60+n minutes for 0 < n <= 10
+//
+// ⚬ PT1MnS becomes 60+n seconds for 0 < n <= 10
 //
 // At each step, if a fraction exists and would affect the calculation, the transformations
 // stop. Also, when not precise,
 //
-// * for periods of at least ten years, month proper fractions are discarded
-// * for periods of at least a year, day proper fractions are discarded
-// * for periods of at least a month, hour proper fractions are discarded
-// * for periods of at least a day, minute proper fractions are discarded
-// * for periods of at least an hour, second proper fractions are discarded
+// ⚬ for periods of at least ten years, month proper fractions are discarded
+//
+// ⚬ for periods of at least a year, day proper fractions are discarded
+//
+// ⚬ for periods of at least a month, hour proper fractions are discarded
+//
+// ⚬ for periods of at least a day, minute proper fractions are discarded
+//
+// ⚬ for periods of at least an hour, second proper fractions are discarded
 //
 // The thresholds can be set using the varargs th parameter. By default, the thresholds a,
 // b, c, d are 6 months, 6 hours, 10 minutes, 10 seconds respectively as listed in the rules
 // above.
 //
-// * No thresholds is equivalent to 6, 6, 10, 10.
-// * A single threshold a is equivalent to a, a, a, a.
-// * Two thresholds a, b are equivalent to a, a, b, b.
-// * Three thresholds a, b, c are equivalent to a, b, c, c.
-// * Four thresholds a, b, c, d are used as provided.
+// ⚬ No thresholds is equivalent to 6, 6, 10, 10.
+//
+// ⚬ A single threshold a is equivalent to a, a, a, a.
+//
+// ⚬ Two thresholds a, b are equivalent to a, a, b, b.
+//
+// ⚬ Three thresholds a, b, c are equivalent to a, b, c, c.
+//
+// ⚬ Four thresholds a, b, c, d are used as provided.
 //
 func (period Period) Simplify(precise bool, th ...int) Period {
 	switch len(th) {
@@ -563,6 +598,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 	// single year is dropped if there are some months
 	if ap.years == 10 &&
 		0 < ap.months && ap.months <= a &&
+		ap.weeks == 0 &&
 		ap.days == 0 {
 		ap.months += 120
 		ap.years = 0
@@ -578,6 +614,15 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 		return ap.condNegate(neg)
 	}
 
+	if ap.weeks == 10 &&
+		ap.years == 0 &&
+		ap.months == 0 &&
+		0 < ap.days && ap.days <= b {
+		ap.days += 70
+		ap.weeks = 0
+		ap.denormal = true
+	}
+
 	if ap.days%10 != 0 {
 		// day fraction is dropped for periods of at least a year (1:365)
 		days := ap.days / 10
@@ -590,6 +635,7 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 	if !precise && ap.days == 10 &&
 		ap.years == 0 &&
 		ap.months == 0 &&
+		ap.weeks == 0 &&
 		0 < ap.hours && ap.hours <= b {
 		ap.hours += 240
 		ap.days = 0

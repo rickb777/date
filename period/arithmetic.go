@@ -34,13 +34,15 @@ func (period Period) Add(that Period) Period {
 //-------------------------------------------------------------------------------------------------
 
 // AddTo adds the period to a time, returning the result.
-// A flag is also returned that is true when the conversion was precise and false otherwise.
+// A flag is also returned that is true when the conversion was precise, and false otherwise.
 //
 // When the period specifies hours, minutes and seconds only, the result is precise.
-// Also, when the period specifies whole years, months and days (i.e. without fractions), the
-// result is precise. However, when years, months or days contains fractions, the result
-// is only an approximation (it assumes that all days are 24 hours and every year is 365.2425
-// days, as per Gregorian calendar rules).
+//
+// Similarly, when the period specifies whole years, months, weeks and days (i.e. without fractions),
+// the result is precise.
+//
+// However, when years, months or days contains fractions, the result is only an approximation (it
+// assumes that all days are 24 hours and every year is 365.2425 days, as per Gregorian calendar rules).
 func (period Period) AddTo(t time.Time) (time.Time, bool) {
 	wholeYears := (period.years % 10) == 0
 	wholeMonths := (period.months % 10) == 0
