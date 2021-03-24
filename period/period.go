@@ -20,6 +20,10 @@ const oneE5 = 100000
 const oneE6 = 1000000
 const oneE7 = 10000000
 
+const daysPerYear = 365.2425         // 365.2425 days by the Gregorian rule
+const weeksPerYear = daysPerYear / 7 // ≈52.1775 weeks per yea)
+const monthsPerYear = 12             // 12 months per year
+
 const hundredMs = 100 * time.Millisecond
 
 // reminder: int64 overflow is after 9,223,372,036,854,775,807 (math.MaxInt64)
@@ -51,7 +55,7 @@ type Period struct {
 // Because this implementation uses int16 internally, the paramters must
 // be within the range ± 2^16 / 10.
 func NewYMD(years, months, days int) Period {
-	return New2(years, months, 0, days, 0, 0, 0)
+	return NewWithWeeks(years, months, 0, days, 0, 0, 0)
 }
 
 // NewYMWD creates a simple period without any fractional parts. The fields are initialised verbatim
@@ -62,7 +66,7 @@ func NewYMD(years, months, days int) Period {
 // Because this implementation uses int16 internally, the paramters must
 // be within the range ± 2^16 / 10.
 func NewYMWD(years, months, weeks, days int) Period {
-	return New2(years, months, weeks, days, 0, 0, 0)
+	return NewWithWeeks(years, months, weeks, days, 0, 0, 0)
 }
 
 // NewHMS creates a simple period without any fractional parts. The fields are initialised verbatim
@@ -73,42 +77,53 @@ func NewYMWD(years, months, weeks, days int) Period {
 // Because this implementation uses int16 internally, the paramters must
 // be within the range ± 2^16 / 10.
 func NewHMS(hours, minutes, seconds int) Period {
-	return New2(0, 0, 0, 0, hours, minutes, seconds)
+	return NewWithWeeks(0, 0, 0, 0, hours, minutes, seconds)
 }
 
 // New creates a simple period without any fractional parts. The fields are initialised verbatim
 // without any normalisation; e.g. 120 seconds will not become 2 minutes. Use the Normalise method
 // if you need to.
 //
-// Unlike New2, this does not have a weeks parameter.
+// Unlike NewWithWeeks, this does not have a weeks parameter.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
 func New(years, months, days, hours, minutes, seconds int) Period {
-	return New2(years, months, 0, days, hours, minutes, seconds)
+	return NewWithWeeks(years, months, 0, days, hours, minutes, seconds)
 }
 
-// New2 creates a simple period without any fractional parts. The fields are initialised verbatim
+// NewWithWeeks creates a simple period without any fractional parts. The fields are initialised verbatim
 // without any normalisation; e.g. 120 seconds will not become 2 minutes. Use the Normalise method
 // if you need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
-func New2(years, months, weeks, days, hours, minutes, seconds int) Period {
-	if years >= 0 && months >= 0 && weeks >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0 {
-		return Period{
-			years: int16(years) * 10, months: int16(months) * 10, weeks: int16(weeks) * 10, days: int16(days) * 10,
-			hours: int16(hours) * 10, minutes: int16(minutes) * 10, seconds: int16(seconds) * 10,
-			denormal: months >= 12 || weeks > 52 || days > 30 || hours >= 24 || minutes >= 60 || seconds >= 60,
-		}
+func NewWithWeeks(years, months, weeks, days, hours, minutes, seconds int) Period {
+	if allInt(intEqualZero, years, months, weeks, days, hours, minutes, seconds) {
+		return Period{}
 	}
-	if years <= 0 && months <= 0 && weeks <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0 {
-		return Period{
-			years: int16(years) * 10, months: int16(months) * 10, weeks: int16(weeks) * 10, days: int16(days) * 10,
-			hours: int16(hours) * 10, minutes: int16(minutes) * 10, seconds: int16(seconds) * 10,
-			denormal: months <= -12 || days < -30 || hours <= -24 || minutes <= -60 || seconds <= -60,
-		}
+
+	p := Period{
+		years:   int16(years) * 10,
+		months:  int16(months) * 10,
+		weeks:   int16(weeks) * 10,
+		days:    int16(days) * 10,
+		hours:   int16(hours) * 10,
+		minutes: int16(minutes) * 10,
+		seconds: int16(seconds) * 10,
 	}
-	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dW%dDT%dH%dM%dS",
-		years, months, weeks, days, hours, minutes, seconds))
+
+	switch {
+	case allInt(intGreaterZero, years, months, weeks, days, hours, minutes, seconds):
+		p.denormal = p.isDenormal()
+
+	case allInt(intLessZero, years, months, weeks, days, hours, minutes, seconds):
+		p.denormal = p.isDenormalNegative()
+
+	default:
+		panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dW%dDT%dH%dM%dS",
+			years, months, weeks, days, hours, minutes, seconds))
+	}
+
+	return p
 }
 
 // NewOf converts a time duration to a Period, and also indicates whether the conversion is precise.
@@ -192,10 +207,10 @@ func Between(t1, t2 time.Time) (p Period) {
 	year, month, day, hour, min, sec, hundredth := daysDiff(t1, t2)
 
 	if sign < 0 {
-		p = New2(-year, -month, 0, -day, -hour, -min, -sec)
+		p = NewWithWeeks(-year, -month, 0, -day, -hour, -min, -sec)
 		p.seconds -= int16(hundredth)
 	} else {
-		p = New2(year, month, 0, day, hour, min, sec)
+		p = NewWithWeeks(year, month, 0, day, hour, min, sec)
 		p.seconds += int16(hundredth)
 	}
 	return
@@ -685,3 +700,30 @@ func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
 
 	return ap.condNegate(neg)
 }
+
+// nominal values, used only for checking, is some values de
+const (
+	nominalDaysPerMonth = 30
+	nominalHoursPerDay  = 24
+	minutesPerHour      = 60
+	secondsPerMinute    = 60
+)
+
+func (period Period) isDenormal() bool {
+	return period.Months() >= monthsPerYear ||
+		period.WeeksFloat() > weeksPerYear ||
+		period.Days() >= nominalDaysPerMonth ||
+		period.Hours() >= nominalHoursPerDay ||
+		period.Minutes() >= minutesPerHour ||
+		period.Seconds() >= secondsPerMinute
+}
+
+func (period Period) isDenormalNegative() bool {
+	return period.Months() <= -monthsPerYear ||
+		period.Days() <= -nominalDaysPerMonth ||
+		period.Hours() <= -nominalHoursPerDay ||
+		period.Minutes() <= -minutesPerHour ||
+		period.Seconds() <= -secondsPerMinute
+}
+
+// months <= -12 || days < -30 || hours <= -24 || minutes <= -60 || seconds <= -60
