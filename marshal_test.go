@@ -64,7 +64,7 @@ func TestDateJSONMarshalling(t *testing.T) {
 		{New(-1, time.December, 31), `"-0001-12-31"`},
 		{New(0, time.January, 1), `"0000-01-01"`},
 		{New(1, time.January, 1), `"0001-01-01"`},
-		{New(1970, time.January, 1), `"1970-01-01"`},
+		{New(1970, time.January, 1), `""`},
 		{New(2012, time.June, 25), `"2012-06-25"`},
 		{New(12345, time.June, 7), `"+12345-06-07"`},
 	}
@@ -120,7 +120,7 @@ func TestDateTextMarshalling(t *testing.T) {
 		if err != nil {
 			t.Errorf("Text(%v) marshal error %v", c, err)
 		} else if string(bb1) != c.want {
-			t.Errorf("Text(%v) == %v, want %v", c.value, string(bb1), c.want)
+			t.Errorf("Text(%v) == %q, want %q", c.value, string(bb1), c.want)
 		} else {
 			err = d.UnmarshalText(bb1)
 			if err != nil {
@@ -135,7 +135,7 @@ func TestDateTextMarshalling(t *testing.T) {
 		if err != nil {
 			t.Errorf("Text(%v) marshal error %v", c, err)
 		} else if string(bb2) != c.want {
-			t.Errorf("Text(%v) == %v, want %v", c.value, string(bb2), c.want)
+			t.Errorf("Text(%v) == %v, want %q", c.value, string(bb2), c.want)
 		} else {
 			err = ds.UnmarshalText(bb2)
 			if err != nil {
