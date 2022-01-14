@@ -89,11 +89,14 @@ func (period Period) String() string {
 	return period.toPeriod64("").String()
 }
 
+func (period PeriodMS) String() string {
+	return period.toPeriod64MS("").String()
+}
+
 func (p64 period64) String() string {
 	if p64 == (period64{}) {
 		return "P0D"
 	}
-
 	buf := &strings.Builder{}
 	if p64.neg {
 		buf.WriteByte('-')
@@ -123,6 +126,40 @@ func (p64 period64) String() string {
 	return buf.String()
 }
 
+func (p64 period64MS) String() string {
+	if p64 == (period64MS{}) {
+		return "P0D"
+	}
+
+	buf := &strings.Builder{}
+	if p64.neg {
+		buf.WriteByte('-')
+	}
+
+	buf.WriteByte('P')
+
+	writeField64(buf, p64.years, byte(Year))
+	writeField64(buf, p64.months, byte(Month))
+
+	if p64.days != 0 {
+		if p64.days%70 == 0 {
+			writeField64(buf, p64.days/7, byte(Week))
+		} else {
+			writeField64(buf, p64.days, byte(Day))
+		}
+	}
+
+	if p64.hours != 0 || p64.minutes != 0 || p64.seconds != 0 || p64.milliseconds != 0 {
+		buf.WriteByte('T')
+	}
+
+	writeField64(buf, p64.hours, byte(Hour))
+	writeField64(buf, p64.minutes, byte(Minute))
+	writeSecondsMS64(buf, p64.seconds, p64.milliseconds)
+
+	return buf.String()
+}
+
 func writeField64(w io.Writer, field int64, designator byte) {
 	if field != 0 {
 		if field%10 != 0 {
@@ -131,6 +168,26 @@ func writeField64(w io.Writer, field int64, designator byte) {
 			fmt.Fprintf(w, "%d", field/10)
 		}
 		w.(io.ByteWriter).WriteByte(designator)
+	}
+}
+
+func writeSecondsMS64(w io.Writer, seconds, millis int64) {
+	if seconds != 0 {
+		fmt.Fprintf(w, "%d", seconds/10)
+	} else if millis != 0 {
+		fmt.Fprintf(w, "0")
+	}
+	if millis != 0 {
+		if millis < 10 {
+			fmt.Fprintf(w, ".00%d", millis)
+		} else if millis < 100 {
+			fmt.Fprintf(w, ".0%d", millis)
+		} else {
+			fmt.Fprintf(w, ".%d", millis)
+		}
+	}
+	if seconds != 0 || millis != 0 {
+		w.(io.ByteWriter).WriteByte(byte(Second))
 	}
 }
 

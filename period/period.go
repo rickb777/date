@@ -23,7 +23,7 @@ const hundredMs = 100 * time.Millisecond
 // reminder: int64 overflow is after 9,223,372,036,854,775,807 (math.MaxInt64)
 
 // Period holds a period of time and provides conversion to/from ISO-8601 representations.
-// Therefore there are six fields: years, months, days, hours, minutes, and seconds.
+// Therefore, there are six fields: years, months, days, hours, minutes, and seconds.
 //
 // In the ISO representation, decimal fractions are supported, although only the last non-zero
 // component is allowed to have a fraction according to the Standard. For example "P2.5Y"
@@ -52,7 +52,7 @@ type Period struct {
 // need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
-// Because this implementation uses int16 internally, the paramters must
+// Because this implementation uses int16 internally, the parameters must
 // be within the range ± 2^16 / 10.
 func NewYMD(years, months, days int) Period {
 	return New(years, months, days, 0, 0, 0)
@@ -63,7 +63,7 @@ func NewYMD(years, months, days int) Period {
 // if you need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
-// Because this implementation uses int16 internally, the paramters must
+// Because this implementation uses int16 internally, the parameters must
 // be within the range ± 2^16 / 10.
 func NewHMS(hours, minutes, seconds int) Period {
 	return New(0, 0, 0, hours, minutes, seconds)
@@ -416,7 +416,7 @@ func (period Period) DurationApprox() time.Duration {
 // When the period specifies hours, minutes and seconds only, the result is precise.
 // however, when the period specifies years, months and days, it is impossible to be precise
 // because the result may depend on knowing date and timezone information, so the duration
-// is estimated on the basis of a year being 365.2425 days as per Gregorian calendar rules)
+// is estimated on the basis of a year being 365.2425 days (as per Gregorian calendar rules)
 // and a month being 1/12 of a that; days are all assumed to be 24 hours long.
 func (period Period) Duration() (time.Duration, bool) {
 	// remember that the fields are all fixed-point 1E1
@@ -443,7 +443,7 @@ func totalDaysApproxE7(period Period) int64 {
 }
 
 // TotalDaysApprox gets the approximate total number of days in the period. The approximation assumes
-// a year is 365.2425 days as per Gregorian calendar rules) and a month is 1/12 of that. Whole
+// a year is 365.2425 days (as per Gregorian calendar rules) and a month is 1/12 of that. Whole
 // multiples of 24 hours are also included in the calculation.
 func (period Period) TotalDaysApprox() int {
 	pn := period.Normalise(false)
@@ -465,9 +465,9 @@ func (period Period) TotalMonthsApprox() int {
 
 // Normalise attempts to simplify the fields. It operates in either precise or imprecise mode.
 //
-// Because the number of hours per day is imprecise (due to daylight savings etc), and because
+// Because the number of hours per day is imprecise (due to daylight savings etc.), and because
 // the number of days per month is variable in the Gregorian calendar, there is a reluctance
-// to transfer time to or from the days element, or to transfer days to or from the months
+// to transfer time to or from the day's element, or to transfer days to or from the months
 // element. To give control over this, there are two modes.
 //
 // In precise mode:
