@@ -2,7 +2,6 @@
 cd "$(dirname $0)"
 PATH=$HOME/go/bin:$PATH
 unset GOPATH
-export GO111MODULE=on
 export GOARCH=${1}
 
 function v
