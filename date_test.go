@@ -23,7 +23,7 @@ func same(d Date, t time.Time) bool {
 		yd == yt && wd == wt
 }
 
-func TestNew(t *testing.T) {
+func TestDate_New(t *testing.T) {
 	cases := []string{
 		"0000-01-01T00:00:00+00:00",
 		"0001-01-01T00:00:00+00:00",
@@ -52,7 +52,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestDaysSinceEpoch(t *testing.T) {
+func TestDate_DaysSinceEpoch(t *testing.T) {
 	zero := Date{}.DaysSinceEpoch()
 	if zero != 0 {
 		t.Errorf("Non zero %v", zero)
@@ -69,7 +69,7 @@ func TestDaysSinceEpoch(t *testing.T) {
 	}
 }
 
-func TestToday(t *testing.T) {
+func TestDate_Today(t *testing.T) {
 	today := Today()
 	now := time.Now()
 	if !same(today, now) {
@@ -91,7 +91,7 @@ func TestToday(t *testing.T) {
 	}
 }
 
-func TestTime(t *testing.T) {
+func TestDate_Time(t *testing.T) {
 	cases := []struct {
 		d Date
 	}{
@@ -217,7 +217,7 @@ func TestArithmetic(t *testing.T) {
 	}
 }
 
-func TestAddDate(t *testing.T) {
+func TestDate_AddDate(t *testing.T) {
 	cases := []struct {
 		d                   Date
 		years, months, days int
@@ -241,7 +241,7 @@ func TestAddDate(t *testing.T) {
 	}
 }
 
-func TestAddPeriod(t *testing.T) {
+func TestDate_AddPeriod(t *testing.T) {
 	cases := []struct {
 		in       Date
 		delta    period.Period

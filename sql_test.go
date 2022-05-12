@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestDateScan(t *testing.T) {
+func TestDate_Scan(t *testing.T) {
 	cases := []struct {
 		v        interface{}
 		expected PeriodOfDays
@@ -51,7 +51,7 @@ func TestDateScan(t *testing.T) {
 	}
 }
 
-func TestDateStringScan(t *testing.T) {
+func TestDateString_Scan(t *testing.T) {
 	cases := []struct {
 		v        interface{}
 		expected string
@@ -88,7 +88,7 @@ func TestDateStringScan(t *testing.T) {
 	}
 }
 
-func TestDateScanWithJunk(t *testing.T) {
+func TestDate_Scan_with_junk(t *testing.T) {
 	cases := []struct {
 		v        interface{}
 		expected string
@@ -106,7 +106,7 @@ func TestDateScanWithJunk(t *testing.T) {
 	}
 }
 
-func TestDateStringScanWithJunk(t *testing.T) {
+func TestDateString_Scan_with_junk(t *testing.T) {
 	cases := []struct {
 		v        interface{}
 		expected string
@@ -124,15 +124,7 @@ func TestDateStringScanWithJunk(t *testing.T) {
 	}
 }
 
-func TestDateScanWithNil(t *testing.T) {
-	var r *Date
-	e := r.Scan(nil)
-	if e != nil {
-		t.Errorf("Got %v", e)
-	}
-}
-
-func TestDateAsStringScanWithNil(t *testing.T) {
+func TestDate_Scan_with_nil(t *testing.T) {
 	var r *Date
 	e := r.Scan(nil)
 	if e != nil {

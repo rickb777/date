@@ -6,6 +6,7 @@ package date
 
 import (
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -35,11 +36,22 @@ const (
 // with possibly extra year digits beyond the prescribed four-digit minimum
 // and with a + or - sign prefix (e.g. , "+12345-06-07", "-0987-06-05").
 func (d Date) String() string {
+	buf := &strings.Builder{}
+	buf.Grow(12)
+	d.WriteTo(buf)
+	return buf.String()
+}
+
+// WriteTo is as per String, albeit writing to an io.Writer.
+func (d Date) WriteTo(w io.Writer) (n64 int64, err error) {
+	var n int
 	year, month, day := d.Date()
 	if 0 <= year && year < 10000 {
-		return fmt.Sprintf("%04d-%02d-%02d", year, month, day)
+		n, err = fmt.Fprintf(w, "%04d-%02d-%02d", year, month, day)
+	} else {
+		n, err = fmt.Fprintf(w, "%+05d-%02d-%02d", year, month, day)
 	}
-	return fmt.Sprintf("%+05d-%02d-%02d", year, month, day)
+	return int64(n), err
 }
 
 // FormatISO returns a textual representation of the date value formatted

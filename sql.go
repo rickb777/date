@@ -16,8 +16,11 @@ import (
 // The underlying column type can be an integer (period of days since the epoch),
 // a string, or a DATE.
 
-// Scan parses some value. It implements sql.Scanner,
-// https://golang.org/pkg/database/sql/#Scanner
+// Scan parses some value. If the value holds an integer, it is treated as the
+// period-of-days value that represents a Date. Otherwise, if it holds a string,
+// the AutoParse function is used.
+//
+// This implements sql.Scanner https://golang.org/pkg/database/sql/#Scanner
 func (d *Date) Scan(value interface{}) (err error) {
 	if value == nil {
 		return nil
@@ -54,8 +57,10 @@ func (d *Date) scanString(value string) (err error) {
 	return err
 }
 
-// Value converts the value to an int64. It implements driver.Valuer,
-// https://golang.org/pkg/database/sql/driver/#Valuer
+// Value converts the value to an int64. Note that if you need to store as a string,
+// convert the Date to a DateString.
+//
+// This implements driver.Valuer https://golang.org/pkg/database/sql/driver/#Valuer
 func (d Date) Value() (driver.Value, error) {
 	return int64(d.day), nil
 }
@@ -77,8 +82,11 @@ func (d Date) DateString() DateString {
 	return DateString(d)
 }
 
-// Scan parses some value. It implements sql.Scanner,
-// https://golang.org/pkg/database/sql/#Scanner
+// Scan parses some value. If the value holds an integer, it is treated as the
+// period-of-days value that represents a Date. Otherwise, if it holds a string,
+// the AutoParse function is used.
+//
+// This implements sql.Scanner https://golang.org/pkg/database/sql/#Scanner
 func (ds *DateString) Scan(value interface{}) (err error) {
 	if value == nil {
 		return nil
@@ -86,8 +94,10 @@ func (ds *DateString) Scan(value interface{}) (err error) {
 	return (*Date)(ds).Scan(value)
 }
 
-// Value converts the value to an int64. It implements driver.Valuer,
-// https://golang.org/pkg/database/sql/driver/#Valuer
+// Value converts the value to a string. Note that if you only need to store as an int64,
+// convert the DateString to a Date.
+//
+// This implements driver.Valuer https://golang.org/pkg/database/sql/driver/#Valuer
 func (ds DateString) Value() (driver.Value, error) {
 	return ds.Date().String(), nil
 }

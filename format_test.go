@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestString(t *testing.T) {
+func TestDate_String(t *testing.T) {
 	cases := []struct {
 		value string
 	}{
@@ -28,7 +28,7 @@ func TestString(t *testing.T) {
 	}
 }
 
-func TestFormatISO(t *testing.T) {
+func TestDate_FormatISO(t *testing.T) {
 	cases := []struct {
 		value string
 		n     int
@@ -53,7 +53,7 @@ func TestFormatISO(t *testing.T) {
 	}
 }
 
-func TestFormat(t *testing.T) {
+func TestDate_Format(t *testing.T) {
 	cases := []struct {
 		value    string
 		format   string

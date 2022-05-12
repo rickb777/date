@@ -5,6 +5,7 @@
 package date
 
 import (
+	"bytes"
 	"errors"
 )
 
@@ -52,11 +53,12 @@ func (ds *DateString) UnmarshalBinary(data []byte) error {
 // Note that the zero value is marshalled as a blank string, which allows
 // "omitempty" to work.
 func (d Date) MarshalJSON() ([]byte, error) {
-	if d.IsZero() {
-		return []byte{'"', '"'}, nil
-	}
-	s := "\"" + d.String() + "\""
-	return []byte(s), nil
+	buf := &bytes.Buffer{}
+	buf.Grow(14)
+	buf.WriteByte('"')
+	d.WriteTo(buf)
+	buf.WriteByte('"')
+	return buf.Bytes(), nil
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
