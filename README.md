@@ -1,10 +1,6 @@
 # date
 
-[![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg)](https://pkg.go.dev/github.com/rickb777/date)
-[![Build Status](https://api.travis-ci.org/rickb777/date.svg?branch=master)](https://travis-ci.org/rickb777/date/builds)
-[![Coverage Status](https://coveralls.io/repos/rickb777/date/badge.svg?branch=master&service=github)](https://coveralls.io/github/rickb777/date?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/rickb777/date)](https://goreportcard.com/report/github.com/rickb777/date)
-[![Issues](https://img.shields.io/github/issues/rickb777/date.svg)](https://github.com/rickb777/date/issues)
+This package is forked from https://github.com/rickb777/date. It is unmodified beyond using 32-bit integers to store Period components internally (instead of 16-bit components) to avoid integer overflows. The upstream package is itself being deprecated in favor of a replacement that addresses the overflow issue, but the replacement package is under active development and not yet ready for production use.
 
 Package `date` provides functionality for working with dates.
 
@@ -20,16 +16,16 @@ It also provides
  * `timespan.TimeSpan` which expresses a duration of time between two instants.
  * `view.VDate` which wraps `Date` for use in templates etc.
 
-See [package documentation](https://godoc.org/github.com/rickb777/date) for
+See [package documentation](https://godoc.org/github.com/voltusdev/date) for
 full documentation and examples.
 
 ## Installation
 
-    go get -u github.com/rickb777/date
+    go get -u github.com/voltusdev/date
 
 or
 
-    dep ensure -add github.com/rickb777/date
+    dep ensure -add github.com/voltusdev/date
 
 ## Status
 

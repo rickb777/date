@@ -12,8 +12,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/rickb777/date"
-	"github.com/rickb777/date/clock"
+	"github.com/voltusdev/date"
+	"github.com/voltusdev/date/clock"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )

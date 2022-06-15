@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rickb777/date"
-	"github.com/rickb777/date/period"
+	"github.com/voltusdev/date"
+	"github.com/voltusdev/date/period"
 )
 
 const minusOneNano time.Duration = -1

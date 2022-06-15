@@ -33,22 +33,22 @@ func (period Period) toPeriod64(input string) *period64 {
 
 func (p64 *period64) toPeriod() (Period, error) {
 	var f []string
-	if p64.years > math.MaxInt16 {
+	if p64.years > math.MaxInt32 {
 		f = append(f, "years")
 	}
-	if p64.months > math.MaxInt16 {
+	if p64.months > math.MaxInt32 {
 		f = append(f, "months")
 	}
-	if p64.days > math.MaxInt16 {
+	if p64.days > math.MaxInt32 {
 		f = append(f, "days")
 	}
-	if p64.hours > math.MaxInt16 {
+	if p64.hours > math.MaxInt32 {
 		f = append(f, "hours")
 	}
-	if p64.minutes > math.MaxInt16 {
+	if p64.minutes > math.MaxInt32 {
 		f = append(f, "minutes")
 	}
-	if p64.seconds > math.MaxInt16 {
+	if p64.seconds > math.MaxInt32 {
 		f = append(f, "seconds")
 	}
 
@@ -61,14 +61,14 @@ func (p64 *period64) toPeriod() (Period, error) {
 
 	if p64.neg {
 		return Period{
-			int16(-p64.years), int16(-p64.months), int16(-p64.days),
-			int16(-p64.hours), int16(-p64.minutes), int16(-p64.seconds),
+			int32(-p64.years), int32(-p64.months), int32(-p64.days),
+			int32(-p64.hours), int32(-p64.minutes), int32(-p64.seconds),
 		}, nil
 	}
 
 	return Period{
-		int16(p64.years), int16(p64.months), int16(p64.days),
-		int16(p64.hours), int16(p64.minutes), int16(p64.seconds),
+		int32(p64.years), int32(p64.months), int32(p64.days),
+		int32(p64.hours), int32(p64.minutes), int32(p64.seconds),
 	}, nil
 }
 

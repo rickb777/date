@@ -181,18 +181,18 @@ func expectValid(t *testing.T, period Period, hint interface{}) Period {
 	return period
 }
 
-func fraction(i int16) int {
+func fraction(i int32) int {
 	return int(i) % 10
 }
 
-func pos(i int16) int {
+func pos(i int32) int {
 	if i > 0 {
 		return 1
 	}
 	return 0
 }
 
-func neg(i int16) int {
+func neg(i int32) int {
 	if i < 0 {
 		return 1
 	}

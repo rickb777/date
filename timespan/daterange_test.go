@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/rickb777/date"
-	"github.com/rickb777/date/period"
+	. "github.com/voltusdev/date"
+	"github.com/voltusdev/date/period"
 )
 
 var d0320 = New(2015, time.March, 20)

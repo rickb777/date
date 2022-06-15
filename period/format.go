@@ -134,6 +134,6 @@ func writeField64(w io.Writer, field int64, designator byte) {
 	}
 }
 
-func float10(v int16) float32 {
+func float10(v int32) float32 {
 	return float32(v) / 10
 }

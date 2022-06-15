@@ -44,7 +44,7 @@ const hundredMs = 100 * time.Millisecond
 // This is because the number of weeks is always inferred from the number of days.
 //
 type Period struct {
-	years, months, days, hours, minutes, seconds int16
+	years, months, days, hours, minutes, seconds int32
 }
 
 // NewYMD creates a simple period without any fractional parts. The fields are initialised verbatim
@@ -52,8 +52,8 @@ type Period struct {
 // need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
-// Because this implementation uses int16 internally, the paramters must
-// be within the range ± 2^16 / 10.
+// Because this implementation uses int32 internally, the parameters must
+// be within the range ± 2^32 / 10.
 func NewYMD(years, months, days int) Period {
 	return New(years, months, days, 0, 0, 0)
 }
@@ -63,8 +63,8 @@ func NewYMD(years, months, days int) Period {
 // if you need to.
 //
 // All the parameters must have the same sign (otherwise a panic occurs).
-// Because this implementation uses int16 internally, the paramters must
-// be within the range ± 2^16 / 10.
+// Because this implementation uses int32 internally, the parameters must
+// be within the range ± 2^32 / 10.
 func NewHMS(hours, minutes, seconds int) Period {
 	return New(0, 0, 0, hours, minutes, seconds)
 }
@@ -78,8 +78,8 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 	if (years >= 0 && months >= 0 && days >= 0 && hours >= 0 && minutes >= 0 && seconds >= 0) ||
 		(years <= 0 && months <= 0 && days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
 		return Period{
-			int16(years) * 10, int16(months) * 10, int16(days) * 10,
-			int16(hours) * 10, int16(minutes) * 10, int16(seconds) * 10,
+			int32(years) * 10, int32(months) * 10, int32(days) * 10,
+			int32(hours) * 10, int32(minutes) * 10, int32(seconds) * 10,
 		}
 	}
 	panic(fmt.Sprintf("Periods must have homogeneous signs; got P%dY%dM%dDT%dH%dM%dS",
@@ -96,7 +96,7 @@ func New(years, months, days, hours, minutes, seconds int) Period {
 // reduces errors arising from the variable lengths of months. For larger time differences, greater than
 // 3276 hours, the days, months and years fields are used as well.
 func NewOf(duration time.Duration) (p Period, precise bool) {
-	var sign int16 = 1
+	var sign int32 = 1
 	d := duration
 	if duration < 0 {
 		sign = -1
@@ -112,7 +112,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		// simple HMS case
 		minutes := d % time.Hour / time.Minute
 		seconds := d % time.Minute / hundredMs
-		return Period{0, 0, 0, sign10 * int16(totalHours), sign10 * int16(minutes), sign * int16(seconds)}, true
+		return Period{0, 0, 0, sign10 * int32(totalHours), sign10 * int32(minutes), sign * int32(seconds)}, true
 	}
 
 	totalDays := totalHours / 24 // ignoring daylight savings adjustments
@@ -121,7 +121,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 		hours := totalHours - totalDays*24
 		minutes := d % time.Hour / time.Minute
 		seconds := d % time.Minute / hundredMs
-		return Period{0, 0, sign10 * int16(totalDays), sign10 * int16(hours), sign10 * int16(minutes), sign * int16(seconds)}, false
+		return Period{0, 0, sign10 * int32(totalDays), sign10 * int32(hours), sign10 * int32(minutes), sign * int32(seconds)}, false
 	}
 
 	// TODO it is uncertain whether this is too imprecise and should be improved
@@ -129,7 +129,7 @@ func NewOf(duration time.Duration) (p Period, precise bool) {
 	months := ((oneE4 * totalDays) / daysPerMonthE4) - (12 * years)
 	hours := totalHours - totalDays*24
 	totalDays = ((totalDays * oneE4) - (daysPerMonthE4 * months) - (daysPerYearE4 * years)) / oneE4
-	return Period{sign10 * int16(years), sign10 * int16(months), sign10 * int16(totalDays), sign10 * int16(hours), 0, 0}, false
+	return Period{sign10 * int32(years), sign10 * int32(months), sign10 * int32(totalDays), sign10 * int32(hours), 0, 0}, false
 }
 
 // Between converts the span between two times to a period. Based on the Gregorian conversion
@@ -157,10 +157,10 @@ func Between(t1, t2 time.Time) (p Period) {
 
 	if sign < 0 {
 		p = New(-year, -month, -day, -hour, -min, -sec)
-		p.seconds -= int16(hundredth)
+		p.seconds -= int32(hundredth)
 	} else {
 		p = New(year, month, day, hour, min, sec)
-		p.seconds += int16(hundredth)
+		p.seconds += int32(hundredth)
 	}
 	return
 }
@@ -273,7 +273,7 @@ func (period Period) Negate() Period {
 	return Period{-period.years, -period.months, -period.days, -period.hours, -period.minutes, -period.seconds}
 }
 
-func absInt16(v int16) int16 {
+func absint32(v int32) int32 {
 	if v < 0 {
 		return -v
 	}
@@ -341,7 +341,7 @@ func (period Period) WeeksFloat() float32 {
 // ModuloDays calculates the whole number of days remaining after the whole number of weeks
 // has been excluded.
 func (period Period) ModuloDays() int {
-	days := absInt16(period.days) % 70
+	days := absint32(period.days) % 70
 	f := int(days / 10)
 	if period.days < 0 {
 		return -f
@@ -525,17 +525,17 @@ func (period Period) Simplify(precise bool, th ...int) Period {
 	case 0:
 		return period.doSimplify(precise, 60, 60, 100, 100)
 	case 1:
-		return period.doSimplify(precise, int16(th[0]*10), int16(th[0]*10), int16(th[0]*10), int16(th[0]*10))
+		return period.doSimplify(precise, int32(th[0]*10), int32(th[0]*10), int32(th[0]*10), int32(th[0]*10))
 	case 2:
-		return period.doSimplify(precise, int16(th[0]*10), int16(th[0]*10), int16(th[1]*10), int16(th[1]*10))
+		return period.doSimplify(precise, int32(th[0]*10), int32(th[0]*10), int32(th[1]*10), int32(th[1]*10))
 	case 3:
-		return period.doSimplify(precise, int16(th[0]*10), int16(th[1]*10), int16(th[2]*10), int16(th[2]*10))
+		return period.doSimplify(precise, int32(th[0]*10), int32(th[1]*10), int32(th[2]*10), int32(th[2]*10))
 	default:
-		return period.doSimplify(precise, int16(th[0]*10), int16(th[1]*10), int16(th[2]*10), int16(th[3]*10))
+		return period.doSimplify(precise, int32(th[0]*10), int32(th[1]*10), int32(th[2]*10), int32(th[3]*10))
 	}
 }
 
-func (period Period) doSimplify(precise bool, a, b, c, d int16) Period {
+func (period Period) doSimplify(precise bool, a, b, c, d int32) Period {
 	if period.years%10 != 0 {
 		return period
 	}

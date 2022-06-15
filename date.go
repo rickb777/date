@@ -8,8 +8,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/rickb777/date/gregorian"
-	"github.com/rickb777/date/period"
+	"github.com/voltusdev/date/gregorian"
+	"github.com/voltusdev/date/period"
 )
 
 // PeriodOfDays describes a period of time measured in whole days. Negative values

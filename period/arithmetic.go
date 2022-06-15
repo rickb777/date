@@ -56,7 +56,7 @@ func (period Period) AddTo(t time.Time) (time.Time, bool) {
 // ignored.
 //
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with two
-// decimal places; each field is only int16.
+// decimal places; each field is only int32.
 //
 // Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
 func (period Period) Scale(factor float32) Period {
@@ -69,7 +69,7 @@ func (period Period) Scale(factor float32) Period {
 // happened.
 //
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with one
-// decimal place; each field is only int16.
+// decimal place; each field is only int32.
 //
 // Known issue: scaling by a large reduction factor (i.e. much less than one) doesn't work properly.
 func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
@@ -100,7 +100,7 @@ func (period Period) ScaleWithOverflowCheck(factor float32) (Period, error) {
 // If the divisor is zero, a panic will arise.
 //
 // Bear in mind that the internal representation is limited by fixed-point arithmetic with two
-// decimal places; each field is only int16.
+// decimal places; each field is only int32.
 //func (period Period) RationalScale(multiplier, divisor int) (Period, error) {
 //	return period.rationalScale64(int64(multiplier), int64(divisor))
 //}
