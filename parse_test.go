@@ -16,12 +16,13 @@ func TestAutoParse(t *testing.T) {
 		month time.Month
 		day   int
 	}{
+		{"01-01-1970", 1970, time.January, 1},
+		{"+1970-01-01", 1970, time.January, 1},
+		{"+01970-01-02", 1970, time.January, 2},
 		{" 31/12/1969 ", 1969, time.December, 31},
 		{"1969/12/31", 1969, time.December, 31},
 		{"1969.12.31", 1969, time.December, 31},
 		{"1969-12-31", 1969, time.December, 31},
-		{"+1970-01-01", 1970, time.January, 1},
-		{"+01970-01-02", 1970, time.January, 2},
 		{"2000-02-28", 2000, time.February, 28},
 		{"+2000-02-29", 2000, time.February, 29},
 		{"+02000-03-01", 2000, time.March, 1},

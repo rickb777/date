@@ -52,6 +52,32 @@ func TestDate_New(t *testing.T) {
 	}
 }
 
+func Test_New_and_Add(t *testing.T) {
+	cases := []struct {
+		offset   PeriodOfDays
+		expected Date
+	}{
+		// For year Y, Julian date offset is
+		//     D = [Y/100] - [Y/400] - 2
+		{offset: -135140, expected: New(1600, time.January, 1)}, // 10 days Julian offset
+		{offset: -98615, expected: New(1700, time.January, 1)},  // 10 days Julian offset
+		{offset: -62091, expected: New(1800, time.January, 1)},
+		{offset: -365, expected: New(1969, time.January, 1)},
+		{offset: 0, expected: New(1970, time.January, 1)},
+		{offset: 365, expected: New(1971, time.January, 1)},
+		{offset: 36525, expected: New(2070, time.January, 1)},
+	}
+
+	zero := Date{}
+
+	for i, c := range cases {
+		d2 := zero.Add(c.offset)
+		if !d2.Equal(c.expected) {
+			t.Errorf("%d: %d gives %s, wanted %s", i, c.offset, d2, c.expected)
+		}
+	}
+}
+
 func TestDate_DaysSinceEpoch(t *testing.T) {
 	zero := Date{}.DaysSinceEpoch()
 	if zero != 0 {
@@ -178,21 +204,21 @@ func testPredicate(t *testing.T, di, dj Date, p, q bool, m string) {
 }
 
 func TestArithmetic(t *testing.T) {
-	cases := []struct {
-		d Date
-	}{
-		{New(-1234, time.February, 5)},
-		{New(0, time.April, 12)},
-		{New(1, time.January, 1)},
-		{New(1946, time.February, 4)},
-		{New(1970, time.January, 1)},
-		{New(1976, time.April, 1)},
-		{New(1999, time.December, 1)},
-		{New(1111111, time.June, 21)},
+	dates := []Date{
+		New(-1234, time.February, 5),
+		New(0, time.April, 12),
+		New(1, time.January, 1),
+		New(1946, time.February, 4),
+		New(1970, time.January, 1),
+		New(1976, time.April, 1),
+		New(1999, time.December, 1),
+		New(1111111, time.June, 21),
 	}
+
 	offsets := []PeriodOfDays{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
-	for _, c := range cases {
-		di := c.d
+
+	for _, d := range dates {
+		di := d
 		for _, days := range offsets {
 			dj := di.Add(days)
 			days2 := dj.Sub(di)

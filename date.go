@@ -19,7 +19,7 @@ type PeriodOfDays int32
 // ZeroDays is the named zero value for PeriodOfDays.
 const ZeroDays PeriodOfDays = 0
 
-// A Date represents a date under the (proleptic) Gregorian calendar as
+// A Date represents a date under the proleptic Gregorian calendar as
 // used by ISO 8601. This calendar uses astronomical year numbering,
 // so it includes a year 0 and represents earlier years as negative numbers
 // (i.e. year 0 is 1 BC; year -1 is 2 BC, and so on).
@@ -30,8 +30,8 @@ const ZeroDays PeriodOfDays = 0
 //
 // Programs using dates should typically store and pass them as values,
 // not pointers.  That is, date variables and struct fields should be of
-// type date.Date, not *date.Date.  A Date value can be used by
-// multiple goroutines simultaneously.
+// type date.Date, not *date.Date unless the pointer indicates an optional
+// value.  A Date value can be used by multiple goroutines simultaneously.
 //
 // Date values can be compared using the Before, After, and Equal methods
 // as well as the == and != operators.
@@ -40,9 +40,9 @@ const ZeroDays PeriodOfDays = 0
 // them. The Add method adds a Date and a number of days, producing a Date.
 //
 // The zero value of type Date is Thursday, January 1, 1970 (called 'the
-// epoch'), based on Unix convention. As this date is unlikely to come up in
-// practice, the IsZero method gives a simple way of detecting a date that
-// has not been initialized explicitly.
+// epoch'), based on Unix convention. The IsZero method gives a simple way
+// of detecting a date that has not been initialized explicitly, with the
+// caveat that this is also a 'normal' date.
 //
 // The first official date of the Gregorian calendar was Friday, October 15th
 // 1582, quite unrelated to the epoch used here. The Date type does not
@@ -188,7 +188,9 @@ func (d Date) ISOWeek() (year, week int) {
 	return t.ISOWeek()
 }
 
-// IsZero reports whether t represents the zero date.
+// IsZero reports whether d represents the zero (i.e. uninitialised) date.
+// Because Date follows Unix conventions, it is based on 1970-01-01. So be
+// careful with this: the corresponding 1970-01-01 date is not itself a 'zero'.
 func (d Date) IsZero() bool {
 	return d.day == 0
 }
@@ -272,12 +274,12 @@ func (d Date) DaysSinceEpoch() (days PeriodOfDays) {
 	return d.day
 }
 
-// IsLeap simply tests whether a given year is a leap year, using the Gregorian calendar algorithm.
+// IsLeap simply tests whether a given year is a leap year, using the proleptic Gregorian calendar algorithm.
 func IsLeap(year int) bool {
 	return gregorian.IsLeap(year)
 }
 
-// DaysIn gives the number of days in a given month, according to the Gregorian calendar.
+// DaysIn gives the number of days in a given month, according to the proleptic Gregorian calendar.
 func DaysIn(year int, month time.Month) int {
 	return gregorian.DaysIn(year, month)
 }

@@ -104,10 +104,5 @@ func (ds DateString) Value() (driver.Value, error) {
 
 //-------------------------------------------------------------------------------------------------
 
-// DisableTextStorage reduces the Scan method so that only integers are handled.
-// Normally, database types int64, []byte, string and time.Time are supported.
-// When set true, only int64 is supported; this mode allows optimisation of SQL
-// result processing and would only be used during development.
-//
-// Deprecated: this is no longer used.
+// Deprecated: DisableTextStorage is no longer used.
 var DisableTextStorage = false
