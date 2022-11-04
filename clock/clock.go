@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 // Package clock specifies a time of day with resolution to the nearest millisecond.
-//
 package clock
 
 import (

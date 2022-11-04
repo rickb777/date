@@ -4,7 +4,6 @@
 
 // This tool prints equivalences between the string representation and the internal numerical
 // representation for dates and clocks.
-//
 package main
 
 import (

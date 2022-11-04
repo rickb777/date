@@ -222,8 +222,8 @@ func (ts TimeSpan) MarshalText() (text []byte, err error) {
 
 // ParseRFC5545InLocation parses a string as a timespan. The string must contain either of
 //
-//     time "/" time
-//     time "/" period
+//	time "/" time
+//	time "/" period
 //
 // If the input time(s) ends in "Z", the location is UTC (as per RFC5545). Otherwise, the
 // specified location will be used for the resulting times; this behaves the same as

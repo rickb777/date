@@ -19,14 +19,14 @@
 //
 // * `view.VDate` which wraps `Date` for use in templates etc.
 //
-// Credits
+// # Credits
 //
 // This package follows very closely the design of package time
 // (http://golang.org/pkg/time/) in the standard library, many of the Date
 // methods are implemented using the corresponding methods of the time.Time
 // type, and much of the documentation is copied directly from that package.
 //
-// References
+// # References
 //
 // https://golang.org/src/time/time.go
 //
@@ -45,5 +45,4 @@
 // https://tools.ietf.org/html/rfc1123
 //
 // https://tools.ietf.org/html/rfc3339
-//
 package date

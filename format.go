@@ -13,7 +13,9 @@ import (
 // These are predefined layouts for use in Date.Format and Date.Parse.
 // The reference date used in the layouts is the same date used by the
 // time package in the standard library:
-//     Monday, Jan 2, 2006
+//
+//	Monday, Jan 2, 2006
+//
 // To define your own format, write down what the reference date would look
 // like formatted your way; see the values of the predefined layouts for
 // examples. The model is to demonstrate what the reference date looks like
@@ -76,7 +78,9 @@ func (d Date) FormatISO(yearDigits int) string {
 // Format returns a textual representation of the date value formatted according
 // to layout, which defines the format by showing how the reference date,
 // defined to be
-//     Mon, Jan 2, 2006
+//
+//	Mon, Jan 2, 2006
+//
 // would be displayed if it were the value; it serves as an example of the
 // desired output.
 //
@@ -86,7 +90,9 @@ func (d Date) FormatISO(yearDigits int) string {
 //
 // Additionally, it is able to insert the day-number suffix into the output string.
 // This is done by including "nd" in the format string, which will become
-//     Mon, Jan 2nd, 2006
+//
+//	Mon, Jan 2nd, 2006
+//
 // For example, New Year's Day might be rendered as "Fri, Jan 1st, 2016". To alter
 // the suffix strings for a different locale, change DaySuffixes or use FormatWithSuffixes
 // instead.

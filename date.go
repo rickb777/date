@@ -48,7 +48,6 @@ const ZeroDays PeriodOfDays = 0
 // 1582, quite unrelated to the epoch used here. The Date type does not
 // distinguish between official Gregorian dates and earlier proleptic dates,
 // which can also be represented when needed.
-//
 type Date struct {
 	day PeriodOfDays // day gives the number of days elapsed since date zero.
 }

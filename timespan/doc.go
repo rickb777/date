@@ -5,5 +5,4 @@
 // Package timespan provides spans of time (TimeSpan), and ranges of dates (DateRange).
 // Both are half-open intervals for which the start is included and the end is excluded.
 // This allows for empty spans and also facilitates aggregating spans together.
-//
 package timespan

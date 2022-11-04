@@ -35,7 +35,6 @@ func MustAutoParse(value string) Date {
 // * dd/mm/yyyy | dd.mm.yyyy (or any similar pattern)
 //
 // * surrounding whitespace is ignored
-//
 func AutoParse(value string) (Date, error) {
 	abs := strings.TrimSpace(value)
 	if len(abs) == 0 {
@@ -182,7 +181,9 @@ func MustParse(layout, value string) Date {
 // Parse parses a formatted string of a known layout and returns the Date value it represents.
 // The layout defines the format by showing how the reference date, defined
 // to be
-//     Monday, Jan 2, 2006
+//
+//	Monday, Jan 2, 2006
+//
 // would be interpreted if it were the value; it serves as an example of the
 // input format. The same interpretation will then be made to the input string.
 //
