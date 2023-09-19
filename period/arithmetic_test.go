@@ -89,45 +89,56 @@ func TestPeriodAddToTime(t *testing.T) {
 	const min = 60 * sec
 	const hr = 60 * min
 
-	// A conveniently round number (14 July 2017 @ 2:40am UTC)
-	var t0 = time.Unix(1500000000, 0).UTC()
+	est, err := time.LoadLocation("America/New_York")
+	g.Expect(err).NotTo(HaveOccurred())
 
-	cases := []struct {
-		value   string
-		result  time.Time
-		precise bool
-	}{
-		// precise cases
-		{"P0D", t0, true},
-		{"PT1S", t0.Add(sec), true},
-		{"PT0.1S", t0.Add(100 * ms), true},
-		{"-PT0.1S", t0.Add(-100 * ms), true},
-		{"PT3276S", t0.Add(3276 * sec), true},
-		{"PT1M", t0.Add(60 * sec), true},
-		{"PT0.1M", t0.Add(6 * sec), true},
-		{"PT3276M", t0.Add(3276 * min), true},
-		{"PT1H", t0.Add(hr), true},
-		{"PT0.1H", t0.Add(6 * min), true},
-		{"PT3276H", t0.Add(3276 * hr), true},
-		{"P1D", t0.AddDate(0, 0, 1), true},
-		{"P3276D", t0.AddDate(0, 0, 3276), true},
-		{"P1M", t0.AddDate(0, 1, 0), true},
-		{"P3276M", t0.AddDate(0, 3276, 0), true},
-		{"P1Y", t0.AddDate(1, 0, 0), true},
-		{"-P1Y", t0.AddDate(-1, 0, 0), true},
-		{"P3276Y", t0.AddDate(3276, 0, 0), true},   // near the upper limit of range
-		{"-P3276Y", t0.AddDate(-3276, 0, 0), true}, // near the lower limit of range
-		// approximate cases
-		{"P0.1D", t0.Add(144 * min), false},
-		{"-P0.1D", t0.Add(-144 * min), false},
-		{"P0.1M", t0.Add(oneMonthApprox / 10), false},
-		{"P0.1Y", t0.Add(oneYearApprox / 10), false},
+	times := []time.Time{
+		// A conveniently round number but with non-zero nanoseconds (14 July 2017 @ 2:40am UTC)
+		time.Unix(1500000000, 1).UTC(),
+		// This specific time fails for EST due behaviour of Time.AddDate
+		time.Date(2020, 11, 1, 1, 0, 0, 0, est),
 	}
-	for i, c := range cases {
-		p := MustParse(c.value)
-		t1, prec := p.AddTo(t0)
-		g.Expect(t1).To(Equal(c.result), info(i, c.value))
-		g.Expect(prec).To(Equal(c.precise), info(i, c.value))
+
+	for _, t0 := range times {
+		cases := []struct {
+			value   string
+			result  time.Time
+			precise bool
+		}{
+			// precise cases
+			{"P0D", t0, true},
+			{"PT1S", t0.Add(sec), true},
+			{"PT0.1S", t0.Add(100 * ms), true},
+			{"-PT0.1S", t0.Add(-100 * ms), true},
+			{"PT3276S", t0.Add(3276 * sec), true},
+			{"PT1M", t0.Add(60 * sec), true},
+			{"PT0.1M", t0.Add(6 * sec), true},
+			{"PT3276M", t0.Add(3276 * min), true},
+			{"PT1H", t0.Add(hr), true},
+			{"PT0.1H", t0.Add(6 * min), true},
+			{"PT3276H", t0.Add(3276 * hr), true},
+			{"P1D", t0.AddDate(0, 0, 1), true},
+			{"P3276D", t0.AddDate(0, 0, 3276), true},
+			{"P1M", t0.AddDate(0, 1, 0), true},
+			{"P3276M", t0.AddDate(0, 3276, 0), true},
+			{"P1Y", t0.AddDate(1, 0, 0), true},
+			{"-P1Y", t0.AddDate(-1, 0, 0), true},
+			{"P3276Y", t0.AddDate(3276, 0, 0), true},   // near the upper limit of range
+			{"-P3276Y", t0.AddDate(-3276, 0, 0), true}, // near the lower limit of range
+			// approximate cases
+			{"P0.1D", t0.Add(144 * min), false},
+			{"-P0.1D", t0.Add(-144 * min), false},
+			{"P0.1M", t0.Add(oneMonthApprox / 10), false},
+			{"P0.1Y", t0.Add(oneYearApprox / 10), false},
+		}
+		for i, c := range cases {
+			p, err := ParseWithNormalise(c.value, false)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			t1, prec := p.AddTo(t0)
+			g.Expect(t1).To(Equal(c.result), info(i, c.value, t0))
+			g.Expect(prec).To(Equal(c.precise), info(i, c.value, t0))
+		}
 	}
 }
 
