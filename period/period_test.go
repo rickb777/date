@@ -41,7 +41,9 @@ func TestParseErrors(t *testing.T) {
 		{"P1D2D", false, ": 'D' designator cannot occur more than once", "P1D2D"},
 		{"PT1HT1S", false, ": 'T' designator cannot occur more than once", "PT1HT1S"},
 		{"P0.1YT0.1S", false, ": 'Y' & 'S' only the last field can have a fraction", "P0.1YT0.1S"},
+		{"P0.1Y1M1DT1H1M0.1S", false, ": 'Y' & 'S' only the last field can have a fraction", "P0.1Y1M1DT1H1M0.1S"},
 		{"P", false, ": expected 'Y', 'M', 'W', 'D', 'H', 'M', or 'S' designator", "P"},
+
 		// integer overflow
 		{"P32768Y", false, ": integer overflow occurred in years", "P32768Y"},
 		{"P32768M", false, ": integer overflow occurred in months", "P32768M"},
