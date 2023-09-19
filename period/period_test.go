@@ -730,8 +730,13 @@ func TestBetween(t *testing.T) {
 
 		// larger ranges
 		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{days: 29210, seconds: 10}},
-		{utc(2008, 1, 1, 0, 0, 1, 0), utc(2016, 12, 31, 0, 0, 2, 0), Period{years: 80, months: 110, days: 300, seconds: 10}},
+		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2017, 12, 21, 0, 0, 2, 0), Period{days: 32760, seconds: 10}},
+		{utc(2009, 1, 1, 0, 0, 1, 0), utc(2017, 12, 22, 0, 0, 2, 0), Period{years: 80, months: 110, days: 210, seconds: 10}},
+		{utc(2009, 1, 1, 10, 10, 10, 00), utc(2017, 12, 23, 5, 5, 5, 5), Period{years: 80, months: 110, days: 220, hours: 180, minutes: 540, seconds: 550}},
 		{utc(1900, 1, 1, 0, 0, 1, 0), utc(2009, 12, 31, 0, 0, 2, 0), Period{years: 1090, months: 110, days: 300, seconds: 10}},
+
+		{japan(2021, 3, 1, 0, 0, 0, 0), japan(2021, 9, 7, 0, 0, 0, 0), Period{days: 1900}},
+		{japan(2021, 3, 1, 0, 0, 0, 0), utc(2021, 9, 7, 0, 0, 0, 0), Period{days: 1900, hours: 90}},
 	}
 	for i, c := range cases {
 		pp := Between(c.a, c.b)
@@ -1085,10 +1090,16 @@ func bst(year int, month time.Month, day, hour, min, sec, msec int) time.Time {
 	return time.Date(year, month, day, hour, min, sec, msec*int(time.Millisecond), london)
 }
 
+func japan(year int, month time.Month, day, hour, min, sec, msec int) time.Time {
+	return time.Date(year, month, day, hour, min, sec, msec*int(time.Millisecond), tokyo)
+}
+
 var london *time.Location // UTC + 1 hour during summer
+var tokyo *time.Location  // UTC + 1 hour during summer
 
 func init() {
 	london, _ = time.LoadLocation("Europe/London")
+	tokyo, _ = time.LoadLocation("Asia/Tokyo")
 }
 
 func info(i int, m ...interface{}) string {
