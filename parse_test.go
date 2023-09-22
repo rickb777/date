@@ -195,6 +195,7 @@ func TestParse(t *testing.T) {
 		{RFC1123, "05 Dec 1928", 1928, time.December, 5},
 		{RFC1123W, "Mon, 05 Dec 1928", 1928, time.December, 5},
 		{RFC3339, "2345-06-07", 2345, time.June, 7},
+		{time.RFC3339Nano, "2020-04-01T12:11:10.101+09:00", 2020, time.April, 1},
 		{"20060102", "20190619", 2019, time.June, 19},
 	}
 	for _, c := range cases {
