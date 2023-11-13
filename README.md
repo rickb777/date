@@ -15,13 +15,15 @@ and convenient for calendrical calculations and date parsing and formatting
 It also provides
 
  * `clock.Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
- * `period.Period` which expresses a period corresponding to the ISO-8601 form (e.g. "PT30S").
  * `timespan.DateRange` which expresses a period between two dates.
  * `timespan.TimeSpan` which expresses a duration of time between two instants.
  * `view.VDate` which wraps `Date` for use in templates etc.
 
 See [package documentation](https://godoc.org/github.com/rickb777/date) for
 full documentation and examples.
+
+See also [period.Period](https://pkg.go.dev/github.com/rickb777/period), which implements periods corresponding
+to the ISO-8601 form (e.g. "PT30S").
 
 ## Installation
 
@@ -34,6 +36,11 @@ or
 ## Status
 
 This library has been in reliable production use for some time. Versioning follows the well-known semantic version pattern.
+
+### Version 2
+
+ * The [period.Period](https://pkg.go.dev/github.com/rickb777/period) type has moved.
+ * The `clock.Clock` type is now nanosecond resolution (formerly millisecond resolution). 
 
 ## Credits
 

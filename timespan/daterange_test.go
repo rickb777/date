@@ -11,7 +11,7 @@ import (
 	"time"
 
 	. "github.com/rickb777/date"
-	"github.com/rickb777/date/period"
+	"github.com/rickb777/period"
 )
 
 var d0320 = New(2015, time.March, 20)
@@ -176,15 +176,15 @@ func TestShiftAndExtend(t *testing.T) {
 		{DayRange(d0327, 6).ExtendBy(-6), 0, d0327, d0327, "0 days at 2015-03-27"},
 		{DayRange(d0327, 6).ExtendBy(-8), 2, d0325, d0327, "2 days from 2015-03-25 to 2015-03-26"},
 
-		{DayRange(d0327, 6).ShiftByPeriod(period.NewYMD(0, 0, 0)), 6, d0327, d0402, "6 days from 2015-03-27 to 2015-04-01"},
-		{DayRange(d0327, 6).ShiftByPeriod(period.NewYMD(0, 0, 7)), 6, d0403, d0409, "6 days from 2015-04-03 to 2015-04-08"},
-		{DayRange(d0327, 6).ShiftByPeriod(period.NewYMD(0, 0, -7)), 6, d0320, d0326, "6 days from 2015-03-20 to 2015-03-25"},
+		{DayRange(d0327, 6).ShiftByPeriod(period.NewYMWD(0, 0, 0, 0)), 6, d0327, d0402, "6 days from 2015-03-27 to 2015-04-01"},
+		{DayRange(d0327, 6).ShiftByPeriod(period.NewYMWD(0, 0, 0, 7)), 6, d0403, d0409, "6 days from 2015-04-03 to 2015-04-08"},
+		{DayRange(d0327, 6).ShiftByPeriod(period.NewYMWD(0, 0, 0, -7)), 6, d0320, d0326, "6 days from 2015-03-20 to 2015-03-25"},
 
-		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMD(0, 0, 0)), 6, d0327, d0402, "6 days from 2015-03-27 to 2015-04-01"},
-		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMD(0, 0, 7)), 13, d0327, d0409, "13 days from 2015-03-27 to 2015-04-08"},
-		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMD(0, 0, -5)), 1, d0327, d0328, "1 day on 2015-03-27"},
-		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMD(0, 0, -6)), 0, d0327, d0327, "0 days at 2015-03-27"},
-		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMD(0, 0, -7)), 1, d0326, d0327, "1 day on 2015-03-26"},
+		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMWD(0, 0, 0, 0)), 6, d0327, d0402, "6 days from 2015-03-27 to 2015-04-01"},
+		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMWD(0, 0, 0, 7)), 13, d0327, d0409, "13 days from 2015-03-27 to 2015-04-08"},
+		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMWD(0, 0, 0, -5)), 1, d0327, d0328, "1 day on 2015-03-27"},
+		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMWD(0, 0, 0, -6)), 0, d0327, d0327, "0 days at 2015-03-27"},
+		{DayRange(d0327, 6).ExtendByPeriod(period.NewYMWD(0, 0, 0, -7)), 1, d0326, d0327, "1 day on 2015-03-26"},
 	}
 
 	for i, c := range cases {

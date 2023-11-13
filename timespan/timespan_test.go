@@ -5,6 +5,7 @@
 package timespan
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -108,12 +109,12 @@ func TestTSEqual(t *testing.T) {
 	cases := []struct {
 		a, b TimeSpan
 	}{
-		{z0, NewTimeSpan(t0, t0)},
-		{z0, z0.In(berlin)},
-		{ts1, ts1},
-		{ts1, NewTimeSpan(t0, t1)},
-		{ts1, ts1.In(berlin)},
-		{ts1, ZeroTimeSpan(t1).ExtendBy(-time.Hour)},
+		{a: z0, b: NewTimeSpan(t0, t0)},
+		{a: z0, b: z0.In(berlin)},
+		{a: ts1, b: ts1},
+		{a: ts1, b: NewTimeSpan(t0, t1)},
+		{a: ts1, b: ts1.In(berlin)},
+		{a: ts1, b: ZeroTimeSpan(t1).ExtendBy(-time.Hour)},
 	}
 
 	for i, c := range cases {
@@ -130,8 +131,8 @@ func TestTSNotEqual(t *testing.T) {
 	cases := []struct {
 		a, b TimeSpan
 	}{
-		{ZeroTimeSpan(t0), TimeSpanOf(t0, time.Hour)},
-		{ZeroTimeSpan(t0), ZeroTimeSpan(t1)},
+		{a: ZeroTimeSpan(t0), b: TimeSpanOf(t0, time.Hour)},
+		{a: ZeroTimeSpan(t0), b: ZeroTimeSpan(t1)},
 	}
 
 	for i, c := range cases {
@@ -152,26 +153,28 @@ func TestTSFormat(t *testing.T) {
 		useDuration            bool
 		layout, separator, exp string
 	}{
-		{t0, time.Hour, true, "", " for ", "20150327T101314Z for PT1H"},
-		{t0, time.Hour, true, "", "/", "20150327T101314Z/PT1H"},
-		{t0.In(berlin), time.Minute, true, "", "/", "20150327T111314/PT1M"},
-		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05", "/", "2015-03-27T11:13:14/PT1H"},
-		{t0.In(berlin), time.Hour, true, "2006-01-02T15:04:05-07", "/", "2015-03-27T11:13:14+01/PT1H"},
-		{t0, time.Hour, true, "2006-01-02T15:04:05-07", "/", "2015-03-27T10:13:14+00/PT1H"},
-		{t0, time.Hour, true, "2006-01-02T15:04:05Z07", "/", "2015-03-27T10:13:14Z/PT1H"},
+		{start: t0, duration: time.Hour, useDuration: true, separator: " for ", exp: "20150327T101314Z for PT1H"},
+		{start: t0, duration: time.Hour, useDuration: true, separator: "/", exp: "20150327T101314Z/PT1H"},
+		{start: t0.In(berlin), duration: time.Minute, useDuration: true, separator: "/", exp: "20150327T111314/PT1M"},
+		{start: t0.In(berlin), duration: time.Hour, useDuration: true, layout: "2006-01-02T15:04:05", separator: "/", exp: "2015-03-27T11:13:14/PT1H"},
+		{start: t0.In(berlin), duration: time.Hour, useDuration: true, layout: "2006-01-02T15:04:05-07", separator: "/", exp: "2015-03-27T11:13:14+01/PT1H"},
+		{start: t0, duration: time.Hour, useDuration: true, layout: "2006-01-02T15:04:05-07", separator: "/", exp: "2015-03-27T10:13:14+00/PT1H"},
+		{start: t0, duration: time.Hour, useDuration: true, layout: "2006-01-02T15:04:05Z07", separator: "/", exp: "2015-03-27T10:13:14Z/PT1H"},
 
-		{t0, time.Hour, false, "", " to ", "20150327T101314Z to 20150327T111314Z"},
-		{t0, time.Hour, false, "", "/", "20150327T101314Z/20150327T111314Z"},
-		{t0.In(berlin), time.Minute, false, "", "/", "20150327T111314/20150327T111414"},
-		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05", "/", "2015-03-27T11:13:14/2015-03-27T12:13:14"},
-		{t0.In(berlin), time.Hour, false, "2006-01-02T15:04:05-07", "/", "2015-03-27T11:13:14+01/2015-03-27T12:13:14+01"},
-		{t0, time.Hour, false, "2006-01-02T15:04:05-07", "/", "2015-03-27T10:13:14+00/2015-03-27T11:13:14+00"},
-		{t0, time.Hour, false, "2006-01-02T15:04:05Z07", "/", "2015-03-27T10:13:14Z/2015-03-27T11:13:14Z"},
+		{start: t0, duration: time.Hour, separator: " to ", exp: "20150327T101314Z to 20150327T111314Z"},
+		{start: t0, duration: time.Hour, separator: "/", exp: "20150327T101314Z/20150327T111314Z"},
+		{start: t0.In(berlin), duration: time.Minute, separator: "/", exp: "20150327T111314/20150327T111414"},
+		{start: t0.In(berlin), duration: time.Hour, layout: "2006-01-02T15:04:05", separator: "/", exp: "2015-03-27T11:13:14/2015-03-27T12:13:14"},
+		{start: t0.In(berlin), duration: time.Hour, layout: "2006-01-02T15:04:05-07", separator: "/", exp: "2015-03-27T11:13:14+01/2015-03-27T12:13:14+01"},
+		{start: t0, duration: time.Hour, layout: "2006-01-02T15:04:05-07", separator: "/", exp: "2015-03-27T10:13:14+00/2015-03-27T11:13:14+00"},
+		{start: t0, duration: time.Hour, layout: "2006-01-02T15:04:05Z07", separator: "/", exp: "2015-03-27T10:13:14Z/2015-03-27T11:13:14Z"},
 	}
 
-	for _, c := range cases {
-		ts := TimeSpan{c.start, c.duration}
-		isEq(t, 0, ts.Format(c.layout, c.separator, c.useDuration), c.exp)
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, c.exp), func(t *testing.T) {
+			ts := TimeSpan{c.start, c.duration}
+			isEq(t, 0, ts.Format(c.layout, c.separator, c.useDuration), c.exp)
+		})
 	}
 }
 
@@ -186,21 +189,23 @@ func TestTSMarshalText(t *testing.T) {
 		duration time.Duration
 		exp      string
 	}{
-		{t0, time.Hour, "20150214T101314Z/PT1H"},
-		{t1, 2 * time.Hour, "20150627T101315Z/PT2H"},
-		{t0.In(berlin), time.Minute, "20150214T111314Z/PT1M"}, // UTC+1
-		{t1.In(berlin), time.Second, "20150627T121315Z/PT1S"}, // UTC+2
+		{start: t0, duration: time.Hour, exp: "20150214T101314Z/PT1H"},
+		{start: t1, duration: 2 * time.Hour, exp: "20150627T101315Z/PT2H"},
+		{start: t0.In(berlin), duration: time.Minute, exp: "20150214T111314Z/PT1M"}, // UTC+1
+		{start: t1.In(berlin), duration: time.Second, exp: "20150627T121315Z/PT1S"}, // UTC+2
 	}
 
 	for i, c := range cases {
-		ts := TimeSpan{c.start, c.duration}
+		t.Run(fmt.Sprintf("%d %s", i, c.exp), func(t *testing.T) {
+			ts := TimeSpan{c.start, c.duration}
 
-		s := ts.FormatRFC5545(true)
-		isEq(t, i, s, c.exp)
+			s := ts.FormatRFC5545(true)
+			isEq(t, i, s, c.exp)
 
-		b, err := ts.MarshalText()
-		isEq(t, i, err, nil)
-		isEq(t, i, string(b), c.exp)
+			b, err := ts.MarshalText()
+			isEq(t, i, err, nil)
+			isEq(t, i, string(b), c.exp)
+		})
 	}
 }
 
@@ -216,38 +221,40 @@ func TestTSParseInLocation(t *testing.T) {
 		duration time.Duration
 		text     string
 	}{
-		{t0325, time.Hour, "20150325T101314Z/PT1H"},
-		{t0325, 2 * time.Second, "20150325T101314Z/PT2S"},
-		{t0120.In(berlin), time.Minute, "20150120T111314/PT1M"},
-		{t0325, 336 * time.Hour, "20150325T101314Z/P2W"},
-		{t0120.In(berlin), 72 * time.Hour, "20150120T111314/P3D"},
+		{text: "20150325T101314Z/PT1H", start: t0325, duration: time.Hour},
+		{text: "20150325T101314Z/PT2S", start: t0325, duration: 2 * time.Second},
+		{text: "20150120T111314/PT1M", start: t0120.In(berlin), duration: time.Minute},
+		{text: "20150325T101314Z/P2W", start: t0325, duration: 336 * time.Hour},
+		{text: "20150120T111314/P3D", start: t0120.In(berlin), duration: 72 * time.Hour},
 		// This case has the daylight-savings clock shift
-		{t0325.In(berlin), 167 * time.Hour, "20150325T111314/P1W"},
+		{text: "20150325T111314/P1W", start: t0325.In(berlin), duration: 167 * time.Hour},
 	}
 
 	for i, c := range cases {
-		ts1, err := ParseRFC5545InLocation(c.text, c.start.Location())
-		if err != nil {
-			t.Errorf("%d: %s %v %v", i, c.text, ts1.String(), err)
-		}
+		t.Run(fmt.Sprintf("%d %s", i, c.text), func(t *testing.T) {
+			ts1, err := ParseRFC5545InLocation(c.text, c.start.Location())
+			if err != nil {
+				t.Errorf("%d: %s %v %v", i, c.text, ts1.String(), err)
+			}
 
-		if !ts1.Start().Equal(c.start) {
-			t.Errorf("%d: %s", i, ts1)
-		}
+			if !ts1.Start().Equal(c.start) {
+				t.Errorf("%d: %s", i, ts1)
+			}
 
-		if ts1.Duration() != c.duration {
-			t.Errorf("%d: %s", i, ts1)
-		}
+			if ts1.Duration() != c.duration {
+				t.Errorf("%d: %s", i, ts1)
+			}
 
-		ts2 := TimeSpan{}.In(c.start.Location())
-		err = ts2.UnmarshalText([]byte(c.text))
-		if err != nil {
-			t.Errorf("%d: %s: %v %v", i, c.text, ts2.String(), err)
-		}
+			ts2 := TimeSpan{}.In(c.start.Location())
+			err = ts2.UnmarshalText([]byte(c.text))
+			if err != nil {
+				t.Errorf("%d: %s: %v %v", i, c.text, ts2.String(), err)
+			}
 
-		if !ts1.Equal(ts2) {
-			t.Errorf("%d: %s: %v is not equal to %v", i, c.text, ts1, ts2)
-		}
+			if !ts1.Equal(ts2) {
+				t.Errorf("%d: %s: %v is not equal to %v", i, c.text, ts1, ts2)
+			}
+		})
 	}
 }
 
@@ -263,11 +270,13 @@ func TestTSParseInLocationErrors(t *testing.T) {
 		{"/PT1H"},
 	}
 
-	for _, c := range cases {
-		ts, err := ParseRFC5545InLocation(c.text, time.UTC)
-		if err == nil {
-			t.Errorf(ts.String())
-		}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, c.text), func(t *testing.T) {
+			ts, err := ParseRFC5545InLocation(c.text, time.UTC)
+			if err == nil {
+				t.Errorf(ts.String())
+			}
+		})
 	}
 }
 

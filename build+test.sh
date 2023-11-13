@@ -30,7 +30,7 @@ v go test -v -covermode=count -coverprofile=date.out .
 v go tool cover -func=date.out
 #[ -z "$COVERALLS_TOKEN" ] || goveralls -coverprofile=date.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 
-for d in clock period timespan view; do
+for d in clock timespan view; do
   echo $d...
   v go test -v -covermode=count -coverprofile=$d.out ./$d
   v go tool cover -func=$d.out
