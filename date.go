@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rickb777/date/gregorian"
-	"github.com/rickb777/date/period"
+	"github.com/rickb777/period"
 )
 
 // PeriodOfDays describes a period of time measured in whole days. Negative values
@@ -260,7 +260,8 @@ func (d Date) AddDate(years, months, days int) Date {
 //
 // See the description for AddDate.
 func (d Date) AddPeriod(delta period.Period) Date {
-	return d.AddDate(delta.Years(), delta.Months(), delta.Days())
+	t, _ := delta.AddTo(decode(d.day))
+	return Date{encode(t)}
 }
 
 // Sub returns d-u as the number of days between the two dates.

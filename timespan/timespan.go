@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/period"
+	"github.com/rickb777/period"
 )
 
 // TimestampFormat is a simple format for date & time, "2006-01-02 15:04:05".
@@ -198,7 +198,7 @@ func (ts TimeSpan) Format(layout, separator string, useDuration bool) string {
 	e := ts.End()
 
 	if useDuration {
-		p := period.Between(s, e)
+		p := period.Between(s, e).Normalise(false)
 		return fmt.Sprintf("%s%s%s", s.Format(layout), separator, p)
 	}
 
@@ -259,7 +259,7 @@ func ParseRFC5545InLocation(text string, loc *time.Location) (TimeSpan, error) {
 			return TimeSpan{st, du}, nil
 		}
 
-		et := st.AddDate(pe.Years(), pe.Months(), pe.Days())
+		et, _ := pe.AddTo(st)
 		return NewTimeSpan(st, et), nil
 	}
 

@@ -6,34 +6,6 @@ package clock
 
 import "fmt"
 
-func clockHours(cm Clock) Clock {
-	return (cm / Hour)
-}
-
-func clockHours12(cm Clock) (Clock, string) {
-	h := clockHours(cm)
-	if h < 1 {
-		return 12, "am"
-	} else if h > 12 {
-		return h - 12, "pm"
-	} else if h == 12 {
-		return 12, "pm"
-	}
-	return h, "am"
-}
-
-func clockMinutes(cm Clock) Clock {
-	return (cm % Hour) / Minute
-}
-
-func clockSeconds(cm Clock) Clock {
-	return (cm % Minute) / Second
-}
-
-func clockMillisec(cm Clock) Clock {
-	return cm % Second
-}
-
 // Hh gets the clock-face number of hours as a two-digit string.
 // It is calculated from the modulo time; see Mod24.
 // Note the special case of midnight at the end of a day is "24".
@@ -42,7 +14,7 @@ func (c Clock) Hh() string {
 		return "24"
 	}
 	cm := c.Mod24()
-	return fmt.Sprintf("%02d", clockHours(cm))
+	return fmt.Sprintf("%02d", clockHour(cm))
 }
 
 // HhMm gets the clock-face number of hours and minutes as a five-character ISO-8601 time string.
@@ -53,7 +25,7 @@ func (c Clock) HhMm() string {
 		return "24:00"
 	}
 	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d", clockHours(cm), clockMinutes(cm))
+	return fmt.Sprintf("%02d:%02d", clockHour(cm), clockMinute(cm))
 }
 
 // HhMmSs gets the clock-face number of hours, minutes, seconds as an eight-character ISO-8601 time string.
@@ -64,7 +36,7 @@ func (c Clock) HhMmSs() string {
 		return "24:00:00"
 	}
 	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d:%02d", clockHours(cm), clockMinutes(cm), clockSeconds(cm))
+	return fmt.Sprintf("%02d:%02d:%02d", clockHour(cm), clockMinute(cm), clockSecond(cm))
 }
 
 // Hh12 gets the clock-face number of hours as a one- or two-digit string, followed by am or pm.
@@ -72,7 +44,7 @@ func (c Clock) HhMmSs() string {
 // It is calculated from the modulo time; see Mod24.
 func (c Clock) Hh12() string {
 	cm := c.Mod24()
-	h, sfx := clockHours12(cm)
+	h, sfx := clockHour12(cm)
 	return fmt.Sprintf("%d%s", h, sfx)
 }
 
@@ -81,8 +53,8 @@ func (c Clock) Hh12() string {
 // It is calculated from the modulo time; see Mod24.
 func (c Clock) HhMm12() string {
 	cm := c.Mod24()
-	h, sfx := clockHours12(cm)
-	return fmt.Sprintf("%d:%02d%s", h, clockMinutes(cm), sfx)
+	h, sfx := clockHour12(cm)
+	return fmt.Sprintf("%d:%02d%s", h, clockMinute(cm), sfx)
 }
 
 // HhMmSs12 gets the clock-face number of hours, minutes and seconds, followed by am or pm.
@@ -90,17 +62,29 @@ func (c Clock) HhMm12() string {
 // It is calculated from the modulo time; see Mod24.
 func (c Clock) HhMmSs12() string {
 	cm := c.Mod24()
-	h, sfx := clockHours12(cm)
-	return fmt.Sprintf("%d:%02d:%02d%s", h, clockMinutes(cm), clockSeconds(cm), sfx)
+	h, sfx := clockHour12(cm)
+	return fmt.Sprintf("%d:%02d:%02d%s", h, clockMinute(cm), clockSecond(cm), sfx)
 }
 
-// String gets the clock-face number of hours, minutes, seconds and milliseconds as a 12-character ISO-8601
-// time string (calculated from the modulo time, see Mod24), specified to the nearest millisecond.
-// Note the special case of midnight at the end of a day is "24:00:00.000".
+// String gets the clock-face number of hours, minutes, seconds and fraction as an ISO-8601 time
+// string.
+//
+// If the clock value has more than 24 hours, the excess is discarded (see Mod24).
+//
+// The number of decimal places depends on the clock value. If microsecond and nanosecond digits
+// are non-zero, the result is given to nanosecond precision. Otherwise, a shorter form is used that
+// only has millisecond precision.
+//
+// See TruncateMillisecond to obtain the shorter form always.
+//
+// The special case of midnight at the end of a day is "24:00:00.000".
 func (c Clock) String() string {
 	if c == Day {
 		return "24:00:00.000"
 	}
 	cm := c.Mod24()
-	return fmt.Sprintf("%02d:%02d:%02d.%03d", clockHours(cm), clockMinutes(cm), clockSeconds(cm), clockMillisec(cm))
+	if cm%Millisecond == 0 {
+		return fmt.Sprintf("%02d:%02d:%02d.%03d", clockHour(cm), clockMinute(cm), clockSecond(cm), clockMillisecond(cm))
+	}
+	return fmt.Sprintf("%02d:%02d:%02d.%09d", clockHour(cm), clockMinute(cm), clockSecond(cm), clockNanosecond(cm))
 }

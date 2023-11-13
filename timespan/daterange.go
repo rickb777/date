@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rickb777/date"
-	"github.com/rickb777/date/period"
+	"github.com/rickb777/period"
 )
 
 const minusOneNano time.Duration = -1

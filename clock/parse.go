@@ -38,45 +38,33 @@ func Parse(hms string) (clock Clock, err error) {
 func parseISO(hms string) (clock Clock, err error) {
 	switch len(hms) {
 	case 2: // HH
-		return parseClockParts(hms, hms, "", "", "", 0, 0)
+		return parseClockParts(hms, hms, "", "", "", 0, 0, 0)
 
 	case 4: // HHMM
-		return parseClockParts(hms, hms[:2], hms[2:], "", "", 0, 0)
+		return parseClockParts(hms, hms[:2], hms[2:], "", "", 0, 0, 0)
 
 	case 5: // HH:MM
 		if hms[2] != ':' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, hms[:2], hms[3:], "", "", 0, 0)
+		return parseClockParts(hms, hms[:2], hms[3:], "", "", 0, 0, 0)
 
 	case 6: // HHMMSS
-		return parseClockParts(hms, hms[:2], hms[2:4], hms[4:], "", 0, 0)
+		return parseClockParts(hms, hms[:2], hms[2:4], hms[4:], "", 0, 0, 0)
 
 	case 8: // HH:MM:SS
 		if hms[2] != ':' || hms[5] != ':' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:], "", 0, 0)
+		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:], "", 0, 0, 0)
 
-	case 9, 10: // HH:MM:SS.0
+	case 9, 10, 11, 12, 13, 14, 15, 16, 17, 18: // HH:MM:SS.000...
 		if hms[2] != ':' || hms[5] != ':' || hms[8] != '.' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:8], hms[9:]+"00", 0, 0)
-
-	case 11: // HH:MM:SS.00
-		if hms[2] != ':' || hms[5] != ':' || hms[8] != '.' {
-			return 0, parseError(hms, nil)
-		}
-		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:8], hms[9:]+"0", 0, 0)
-
-	case 12: // HH:MM:SS.000
-		if hms[2] != ':' || hms[5] != ':' || hms[8] != '.' {
-			return 0, parseError(hms, nil)
-		}
-		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:8], hms[9:], 0, 0)
+		return parseClockParts(hms, hms[:2], hms[3:5], hms[6:8], hms[9:], 9, 0, 0)
 	}
-	return 0, parseError(hms, nil)
+	return 0, parseError(hms)
 }
 
 func parseAmPm(hms string, offset int) (clock Clock, err error) {
@@ -84,15 +72,15 @@ func parseAmPm(hms string, offset int) (clock Clock, err error) {
 
 	switch len(hms) {
 	case 3: // Ham
-		return parseClockParts(hms, "0"+hms[:1], "", "", "", 12, offset)
+		return parseClockParts(hms, "0"+hms[:1], "", "", "", 0, 12, offset)
 
 	case 4: // HHam
-		return parseClockParts(hms, hms[:2], "", "", "", 12, offset)
+		return parseClockParts(hms, hms[:2], "", "", "", 0, 12, offset)
 	}
 
 	colon := strings.IndexByte(hms, ':')
 	if colon < 0 {
-		return 0, parseError(hms, nil)
+		return 0, parseError(hms)
 	}
 
 	h := hms[:colon]
@@ -100,74 +88,81 @@ func parseAmPm(hms string, offset int) (clock Clock, err error) {
 
 	switch len(rest) {
 	case 2: // MM
-		return parseClockParts(hms, h, rest, "", "", 12, offset)
+		return parseClockParts(hms, h, rest, "", "", 0, 12, offset)
 
 	case 5: // MM:SS
 		if rest[2] != ':' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, h, rest[:2], rest[3:], "", 12, offset)
+		return parseClockParts(hms, h, rest[:2], rest[3:], "", 0, 12, offset)
 
 	case 6, 7: // MM:SS.0xm
 		if rest[2] != ':' || rest[5] != '.' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, h, rest[:2], rest[3:5], rest[6:]+"00", 12, offset)
+		return parseClockParts(hms, h, rest[:2], rest[3:5], rest[6:], 8, 12, offset)
 
 	case 8: // MM:SS.00xm
 		if rest[2] != ':' || rest[5] != '.' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, h, rest[:2], rest[3:5], rest[6:]+"0", 12, offset)
+		return parseClockParts(hms, h, rest[:2], rest[3:5], rest[6:], 7, 12, offset)
 
 	case 9: // MM:SS.000xm
 		if rest[2] != ':' || rest[5] != '.' {
-			return 0, parseError(hms, nil)
+			return 0, parseError(hms)
 		}
-		return parseClockParts(hms, h, rest[:2], rest[3:5], rest[6:], 12, offset)
+		return parseClockParts(hms, h, rest[:2], rest[3:5], rest[6:], 6, 12, offset)
 	}
-	return 0, parseError(hms, nil)
+	return 0, parseError(hms)
 }
 
-func parseClockParts(hms, hh, mm, ss, mmms string, mod, offset int) (clock Clock, err error) {
+func parseClockParts(input, hh, mm, ss, fracs string, zeros, mod, offset int) (clock Clock, err error) {
 	h := 0
 	m := 0
 	s := 0
-	ms := 0
+	ns := 0
+
 	if hh != "" {
 		h, err = strconv.Atoi(hh)
 		if err != nil {
-			return 0, parseError(hms, err)
+			return 0, parseError(input)
 		}
 	}
-	if mm != "" {
-		m, err = strconv.Atoi(mm)
-		if err != nil {
-			return 0, parseError(hms, err)
-		}
-	}
-	if ss != "" {
-		s, err = strconv.Atoi(ss)
-		if err != nil {
-			return 0, parseError(hms, err)
-		}
-	}
-	if mmms != "" {
-		ms, err = strconv.Atoi(mmms)
-		if err != nil {
-			return 0, parseError(hms, err)
-		}
-	}
+
 	if mod > 0 {
 		h = h % mod
 	}
-	return New(h+offset, m, s, ms), nil
+
+	if mm != "" {
+		m, err = strconv.Atoi(mm)
+		if err != nil {
+			return 0, parseError(input)
+		}
+	}
+
+	if ss != "" {
+		s, err = strconv.Atoi(ss)
+		if err != nil {
+			return 0, parseError(input)
+		}
+	}
+
+	c := New(h+offset, m, s, 0)
+
+	if fracs != "" {
+		fracs = (fracs + strings.Repeat("0", zeros))[:9]
+		ns, err = strconv.Atoi(fracs)
+		if err != nil {
+			return 0, parseError(input)
+		}
+		c += Clock(ns)
+	}
+
+	return c, nil
 }
 
-func parseError(hms string, err error) error {
+func parseError(hms string) error {
 	_, _, line, _ := runtime.Caller(1)
-	if err != nil {
-		return fmt.Errorf("parse.go:%d: clock.Clock: cannot parse %s: %v", line, hms, err)
-	}
-	return fmt.Errorf("parse.go:%d: clock.Clock: cannot parse %s", line, hms)
+	return fmt.Errorf("parse.go:%d: clock.Clock: cannot parse %q", line, hms)
 }

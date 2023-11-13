@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rickb777/date/period"
+	"github.com/rickb777/period"
 )
 
 func same(d Date, t time.Time) bool {
@@ -273,15 +273,16 @@ func TestDate_AddPeriod(t *testing.T) {
 		delta    period.Period
 		expected Date
 	}{
-		{New(1970, time.January, 1), period.NewYMD(0, 0, 0), New(1970, time.January, 1)},
-		{New(1971, time.January, 1), period.NewYMD(10, 0, 0), New(1981, time.January, 1)},
-		{New(1972, time.January, 1), period.NewYMD(0, 10, 0), New(1972, time.November, 1)},
-		{New(1972, time.January, 1), period.NewYMD(0, 24, 0), New(1974, time.January, 1)},
-		{New(1973, time.January, 1), period.NewYMD(0, 0, 10), New(1973, time.January, 11)},
-		{New(1973, time.January, 1), period.NewYMD(0, 0, 365), New(1974, time.January, 1)},
+		{New(1970, time.January, 1), period.NewYMWD(0, 0, 0, 0), New(1970, time.January, 1)},
+		{New(1971, time.January, 1), period.NewYMWD(10, 0, 0, 0), New(1981, time.January, 1)},
+		{New(1972, time.January, 1), period.NewYMWD(0, 10, 0, 0), New(1972, time.November, 1)},
+		{New(1972, time.January, 1), period.NewYMWD(0, 24, 0, 0), New(1974, time.January, 1)},
+		{New(1973, time.January, 1), period.NewYMWD(0, 0, 1, 0), New(1973, time.January, 8)},
+		{New(1973, time.January, 1), period.NewYMWD(0, 0, 0, 10), New(1973, time.January, 11)},
+		{New(1973, time.January, 1), period.NewYMWD(0, 0, 0, 365), New(1974, time.January, 1)},
 		{New(1974, time.January, 1), period.NewHMS(1, 2, 3), New(1974, time.January, 1)},
 		// note: the period is not normalised so the HMS is ignored even though it's more than one day
-		{New(1975, time.January, 1), period.NewHMS(24, 2, 3), New(1975, time.January, 1)},
+		{New(1975, time.January, 1), period.NewHMS(24, 2, 3), New(1975, time.January, 2)},
 	}
 	for i, c := range cases {
 		out := c.in.AddPeriod(c.delta)

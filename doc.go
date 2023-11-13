@@ -11,8 +11,6 @@
 //
 // * `clock.Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
 //
-// * `period.Period` which expresses a period corresponding to the ISO-8601 form (e.g. "PT30S").
-//
 // * `timespan.DateRange` which expresses a period between two dates.
 //
 // * `timespan.TimeSpan` which expresses a duration of time between two instants.

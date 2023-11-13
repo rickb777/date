@@ -1,30 +1,29 @@
 package clock
 
 import (
+	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (c Clock) MarshalBinary() ([]byte, error) {
-	enc := []byte{
-		byte(c >> 24),
-		byte(c >> 16),
-		byte(c >> 8),
-		byte(c),
-	}
-	return enc, nil
+func (c Clock) MarshalBinary() (b []byte, err error) {
+	b = make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(c))
+	return b, nil
 }
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 func (c *Clock) UnmarshalBinary(data []byte) error {
-	if len(data) == 0 {
+	switch len(data) {
+	case 0:
 		return errors.New("Clock.UnmarshalBinary: no data")
-	}
-	if len(data) != 4 {
-		return errors.New("Clock.UnmarshalBinary: invalid length")
+	case 8:
+		*c = Clock(binary.LittleEndian.Uint64(data))
+	default:
+		return fmt.Errorf("Clock.UnmarshalBinary: invalid length %d bytes", len(data))
 	}
 
-	*c = Clock(data[3]) | Clock(data[2])<<8 | Clock(data[1])<<16 | Clock(data[0])<<24
 	return nil
 }
 
