@@ -7,7 +7,7 @@
 package view
 
 import (
-	"github.com/rickb777/date"
+	"github.com/rickb777/date/v2"
 )
 
 const (

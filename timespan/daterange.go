@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rickb777/date"
+	"github.com/rickb777/date/v2"
 	"github.com/rickb777/period"
 )
 

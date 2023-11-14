@@ -8,7 +8,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/rickb777/date/gregorian"
+	"github.com/rickb777/date/v2/gregorian"
 	"github.com/rickb777/period"
 )
 
