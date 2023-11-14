@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rickb777/date"
+	"github.com/rickb777/date/v2"
 )
 
 const zero time.Duration = 0
