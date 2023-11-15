@@ -11,14 +11,14 @@ import (
 	"time"
 )
 
-// These methods allow Date and PeriodOfDays to be fields stored in an
-// SQL database by implementing the database/sql/driver interfaces.
-// The underlying column type can be an integer (period of days since the epoch),
-// a string, or a DATE.
+// These methods allow Date to be stored in an SQL database by implementing the
+// database/sql/driver interfaces.
+// The underlying column type can be a string, an integer (period of days since
+// year 0), or a DATE.
 
-// Scan parses some value. If the value holds an integer, it is treated as the
-// period-of-days value that represents a Date. Otherwise, if it holds a string,
-// the AutoParse function is used.
+// Scan parses some value. If the value holds a string, the AutoParse function is used.
+// Otherwise, if the value holds an integer, it is treated as the period of days
+// since year 0 value that represents a Date.
 //
 // This implements sql.Scanner https://golang.org/pkg/database/sql/#Scanner
 func (d *Date) Scan(value interface{}) (err error) {
@@ -33,7 +33,7 @@ func (d *Date) scanAny(value interface{}) (err error) {
 	err = nil
 	switch v := value.(type) {
 	case int64:
-		*d = Date{PeriodOfDays(v)}
+		*d = Date(v)
 	case []byte:
 		return d.scanString(string(v))
 	case string:
@@ -47,62 +47,40 @@ func (d *Date) scanAny(value interface{}) (err error) {
 	return err
 }
 
-func (d *Date) scanString(value string) (err error) {
-	n, err := strconv.ParseInt(value, 10, 64)
-	if err == nil {
-		*d = Date{PeriodOfDays(n)}
+func (d *Date) scanString(value string) error {
+	var err1 error
+	*d, err1 = AutoParse(value)
+	if err1 == nil {
 		return nil
 	}
-	*d, err = AutoParse(value)
-	return err
+
+	n, err2 := strconv.ParseInt(value, 10, 64)
+	*d = Date(n)
+	if err2 == nil {
+		return nil
+	}
+
+	return err1
 }
 
-// Value converts the value to an int64. Note that if you need to store as a string,
-// convert the Date to a DateString.
+// Value converts the value for DB storage. It uses Valuer, which returns strings
+// by default.
 //
 // This implements driver.Valuer https://golang.org/pkg/database/sql/driver/#Valuer
 func (d Date) Value() (driver.Value, error) {
-	return int64(d.day), nil
+	return Valuer(d)
 }
 
-//-------------------------------------------------------------------------------------------------
+// Valuer is the pluggable implementation function for converting dates to driver.Value.
+// It is initialised with ValueAsString.
+var Valuer = ValueAsString
 
-// DateString alters Date to make database storage use a string column, or
-// a similar derived column such as SQL DATE. (Otherwise, Date is stored as
-// an integer).
-type DateString Date
-
-// Date provides a simple fluent type conversion to the underlying type.
-func (ds DateString) Date() Date {
-	return Date(ds)
+// ValueAsInt converts a date for DB storage using an integer.
+func ValueAsInt(d Date) (driver.Value, error) {
+	return int64(d), nil
 }
 
-// DateString provides a simple fluent type conversion from the underlying type.
-func (d Date) DateString() DateString {
-	return DateString(d)
+// ValueAsString converts a date for DB storage using an string.
+func ValueAsString(d Date) (driver.Value, error) {
+	return d.String(), nil
 }
-
-// Scan parses some value. If the value holds an integer, it is treated as the
-// period-of-days value that represents a Date. Otherwise, if it holds a string,
-// the AutoParse function is used.
-//
-// This implements sql.Scanner https://golang.org/pkg/database/sql/#Scanner
-func (ds *DateString) Scan(value interface{}) (err error) {
-	if value == nil {
-		return nil
-	}
-	return (*Date)(ds).Scan(value)
-}
-
-// Value converts the value to a string. Note that if you only need to store as an int64,
-// convert the DateString to a Date.
-//
-// This implements driver.Valuer https://golang.org/pkg/database/sql/driver/#Valuer
-func (ds DateString) Value() (driver.Value, error) {
-	return ds.Date().String(), nil
-}
-
-//-------------------------------------------------------------------------------------------------
-
-// Deprecated: DisableTextStorage is no longer used.
-var DisableTextStorage = false

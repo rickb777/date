@@ -12,21 +12,26 @@ import (
 func TestDate_Scan(t *testing.T) {
 	cases := []struct {
 		v        interface{}
-		expected PeriodOfDays
+		expected Date
 	}{
-		{int64(0), 0},
-		{int64(1000), 1000},
-		{int64(10000), 10000},
-		{int64(0), 0},
-		{int64(1000), 1000},
-		{int64(10000), 10000},
-		{"0", 0},
-		{"1000", 1000},
-		{"10000", 10000},
-		{"2018-12-31", 17896},
-		{"31/12/2018", 17896},
-		{[]byte("10000"), 10000},
-		{PeriodOfDays(10000).Date().Local(), 10000},
+		{v: int64(0), expected: 0},
+		{v: int64(1), expected: 1},
+		{v: int64(1000), expected: 1000},
+		{v: int64(10000), expected: 10000},
+		{v: "0", expected: 0},
+		{v: "1", expected: 1},
+		{v: "1000", expected: 1000},
+		{v: "10000", expected: 10000},
+		{v: "00000101", expected: 0},
+		{v: "00000102", expected: 1},
+		{v: "0000-01-01", expected: 0},
+		{v: "19700101", expected: zeroOffset},
+		{v: "1970-01-01", expected: zeroOffset},
+		{v: "1971-01-01", expected: 365 + zeroOffset},
+		{v: "2018-12-31", expected: 17896 + zeroOffset},
+		{v: "31/12/2018", expected: 17896 + zeroOffset},
+		{v: []byte("10000"), expected: 10000},
+		{v: Date(10000).Local(), expected: 10000},
 	}
 
 	for i, c := range cases {
@@ -35,7 +40,7 @@ func TestDate_Scan(t *testing.T) {
 		if e != nil {
 			t.Errorf("%d: Got %v for %d", i, e, c.expected)
 		}
-		if r.DaysSinceEpoch() != c.expected {
+		if *r != c.expected {
 			t.Errorf("%d: Got %v, want %d", i, *r, c.expected)
 		}
 
@@ -45,45 +50,16 @@ func TestDate_Scan(t *testing.T) {
 		if e != nil {
 			t.Errorf("%d: Got %v for %d", i, e, c.expected)
 		}
-		if q.(int64) != int64(c.expected) {
+		if q.(string) != c.expected.String() {
 			t.Errorf("%d: Got %v, want %d", i, q, c.expected)
 		}
-	}
-}
 
-func TestDateString_Scan(t *testing.T) {
-	cases := []struct {
-		v        interface{}
-		expected string
-	}{
-		{int64(0), "1970-01-01"},
-		{int64(15000), "2011-01-26"},
-		{"0", "1970-01-01"},
-		{"15000", "2011-01-26"},
-		{"2018-12-31", "2018-12-31"},
-		{"31/12/2018", "2018-12-31"},
-		//{[]byte("10000"), ""},
-		//{PeriodOfDays(10000).Date().Local(), ""},
-	}
-
-	for i, c := range cases {
-		r := new(DateString)
-		e := r.Scan(c.v)
+		q, e = ValueAsInt(*r)
 		if e != nil {
-			t.Errorf("%d: Got %v for %s", i, e, c.expected)
+			t.Errorf("%d: Got %v for %d", i, e, c.expected)
 		}
-		if r.Date().String() != c.expected {
-			t.Errorf("%d: Got %v, want %s", i, r.Date(), c.expected)
-		}
-
-		var d driver.Valuer = *r
-
-		q, e := d.Value()
-		if e != nil {
-			t.Errorf("%d: Got %v for %s", i, e, c.expected)
-		}
-		if q.(string) != c.expected {
-			t.Errorf("%d: Got %v, want %s", i, q, c.expected)
+		if q.(int64) != int64(c.expected) {
+			t.Errorf("%d: Got %v, want %d", i, q, c.expected)
 		}
 	}
 }
@@ -99,24 +75,6 @@ func TestDate_Scan_with_junk(t *testing.T) {
 
 	for i, c := range cases {
 		r := new(Date)
-		e := r.Scan(c.v)
-		if e.Error() != c.expected {
-			t.Errorf("%d: Got %q, want %q", i, e.Error(), c.expected)
-		}
-	}
-}
-
-func TestDateString_Scan_with_junk(t *testing.T) {
-	cases := []struct {
-		v        interface{}
-		expected string
-	}{
-		{true, "bool true is not a meaningful date"},
-		{true, "bool true is not a meaningful date"},
-	}
-
-	for i, c := range cases {
-		r := new(DateString)
 		e := r.Scan(c.v)
 		if e.Error() != c.expected {
 			t.Errorf("%d: Got %q, want %q", i, e.Error(), c.expected)

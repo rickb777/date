@@ -6,7 +6,7 @@ package date
 
 import (
 	"testing"
-	"time"
+	time "time"
 )
 
 func TestAutoParse(t *testing.T) {
@@ -16,36 +16,36 @@ func TestAutoParse(t *testing.T) {
 		month time.Month
 		day   int
 	}{
-		{"01-01-1970", 1970, time.January, 1},
-		{"+1970-01-01", 1970, time.January, 1},
-		{"+01970-01-02", 1970, time.January, 2},
-		{" 31/12/1969 ", 1969, time.December, 31},
-		{"1969/12/31", 1969, time.December, 31},
-		{"1969.12.31", 1969, time.December, 31},
-		{"1969-12-31", 1969, time.December, 31},
-		{"2000-02-28", 2000, time.February, 28},
-		{"+2000-02-29", 2000, time.February, 29},
-		{"+02000-03-01", 2000, time.March, 1},
-		{"+002004-02-28", 2004, time.February, 28},
-		{"2004-02-29", 2004, time.February, 29},
-		{"2004-03-01", 2004, time.March, 1},
-		{"0000-01-01", 0, time.January, 1},
-		{"+0001-02-03", 1, time.February, 3},
-		{" +00019-03-04 ", 19, time.March, 4},
-		{"0100-04-05", 100, time.April, 5},
-		{"2000-05-06", 2000, time.May, 6},
-		{"+5000000-08-09", 5000000, time.August, 9},
-		{"-0001-09-11", -1, time.September, 11},
-		{" -0019-10-12 ", -19, time.October, 12},
-		{"-00100-11-13", -100, time.November, 13},
-		{"-02000-12-14", -2000, time.December, 14},
-		{"-30000-02-15", -30000, time.February, 15},
-		{"-0400000-05-16", -400000, time.May, 16},
-		{"-5000000-09-17", -5000000, time.September, 17},
-		{"12340506", 1234, time.May, 6},
-		{"+12340506", 1234, time.May, 6},
-		{"-00191012", -19, time.October, 12},
-		{" -00191012 ", -19, time.October, 12},
+		{value: "01-01-1970", year: 1970, month: time.January, day: 1},
+		{value: "+1970-01-01", year: 1970, month: time.January, day: 1},
+		{value: "+01970-01-02", year: 1970, month: time.January, day: 2},
+		{value: " 31/12/1969 ", year: 1969, month: time.December, day: 31},
+		{value: "1969/12/31", year: 1969, month: time.December, day: 31},
+		{value: "1969.12.31", year: 1969, month: time.December, day: 31},
+		{value: "1969-12-31", year: 1969, month: time.December, day: 31},
+		{value: "2000-02-28", year: 2000, month: time.February, day: 28},
+		{value: "+2000-02-29", year: 2000, month: time.February, day: 29},
+		{value: "+02000-03-01", year: 2000, month: time.March, day: 1},
+		{value: "+002004-02-28", year: 2004, month: time.February, day: 28},
+		{value: "2004-02-29", year: 2004, month: time.February, day: 29},
+		{value: "2004-03-01", year: 2004, month: time.March, day: 1},
+		{value: "0000-01-01", month: time.January, day: 1},
+		{value: "+0001-02-03", year: 1, month: time.February, day: 3},
+		{value: " +00019-03-04 ", year: 19, month: time.March, day: 4},
+		{value: "0100-04-05", year: 100, month: time.April, day: 5},
+		{value: "2000-05-06", year: 2000, month: time.May, day: 6},
+		{value: "+5000000-08-09", year: 5000000, month: time.August, day: 9},
+		{value: "-0001-09-11", year: -1, month: time.September, day: 11},
+		{value: " -0019-10-12 ", year: -19, month: time.October, day: 12},
+		{value: "-00100-11-13", year: -100, month: time.November, day: 13},
+		{value: "-02000-12-14", year: -2000, month: time.December, day: 14},
+		{value: "-30000-02-15", year: -30000, month: time.February, day: 15},
+		{value: "-0400000-05-16", year: -400000, month: time.May, day: 16},
+		{value: "-5000000-09-17", year: -5000000, month: time.September, day: 17},
+		{value: "12340506", year: 1234, month: time.May, day: 6},
+		{value: "+12340506", year: 1234, month: time.May, day: 6},
+		{value: "-00191012", year: -19, month: time.October, day: 12},
+		{value: " -00191012 ", year: -19, month: time.October, day: 12},
 	}
 	for _, c := range cases {
 		d := MustAutoParse(c.value)
@@ -187,16 +187,16 @@ func TestParse(t *testing.T) {
 		month  time.Month
 		day    int
 	}{
-		{ISO8601, "1969-12-31", 1969, time.December, 31},
-		{ISO8601B, "19700101", 1970, time.January, 1},
-		{RFC822, "29-Feb-00", 2000, time.February, 29},
-		{RFC822W, "Mon, 01-Mar-04", 2004, time.March, 1},
-		{RFC850, "Wednesday, 12-Aug-15", 2015, time.August, 12},
-		{RFC1123, "05 Dec 1928", 1928, time.December, 5},
-		{RFC1123W, "Mon, 05 Dec 1928", 1928, time.December, 5},
-		{RFC3339, "2345-06-07", 2345, time.June, 7},
-		{time.RFC3339Nano, "2020-04-01T12:11:10.101+09:00", 2020, time.April, 1},
-		{"20060102", "20190619", 2019, time.June, 19},
+		{layout: ISO8601, value: "1969-12-31", year: 1969, month: time.December, day: 31},
+		{layout: ISO8601B, value: "19700101", year: 1970, month: time.January, day: 1},
+		{layout: RFC822, value: "29-Feb-00", year: 2000, month: time.February, day: 29},
+		{layout: RFC822W, value: "Mon, 01-Mar-04", year: 2004, month: time.March, day: 1},
+		{layout: RFC850, value: "Wednesday, 12-Aug-15", year: 2015, month: time.August, day: 12},
+		{layout: RFC1123, value: "05 Dec 1928", year: 1928, month: time.December, day: 5},
+		{layout: RFC1123W, value: "Mon, 05 Dec 1928", year: 1928, month: time.December, day: 5},
+		{layout: RFC3339, value: "2345-06-07", year: 2345, month: time.June, day: 7},
+		{layout: time.RFC3339Nano, value: "2020-04-01T12:11:10.101+09:00", year: 2020, month: time.April, day: 1},
+		{layout: "20060102", value: "20190619", year: 2019, month: time.June, day: 19},
 	}
 	for _, c := range cases {
 		d := MustParse(c.layout, c.value)
@@ -230,14 +230,14 @@ func BenchmarkParse(b *testing.B) {
 		month  time.Month
 		day    int
 	}{
-		{ISO8601, "1969-12-31", 1969, time.December, 31},
-		{ISO8601, "2000-02-28", 2000, time.February, 28},
-		{ISO8601, "2004-02-29", 2004, time.February, 29},
-		{ISO8601, "2004-03-01", 2004, time.March, 1},
-		{ISO8601, "0000-01-01", 0, time.January, 1},
-		{ISO8601, "0001-02-03", 1, time.February, 3},
-		{ISO8601, "0100-04-05", 100, time.April, 5},
-		{ISO8601, "2000-05-06", 2000, time.May, 6},
+		{layout: ISO8601, value: "1969-12-31", year: 1969, month: time.December, day: 31},
+		{layout: ISO8601, value: "2000-02-28", year: 2000, month: time.February, day: 28},
+		{layout: ISO8601, value: "2004-02-29", year: 2004, month: time.February, day: 29},
+		{layout: ISO8601, value: "2004-03-01", year: 2004, month: time.March, day: 1},
+		{layout: ISO8601, value: "0000-01-01", month: time.January, day: 1},
+		{layout: ISO8601, value: "0001-02-03", year: 1, month: time.February, day: 3},
+		{layout: ISO8601, value: "0100-04-05", year: 100, month: time.April, day: 5},
+		{layout: ISO8601, value: "2000-05-06", year: 2000, month: time.May, day: 6},
 	}
 	for n := 0; n < b.N; n++ {
 		c := cases[n%len(cases)]

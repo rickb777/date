@@ -107,7 +107,7 @@ func (d Date) Format(layout string) string {
 // explicitly, which allows multiple locales to be supported. The suffixes slice should
 // contain 31 strings covering the days 1 (index 0) to 31 (index 30).
 func (d Date) FormatWithSuffixes(layout string, suffixes []string) string {
-	t := decode(d.day)
+	t := decode(d)
 	parts := strings.Split(layout, "nd")
 	switch len(parts) {
 	case 1:

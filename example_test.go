@@ -12,13 +12,19 @@ import (
 func ExampleMax() {
 	d := Max()
 	fmt.Println(d)
-	// Output: +5881580-07-11
+	// Output: +5877640-07-10
 }
 
 func ExampleMin() {
 	d := Min()
 	fmt.Println(d)
-	// Output: -5877641-06-23
+	// Output: -5879611-06-23
+}
+
+func ExampleZero() {
+	d := Zero
+	fmt.Println(d)
+	// Output: 0000-01-01
 }
 
 func ExampleNew() {

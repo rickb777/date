@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/rickb777/date/v2"
 )
 
 const zero time.Duration = 0
@@ -354,7 +352,7 @@ func TestConversion1(t *testing.T) {
 	isEq(t, 0, dr.IsEmpty(), true)
 	isEq(t, 0, ts1.Start(), ts1.End())
 	isEq(t, 0, ts1.Duration(), zero)
-	isEq(t, 0, dr.Days(), date.PeriodOfDays(0))
+	isEq(t, 0, dr.Days(), PeriodOfDays(0))
 	isEq(t, 0, ts2.Duration(), zero)
 	isEq(t, 0, ts1, ts2)
 }

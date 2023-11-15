@@ -6,11 +6,16 @@ package date
 
 import "time"
 
-const secondsPerDay = 60 * 60 * 24
+const (
+	secondsPerDay = 60 * 60 * 24
+
+	// zeroOffset is the number of days between 0001-01-01 and 1970-01-01
+	zeroOffset = 719528
+)
 
 // encode returns the number of days elapsed from date zero to the date
 // corresponding to the given Time value.
-func encode(t time.Time) PeriodOfDays {
+func encode(t time.Time) Date {
 	// Compute the number of seconds elapsed since January 1, 1970 00:00:00
 	// in the location specified by t and not necessarily UTC.
 	// A Time value is represented internally as an offset from a UTC base
@@ -19,17 +24,18 @@ func encode(t time.Time) PeriodOfDays {
 	// difference.
 	_, offset := t.Zone()
 	secs := t.Unix() + int64(offset)
+	if secs >= 0 {
+		return zeroOffset + Date(secs/secondsPerDay)
+	}
+
 	// Unfortunately operator / rounds towards 0, so negative values
 	// must be handled differently
-	if secs >= 0 {
-		return PeriodOfDays(secs / secondsPerDay)
-	}
-	return -PeriodOfDays((secondsPerDay - 1 - secs) / secondsPerDay)
+	return zeroOffset - Date((secondsPerDay-1-secs)/secondsPerDay)
 }
 
 // decode returns the Time value corresponding to 00:00:00 UTC of the date
 // represented by d, the number of days elapsed since date zero.
-func decode(d PeriodOfDays) time.Time {
-	secs := int64(d) * secondsPerDay
+func decode(d Date) time.Time {
+	secs := int64(d-zeroOffset) * secondsPerDay
 	return time.Unix(secs, 0).UTC()
 }

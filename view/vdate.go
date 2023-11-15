@@ -23,8 +23,8 @@ const (
 
 // A VDate holds a Date and provides easy ways to render it, e.g. in Go templates.
 type VDate struct {
-	d date.Date
-	f string
+	d      date.Date
+	format string
 }
 
 // NewVDate wraps a Date.
@@ -39,28 +39,28 @@ func (v VDate) Date() date.Date {
 
 // IsYesterday returns true if the date is yesterday's date.
 func (v VDate) IsYesterday() bool {
-	return v.d.DaysSinceEpoch()+1 == date.Today().DaysSinceEpoch()
+	return v.d+1 == date.Today()
 }
 
 // IsToday returns true if the date is today's date.
 func (v VDate) IsToday() bool {
-	return v.d.DaysSinceEpoch() == date.Today().DaysSinceEpoch()
+	return v.d == date.Today()
 }
 
 // IsTomorrow returns true if the date is tomorrow's date.
 func (v VDate) IsTomorrow() bool {
-	return v.d.DaysSinceEpoch()-1 == date.Today().DaysSinceEpoch()
+	return v.d-1 == date.Today()
 }
 
 // IsOdd returns true if the date is an odd number. This is useful for
 // zebra striping etc.
 func (v VDate) IsOdd() bool {
-	return v.d.DaysSinceEpoch()%2 == 0
+	return v.d%2 == 0
 }
 
 // String formats the date in basic ISO8601 format YYYY-MM-DD.
 func (v VDate) String() string {
-	if v.d.IsZero() {
+	if v.d == date.Zero {
 		return ""
 	}
 	return v.d.String()
@@ -74,7 +74,7 @@ func (v VDate) WithFormat(f string) VDate {
 // Format formats the date using the specified format string, or "02/01/2006" by default.
 // Use WithFormat to set this up.
 func (v VDate) Format() string {
-	return v.d.Format(v.f)
+	return v.d.Format(v.format)
 }
 
 // Mon returns the day name as three letters.
@@ -130,12 +130,12 @@ func (v VDate) Year() string {
 
 // Next returns a fluent generator for later dates.
 func (v VDate) Next() VDateDelta {
-	return VDateDelta{v.d, v.f, 1}
+	return VDateDelta{d: v.d, format: v.format, sign: 1}
 }
 
 // Previous returns a fluent generator for earlier dates.
 func (v VDate) Previous() VDateDelta {
-	return VDateDelta{v.d, v.f, -1}
+	return VDateDelta{d: v.d, format: v.format, sign: -1}
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -150,11 +150,11 @@ func (v VDate) MarshalText() ([]byte, error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 // Note that the format value gets lost.
 func (v *VDate) UnmarshalText(data []byte) (err error) {
-	u := &date.Date{}
+	var u date.Date
 	err = u.UnmarshalText(data)
 	if err == nil {
-		v.d = *u
-		v.f = DefaultFormat
+		v.d = u
+		v.format = DefaultFormat
 	}
 	return err
 }
@@ -163,27 +163,27 @@ func (v *VDate) UnmarshalText(data []byte) (err error) {
 
 // VDateDelta is a VDate with the ability to add or subtract days, weeks, months or years.
 type VDateDelta struct {
-	d    date.Date
-	f    string
-	sign date.PeriodOfDays
+	d      date.Date
+	format string
+	sign   int
 }
 
 // Day adds or subtracts one day.
 func (dd VDateDelta) Day() VDate {
-	return VDate{dd.d.Add(dd.sign), dd.f}
+	return VDate{d: dd.d + date.Date(dd.sign), format: dd.format}
 }
 
 // Week adds or subtracts one week.
 func (dd VDateDelta) Week() VDate {
-	return VDate{dd.d.Add(dd.sign * 7), dd.f}
+	return VDate{d: dd.d + date.Date(dd.sign*7), format: dd.format}
 }
 
 // Month adds or subtracts one month.
 func (dd VDateDelta) Month() VDate {
-	return VDate{dd.d.AddDate(0, int(dd.sign), 0), dd.f}
+	return VDate{d: dd.d.AddDate(0, dd.sign, 0), format: dd.format}
 }
 
 // Year adds or subtracts one year.
 func (dd VDateDelta) Year() VDate {
-	return VDate{dd.d.AddDate(int(dd.sign), 0, 0), dd.f}
+	return VDate{d: dd.d.AddDate(dd.sign, 0, 0), format: dd.format}
 }

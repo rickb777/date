@@ -51,7 +51,7 @@ func printArg(arg string) {
 	i, err := strconv.ParseInt(arg, 10, 64)
 	if err == nil {
 		title()
-		d := date.NewOfDays(date.PeriodOfDays(i))
+		d := date.Date(i)
 		c := clock.Clock(i)
 		fmt.Printf("%-15s %-15s %-15s %-12s %s\n", arg, sprintf(i), c, d, d.Weekday())
 		success = true
@@ -61,7 +61,7 @@ func printArg(arg string) {
 	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
 		title()
-		fmt.Printf("%-15s %-15s %15s %-12s %s\n", arg, sprintf(d.DaysSinceEpoch()), "", d, d.Weekday())
+		fmt.Printf("%-15s %-15s %15s %-12s %s\n", arg, sprintf(d), "", d, d.Weekday())
 		success = true
 	}
 
