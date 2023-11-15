@@ -14,10 +14,12 @@ import (
 
 const minusOneNano time.Duration = -1
 
+type PeriodOfDays int
+
 // DateRange carries a date and a number of days and describes a range between two dates.
 type DateRange struct {
 	mark date.Date
-	days date.PeriodOfDays
+	days PeriodOfDays
 }
 
 // NewDateRangeOf assembles a new date range from a start time and a duration, discarding
@@ -26,7 +28,7 @@ type DateRange struct {
 func NewDateRangeOf(start time.Time, duration time.Duration) DateRange {
 	sd := date.NewAt(start)
 	ed := date.NewAt(start.Add(duration))
-	return DateRange{sd, date.PeriodOfDays(ed.Sub(sd))}
+	return DateRange{mark: sd, days: PeriodOfDays(ed - sd)}
 }
 
 // NewDateRange assembles a new date range from two dates. These are half-open, so
@@ -34,17 +36,17 @@ func NewDateRangeOf(start time.Time, duration time.Duration) DateRange {
 // are on subsequent days, the range is one date (not two).
 // The result is normalised.
 func NewDateRange(start, end date.Date) DateRange {
-	if end.Before(start) {
-		return DateRange{end, date.PeriodOfDays(start.Sub(end))}
+	if end < start {
+		return DateRange{mark: end, days: PeriodOfDays(start - end)}
 	}
-	return DateRange{start, date.PeriodOfDays(end.Sub(start))}
+	return DateRange{mark: start, days: PeriodOfDays(end - start)}
 }
 
 // NewYearOf constructs the range encompassing the whole year specified.
 func NewYearOf(year int) DateRange {
 	start := date.New(year, time.January, 1)
 	end := date.New(year+1, time.January, 1)
-	return DateRange{start, date.PeriodOfDays(end.Sub(start))}
+	return DateRange{start, PeriodOfDays(end - start)}
 }
 
 // NewMonthOf constructs the range encompassing the whole month specified for a given year.
@@ -53,19 +55,19 @@ func NewMonthOf(year int, month time.Month) DateRange {
 	start := date.New(year, month, 1)
 	endT := time.Date(year, month+1, 1, 0, 0, 0, 0, time.UTC)
 	end := date.NewAt(endT)
-	return DateRange{start, date.PeriodOfDays(end.Sub(start))}
+	return DateRange{start, PeriodOfDays(end - start)}
 }
 
 // EmptyRange constructs an empty range. This is often a useful basis for
 // further operations but note that the end date is undefined.
 func EmptyRange(day date.Date) DateRange {
-	return DateRange{day, 0}
+	return DateRange{mark: day}
 }
 
 // OneDayRange constructs a range of exactly one day. This is often a useful basis for
 // further operations. Note that the last date is the same as the start date.
 func OneDayRange(day date.Date) DateRange {
-	return DateRange{day, 1}
+	return DateRange{mark: day, days: 1}
 }
 
 // DayRange constructs a range of n days.
@@ -73,15 +75,15 @@ func OneDayRange(day date.Date) DateRange {
 // Note that n can be negative. In this case, the specified day will be the end day,
 // which is outside of the half-open range; the last day will be the day before the
 // day specified.
-func DayRange(day date.Date, n date.PeriodOfDays) DateRange {
+func DayRange(day date.Date, n PeriodOfDays) DateRange {
 	if n < 0 {
-		return DateRange{day.Add(n), -n}
+		return DateRange{mark: day + date.Date(n), days: -n}
 	}
 	return DateRange{day, n}
 }
 
 // Days returns the period represented by this range. This will never be negative.
-func (dateRange DateRange) Days() date.PeriodOfDays {
+func (dateRange DateRange) Days() PeriodOfDays {
 	if dateRange.days < 0 {
 		return -dateRange.days
 	}
@@ -91,7 +93,7 @@ func (dateRange DateRange) Days() date.PeriodOfDays {
 // IsZero returns true if this has a zero start date and the the range is empty.
 // Usually this is because the range was created via the zero value.
 func (dateRange DateRange) IsZero() bool {
-	return dateRange.days == 0 && dateRange.mark.IsZero()
+	return dateRange.days == 0 && dateRange.mark == 0
 }
 
 // IsEmpty returns true if this has a starting date but the range is empty (zero days).
@@ -102,7 +104,7 @@ func (dateRange DateRange) IsEmpty() bool {
 // Start returns the earliest date represented by this range.
 func (dateRange DateRange) Start() date.Date {
 	if dateRange.days < 0 {
-		return dateRange.mark.Add(date.PeriodOfDays(1 + dateRange.days))
+		return dateRange.mark + date.Date(1+dateRange.days)
 	}
 	return dateRange.mark
 }
@@ -115,9 +117,9 @@ func (dateRange DateRange) Last() date.Date {
 	if dateRange.days < 0 {
 		return dateRange.mark // because mark is at the end
 	} else if dateRange.days == 0 {
-		return date.Date{}
+		return 0
 	}
-	return dateRange.mark.Add(dateRange.days - 1)
+	return dateRange.mark + date.Date(dateRange.days-1)
 }
 
 // End returns the date following the last date of the range. End can be considered to
@@ -128,9 +130,9 @@ func (dateRange DateRange) Last() date.Date {
 // returned by Last() for empty ranges.
 func (dateRange DateRange) End() date.Date {
 	if dateRange.days < 0 {
-		return dateRange.mark.Add(1) // because mark is at the end
+		return dateRange.mark + 1 // because mark is at the end
 	}
-	return dateRange.mark.Add(dateRange.days)
+	return dateRange.mark + date.Date(dateRange.days)
 }
 
 // Normalise ensures that the number of days is zero or positive.
@@ -138,25 +140,25 @@ func (dateRange DateRange) End() date.Date {
 // in this value, the mark date is the same as the start date.
 func (dateRange DateRange) Normalise() DateRange {
 	if dateRange.days < 0 {
-		return DateRange{dateRange.mark.Add(dateRange.days), -dateRange.days}
+		return DateRange{dateRange.mark + date.Date(dateRange.days), -dateRange.days}
 	}
 	return dateRange
 }
 
 // ShiftBy moves the date range by moving both the start and end dates similarly.
 // A negative parameter is allowed.
-func (dateRange DateRange) ShiftBy(days date.PeriodOfDays) DateRange {
+func (dateRange DateRange) ShiftBy(days PeriodOfDays) DateRange {
 	if days == 0 {
 		return dateRange
 	}
-	newMark := dateRange.mark.Add(days)
+	newMark := dateRange.mark + date.Date(days)
 	return DateRange{newMark, dateRange.days}
 }
 
 // ExtendBy extends (or reduces) the date range by moving the end date.
 // A negative parameter is allowed and this may cause the range to become inverted
 // (i.e. the mark date becomes the end date instead of the start date).
-func (dateRange DateRange) ExtendBy(days date.PeriodOfDays) DateRange {
+func (dateRange DateRange) ExtendBy(days PeriodOfDays) DateRange {
 	if days == 0 {
 		return dateRange
 	}
@@ -214,7 +216,7 @@ func (dateRange DateRange) Contains(d date.Date) bool {
 	if dateRange.days == 0 {
 		return false
 	}
-	return !(d.Before(dateRange.Start()) || d.After(dateRange.Last()))
+	return dateRange.Start() <= d && d <= dateRange.Last()
 }
 
 // StartUTC assumes that the start date is a UTC date and gets the start time of that date, as UTC.
@@ -260,8 +262,8 @@ func (dateRange DateRange) Merge(otherRange DateRange) DateRange {
 	if dateRange.IsZero() {
 		return otherRange
 	}
-	minStart := dateRange.Start().Min(otherRange.Start())
-	maxEnd := dateRange.End().Max(otherRange.End())
+	minStart := min(dateRange.Start(), otherRange.Start())
+	maxEnd := max(dateRange.End(), otherRange.End())
 	return NewDateRange(minStart, maxEnd)
 }
 

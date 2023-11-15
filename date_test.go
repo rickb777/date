@@ -30,68 +30,26 @@ func TestDate_New(t *testing.T) {
 		"1614-01-01T01:02:03+04:00",
 		"1970-01-01T00:00:00+00:00",
 		"1815-12-10T05:06:07+00:00",
+		"1900-01-01T00:00:00+00:00",
 		"1901-09-10T00:00:00-05:00",
 		"1998-09-01T00:00:00-08:00",
 		"2000-01-01T00:00:00+00:00",
 		"9999-12-31T00:00:00+00:00",
 	}
-	for _, c := range cases {
+	for i, c := range cases {
 		tIn, err := time.Parse(time.RFC3339, c)
 		if err != nil {
-			t.Errorf("New(%v) cannot parse input: %v", c, err)
+			t.Errorf("%d: New(%v) cannot parse input: %v", i, c, err)
 			continue
 		}
 		dOut := New(tIn.Year(), tIn.Month(), tIn.Day())
 		if !same(dOut, tIn) {
-			t.Errorf("New(%v) == %v, want date of %v", c, dOut, tIn)
+			t.Errorf("%d: New(%v) == %v, want date of %v", i, c, dOut, tIn)
 		}
 		dOut = NewAt(tIn)
 		if !same(dOut, tIn) {
-			t.Errorf("NewAt(%v) == %v, want date of %v", c, dOut, tIn)
+			t.Errorf("%d: NewAt(%v) == %v, want date of %v", i, c, dOut, tIn)
 		}
-	}
-}
-
-func Test_New_and_Add(t *testing.T) {
-	cases := []struct {
-		offset   PeriodOfDays
-		expected Date
-	}{
-		// For year Y, Julian date offset is
-		//     D = [Y/100] - [Y/400] - 2
-		{offset: -135140, expected: New(1600, time.January, 1)}, // 10 days Julian offset
-		{offset: -98615, expected: New(1700, time.January, 1)},  // 10 days Julian offset
-		{offset: -62091, expected: New(1800, time.January, 1)},
-		{offset: -365, expected: New(1969, time.January, 1)},
-		{offset: 0, expected: New(1970, time.January, 1)},
-		{offset: 365, expected: New(1971, time.January, 1)},
-		{offset: 36525, expected: New(2070, time.January, 1)},
-	}
-
-	zero := Date{}
-
-	for i, c := range cases {
-		d2 := zero.Add(c.offset)
-		if !d2.Equal(c.expected) {
-			t.Errorf("%d: %d gives %s, wanted %s", i, c.offset, d2, c.expected)
-		}
-	}
-}
-
-func TestDate_DaysSinceEpoch(t *testing.T) {
-	zero := Date{}.DaysSinceEpoch()
-	if zero != 0 {
-		t.Errorf("Non zero %v", zero)
-	}
-	today := Today()
-	days := today.DaysSinceEpoch()
-	copy1 := NewOfDays(days)
-	copy2 := days.Date()
-	if today != copy1 || days == 0 {
-		t.Errorf("Today == %v, want date of %v", today, copy1)
-	}
-	if today != copy2 || days == 0 {
-		t.Errorf("Today == %v, want date of %v", today, copy2)
 	}
 }
 
@@ -122,6 +80,7 @@ func TestDate_Time(t *testing.T) {
 		d Date
 	}{
 		{New(-1234, time.February, 5)},
+		{New(-1, time.January, 1)},
 		{New(0, time.April, 12)},
 		{New(1, time.January, 1)},
 		{New(1946, time.February, 4)},
@@ -131,30 +90,30 @@ func TestDate_Time(t *testing.T) {
 		{New(1111111, time.June, 21)},
 	}
 	zones := []int{-12, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 12}
-	for _, c := range cases {
+	for i, c := range cases {
 		d := c.d
 		tUTC := d.UTC()
 		if !same(d, tUTC) {
-			t.Errorf("TimeUTC(%v) == %v, want date part %v", d, tUTC, d)
+			t.Errorf("%d: TimeUTC(%v) == %v, want date part %v", i, d, tUTC, d)
 		}
 		if tUTC.Location() != time.UTC {
-			t.Errorf("TimeUTC(%v) == %v, want %v", d, tUTC.Location(), time.UTC)
+			t.Errorf("%d: TimeUTC(%v) == %v, want %v", i, d, tUTC.Location(), time.UTC)
 		}
 		tLocal := d.Local()
 		if !same(d, tLocal) {
-			t.Errorf("TimeLocal(%v) == %v, want date part %v", d, tLocal, d)
+			t.Errorf("%d: TimeLocal(%v) == %v, want date part %v", i, d, tLocal, d)
 		}
 		if tLocal.Location() != time.Local {
-			t.Errorf("TimeLocal(%v) == %v, want %v", d, tLocal.Location(), time.Local)
+			t.Errorf("%d: TimeLocal(%v) == %v, want %v", i, d, tLocal.Location(), time.Local)
 		}
 		for _, z := range zones {
 			location := time.FixedZone("zone", z*60*60)
 			tInLoc := d.In(location)
 			if !same(d, tInLoc) {
-				t.Errorf("TimeIn(%v) == %v, want date part %v", d, tInLoc, d)
+				t.Errorf("%d: TimeIn(%v) == %v, want date part %v", i, d, tInLoc, d)
 			}
 			if tInLoc.Location() != location {
-				t.Errorf("TimeIn(%v) == %v, want %v", d, tInLoc.Location(), location)
+				t.Errorf("%d: TimeIn(%v) == %v, want %v", i, d, tInLoc.Location(), location)
 			}
 		}
 	}
@@ -178,68 +137,15 @@ func TestPredicates(t *testing.T) {
 		di := ci.d
 		for j, cj := range cases {
 			dj := cj.d
-			testPredicate(t, di, dj, di.Equal(dj), i == j, "Equal")
-			testPredicate(t, di, dj, di.Before(dj), i < j, "Before")
-			testPredicate(t, di, dj, di.After(dj), i > j, "After")
 			testPredicate(t, di, dj, di == dj, i == j, "==")
 			testPredicate(t, di, dj, di != dj, i != j, "!=")
 		}
-	}
-
-	// Test IsZero
-	zero := Date{}
-	if !zero.IsZero() {
-		t.Errorf("IsZero(%v) == false, want true", zero)
-	}
-	today := Today()
-	if today.IsZero() {
-		t.Errorf("IsZero(%v) == true, want false", today)
 	}
 }
 
 func testPredicate(t *testing.T, di, dj Date, p, q bool, m string) {
 	if p != q {
 		t.Errorf("%s(%v, %v) == %v, want %v\n%v", m, di, dj, p, q, debug.Stack())
-	}
-}
-
-func TestArithmetic(t *testing.T) {
-	dates := []Date{
-		New(-1234, time.February, 5),
-		New(0, time.April, 12),
-		New(1, time.January, 1),
-		New(1946, time.February, 4),
-		New(1970, time.January, 1),
-		New(1976, time.April, 1),
-		New(1999, time.December, 1),
-		New(1111111, time.June, 21),
-	}
-
-	offsets := []PeriodOfDays{-1000000, -9999, -555, -99, -22, -1, 0, 1, 22, 99, 555, 9999, 1000000}
-
-	for _, d := range dates {
-		di := d
-		for _, days := range offsets {
-			dj := di.Add(days)
-			days2 := dj.Sub(di)
-			if days2 != days {
-				t.Errorf("AddSub(%v,%v) == %v, want %v", di, days, days2, days)
-			}
-			d3 := dj.Add(-days)
-			if d3 != di {
-				t.Errorf("AddNeg(%v,%v) == %v, want %v", di, days, d3, di)
-			}
-			eMin1 := min(di.day, dj.day)
-			aMin1 := di.Min(dj)
-			if aMin1.day != eMin1 {
-				t.Errorf("%v.Max(%v) is %s", di, dj, aMin1)
-			}
-			eMax1 := max(di.day, dj.day)
-			aMax1 := di.Max(dj)
-			if aMax1.day != eMax1 {
-				t.Errorf("%v.Max(%v) is %s", di, dj, aMax1)
-			}
-		}
 	}
 }
 
@@ -290,20 +196,6 @@ func TestDate_AddPeriod(t *testing.T) {
 			t.Errorf("%d: %v.AddPeriod(%v) == %v, want %v", i, c.in, c.delta, out, c.expected)
 		}
 	}
-}
-
-func min(a, b PeriodOfDays) PeriodOfDays {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b PeriodOfDays) PeriodOfDays {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // See main testin in period_test.go

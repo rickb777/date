@@ -10,18 +10,19 @@ import (
 	"time"
 )
 
+var zeroDateTime = time.Date(0, time.January, 1, 0, 0, 0, 0, time.UTC)
+
 func TestEncode(t *testing.T) {
 	cases := []int{
 		0, 1, 28, 30, 31, 32, 364, 365, 366, 367, 500, 1000, 10000, 100000,
 	}
-	tBase := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
 	for i, c := range cases {
-		d := encode(tBase.AddDate(0, 0, c))
-		if d != PeriodOfDays(c) {
+		d := encode(zeroDateTime.AddDate(0, 0, c))
+		if d != Date(c) {
 			t.Errorf("Encode(%v) == %v, want %v", i, d, c)
 		}
-		d = encode(tBase.AddDate(0, 0, -c))
-		if d != PeriodOfDays(-c) {
+		d = encode(zeroDateTime.AddDate(0, 0, -c))
+		if d != Date(-c) {
 			t.Errorf("Encode(%v) == %v, want %v", i, d, c)
 		}
 	}
@@ -33,6 +34,8 @@ func TestEncodeDecode(t *testing.T) {
 		month time.Month
 		day   int
 	}{
+		{0, time.December, 31},
+		{1500, time.October, 31},
 		{1969, time.December, 31},
 		{1970, time.January, 1},
 		{1970, time.January, 2},
@@ -73,14 +76,14 @@ func TestEncodeDecode(t *testing.T) {
 
 func TestDecodeEncode(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		c := PeriodOfDays(rand.Int31())
+		c := Date(rand.Int31())
 		d := encode(decode(c))
 		if d != c {
 			t.Errorf("DecodeEncode(%v) == %v, want %v", i, d, c)
 		}
 	}
 	for i := 0; i < 1000; i++ {
-		c := -PeriodOfDays(rand.Int31())
+		c := -Date(rand.Int31())
 		d := encode(decode(c))
 		if d != c {
 			t.Errorf("DecodeEncode(%v) == %v, want %v", i, d, c)

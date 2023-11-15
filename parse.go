@@ -38,7 +38,7 @@ func MustAutoParse(value string) Date {
 func AutoParse(value string) (Date, error) {
 	abs := strings.TrimSpace(value)
 	if len(abs) == 0 {
-		return Date{}, errors.New("Date.AutoParse: cannot parse a blank string")
+		return 0, errors.New("Date.AutoParse: cannot parse a blank string")
 	}
 
 	sign := ""
@@ -103,7 +103,7 @@ func MustParseISO(value string) Date {
 // Background: https://en.wikipedia.org/wiki/ISO_8601#Dates
 func ParseISO(value string) (Date, error) {
 	if len(value) < 8 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
 	}
 
 	abs := value
@@ -125,27 +125,27 @@ func ParseISO(value string) (Date, error) {
 		fd1 = 6
 		fd2 = 8
 	} else if abs[fm2] != '-' {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax", value)
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax", value)
 	}
 	//fmt.Printf("%s %d %d %d %d %d\n", value, dash1, fm1, fm2, fd1, fd2)
 
 	if len(abs) != fd2 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
 	}
 
 	year, err := parseField(value, abs[:dash1], "year", 4, -1)
 	if err != nil {
-		return Date{}, err
+		return 0, err
 	}
 
 	month, err := parseField(value, abs[fm1:fm2], "month", -1, 2)
 	if err != nil {
-		return Date{}, err
+		return 0, err
 	}
 
 	day, err := parseField(value, abs[fd1:], "day", -1, 2)
 	if err != nil {
-		return Date{}, err
+		return 0, err
 	}
 
 	if value[0] == '-' {
@@ -154,7 +154,7 @@ func ParseISO(value string) (Date, error) {
 
 	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
-	return Date{encode(t)}, nil
+	return encode(t), nil
 }
 
 func parseField(value, field, name string, minLength, requiredLength int) (int, error) {
@@ -196,7 +196,7 @@ func MustParse(layout, value string) Date {
 func Parse(layout, value string) (Date, error) {
 	t, err := time.Parse(layout, value)
 	if err != nil {
-		return Date{}, err
+		return 0, err
 	}
-	return Date{encode(t)}, nil
+	return encode(t), nil
 }

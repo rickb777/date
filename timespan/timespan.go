@@ -19,7 +19,9 @@ const TimestampFormat = "2006-01-02 15:04:05"
 //const ISOFormat = "2006-01-02T15:04:05"
 
 // TimeSpan holds a span of time between two instants with a 1 nanosecond resolution.
-// It is implemented using a time.Duration, therefore is limited to a maximum span of 290 years.
+// It is implemented using a time.Duration, therefore is limited to a maximum span of 292 years.
+//
+// It supports RFC5545 timespan representations.
 type TimeSpan struct {
 	mark     time.Time
 	duration time.Duration

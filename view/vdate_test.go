@@ -30,12 +30,12 @@ func TestBasicFormatting(t *testing.T) {
 }
 
 func TestZeroFormatting(t *testing.T) {
-	d := NewVDate(date.Date{})
+	d := NewVDate(0)
 	is(t, d.String(), "")
-	is(t, d.Format(), "01/01/1970")
-	is(t, d.WithFormat(ISOFormat).Format(), "1970-01-01")
-	is(t, d.Mon(), "Thu")
-	is(t, d.Monday(), "Thursday")
+	is(t, d.Format(), "01/01/0000")
+	is(t, d.WithFormat(ISOFormat).Format(), "0000-01-01")
+	is(t, d.Mon(), "Sat")
+	is(t, d.Monday(), "Saturday")
 	is(t, d.Day2(), "1")
 	is(t, d.Day02(), "01")
 	is(t, d.Day2nd(), "1st")
@@ -43,7 +43,7 @@ func TestZeroFormatting(t *testing.T) {
 	is(t, d.Month01(), "01")
 	is(t, d.Jan(), "Jan")
 	is(t, d.January(), "January")
-	is(t, d.Year(), "1970")
+	is(t, d.Year(), "0000")
 }
 
 func TestDate(t *testing.T) {
@@ -64,11 +64,11 @@ func TestIsToday(t *testing.T) {
 		expectTomorrow  bool
 	}{
 		{NewVDate(date.New(2012, time.June, 25)), false, false, false},
-		{NewVDate(today.Add(-2)), false, false, false},
-		{NewVDate(today.Add(-1)), true, false, false},
-		{NewVDate(today.Add(0)), false, true, false},
-		{NewVDate(today.Add(1)), false, false, true},
-		{NewVDate(today.Add(2)), false, false, false},
+		{NewVDate(today - 2), false, false, false},
+		{NewVDate(today - 1), true, false, false},
+		{NewVDate(today), false, true, false},
+		{NewVDate(today + 1), false, false, true},
+		{NewVDate(today + 2), false, false, false},
 	}
 	for _, c := range cases {
 		if c.value.IsYesterday() != c.expectYesterday {
@@ -92,11 +92,11 @@ func TestIsOdd(t *testing.T) {
 		expectOdd bool
 	}{
 		{NewVDate(d25), true},
-		{NewVDate(d25.Add(-2)), true},
-		{NewVDate(d25.Add(-1)), false},
-		{NewVDate(d25.Add(0)), true},
-		{NewVDate(d25.Add(1)), false},
-		{NewVDate(d25.Add(2)), true},
+		{NewVDate(d25 - 2), true},
+		{NewVDate(d25 - 1), false},
+		{NewVDate(d25), true},
+		{NewVDate(d25 + 1), false},
+		{NewVDate(d25 + 2), true},
 	}
 	for _, c := range cases {
 		if c.value.IsOdd() != c.expectOdd {

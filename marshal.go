@@ -5,60 +5,37 @@
 package date
 
 import (
-	"bytes"
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"math"
 )
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (d Date) MarshalBinary() ([]byte, error) {
-	enc := []byte{
-		byte(d.day >> 24),
-		byte(d.day >> 16),
-		byte(d.day >> 8),
-		byte(d.day),
+func (d Date) MarshalBinary() (b []byte, err error) {
+	if math.MaxInt == math.MaxInt32 {
+		b = make([]byte, 4)
+		binary.LittleEndian.PutUint32(b, uint32(d))
+	} else {
+		b = make([]byte, 8)
+		binary.LittleEndian.PutUint64(b, uint64(d))
 	}
-	return enc, nil
+	return b, nil
 }
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 func (d *Date) UnmarshalBinary(data []byte) error {
-	if len(data) == 0 {
+	switch len(data) {
+	case 0:
 		return errors.New("Date.UnmarshalBinary: no data")
+	case 4:
+		*d = Date(binary.LittleEndian.Uint32(data))
+	case 8:
+		*d = Date(binary.LittleEndian.Uint64(data))
+	default:
+		return fmt.Errorf("Date.UnmarshalBinary: invalid length %d bytes", len(data))
 	}
-	if len(data) != 4 {
-		return errors.New("Date.UnmarshalBinary: invalid length")
-	}
-
-	d.day = PeriodOfDays(data[3]) | PeriodOfDays(data[2])<<8 | PeriodOfDays(data[1])<<16 | PeriodOfDays(data[0])<<24
-
 	return nil
-}
-
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
-func (ds DateString) MarshalBinary() ([]byte, error) {
-	return Date(ds).MarshalBinary()
-}
-
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
-func (ds *DateString) UnmarshalBinary(data []byte) error {
-	return (*Date)(ds).UnmarshalBinary(data)
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-// The date is given in ISO 8601 extended format (e.g. "2006-01-02").
-// If the year of the date falls outside the [0,9999] range, this format
-// produces an expanded year representation with possibly extra year digits
-// beyond the prescribed four-digit minimum and with a + or - sign prefix
-// (e.g. , "+12345-06-07", "-0987-06-05").
-// Note that the zero value is marshalled as a blank string, which allows
-// "omitempty" to work.
-func (d Date) MarshalJSON() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	buf.Grow(14)
-	buf.WriteByte('"')
-	d.WriteTo(buf)
-	buf.WriteByte('"')
-	return buf.Bytes(), nil
 }
 
 // MarshalText implements the encoding.TextMarshaler interface.
@@ -83,38 +60,7 @@ func (d *Date) UnmarshalText(data []byte) (err error) {
 	}
 	u, err := ParseISO(string(data))
 	if err == nil {
-		d.day = u.day
+		*d = u
 	}
 	return err
-}
-
-// MarshalJSON implements the json.Marshaler interface.
-// The date is given in ISO 8601 extended format (e.g. "2006-01-02").
-// If the year of the date falls outside the [0,9999] range, this format
-// produces an expanded year representation with possibly extra year digits
-// beyond the prescribed four-digit minimum and with a + or - sign prefix
-// (e.g. , "+12345-06-07", "-0987-06-05").
-// Note that the zero value is marshalled as a blank string, which allows
-// "omitempty" to work.
-func (ds DateString) MarshalJSON() ([]byte, error) {
-	return Date(ds).MarshalJSON()
-}
-
-// MarshalText implements the encoding.TextMarshaler interface.
-// The date is given in ISO 8601 extended format (e.g. "2006-01-02").
-// If the year of the date falls outside the [0,9999] range, this format
-// produces an expanded year representation with possibly extra year digits
-// beyond the prescribed four-digit minimum and with a + or - sign prefix
-// (e.g. , "+12345-06-07", "-0987-06-05").
-func (ds DateString) MarshalText() ([]byte, error) {
-	return Date(ds).MarshalText()
-}
-
-// UnmarshalText implements the encoding.TextUnmarshaler interface.
-// The date is expected to be in ISO 8601 extended format
-// (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
-// the year must use at least 4 digits and if outside the [0,9999] range
-// must be prefixed with a + or - sign.
-func (ds *DateString) UnmarshalText(data []byte) (err error) {
-	return (*Date)(ds).UnmarshalText(data)
 }

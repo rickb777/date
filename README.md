@@ -16,7 +16,7 @@ It also provides
 
  * `clock.Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
  * `timespan.DateRange` which expresses a period between two dates.
- * `timespan.TimeSpan` which expresses a duration of time between two instants.
+ * `timespan.TimeSpan` which expresses a duration of time between two instants (see RFC5545).
  * `view.VDate` which wraps `Date` for use in templates etc.
 
 See [package documentation](https://godoc.org/github.com/rickb777/date) for
@@ -27,11 +27,7 @@ to the ISO-8601 form (e.g. "PT30S").
 
 ## Installation
 
-    go get -u github.com/rickb777/date
-
-or
-
-    dep ensure -add github.com/rickb777/date
+    go get github.com/rickb777/date/v2
 
 ## Status
 
@@ -39,6 +35,13 @@ This library has been in reliable production use for some time. Versioning follo
 
 ### Version 2
 
+Changes since v1:
+
+ * `date.Date` is now an integer that holds the number of days since year zero. Previously, it was a struct based on year 1970.
+ * `date.Date` arithmetic and comparison operations now rely on Go operators; the corresponding methods have been deleted.
+ * `date.Date` zero value is now year 0 (Gregorian proleptic astronomical) so 1970 will no longer cause issues.
+ * `date.PeriodOfDays` has been moved to `timespan.PeriodOfDays`
+ * `date.DateString` has been deleted; the SQL `driver.Valuer` implementation is now pluggable and serves the same purpose more simply.
  * The [period.Period](https://pkg.go.dev/github.com/rickb777/period) type has moved.
  * The `clock.Clock` type is now nanosecond resolution (formerly millisecond resolution). 
 
