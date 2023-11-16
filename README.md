@@ -48,16 +48,16 @@ Changes since v1:
 
 Renamed methods:
 
-| Was        | Use instead         |
-|------------|---------------------|
+| Was          | Use instead         |
+|--------------|---------------------|
 | Date`.Local` | Date`.Midnight`     |
 | Date`.UTC`   | Date`.MidnightUTC`  |
 | Date`.In`    | Date`.MidnightIn`   |
 
 Deleted methods and functions:
 
-| Was         | Use instead        |
-|-------------|--------------------|
+| Was           | Use instead        |
+|---------------|--------------------|
 | Date`.Add`    | `+`                |
 | Date`.Sub`    | `-`                |
 | Date`.IsZero` | `== 0`             |
