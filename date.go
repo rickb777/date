@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/rickb777/date/v2/clock"
 	"github.com/rickb777/date/v2/gregorian"
 	"github.com/rickb777/period"
 )
@@ -85,25 +86,32 @@ func Max() Date {
 	return Date(math.MaxInt32 - zeroOffset)
 }
 
-// UTC returns a Time value corresponding to midnight on the given date,
+// MidnightUTC returns a Time value corresponding to midnight on the given date d,
 // UTC time.  Note that midnight is the beginning of the day rather than the end.
-func (d Date) UTC() time.Time {
+func (d Date) MidnightUTC() time.Time {
 	return decode(d)
 }
 
-// Local returns a Time value corresponding to midnight on the given date,
+// Midnight returns a Time value corresponding to midnight on the given date d,
 // local time.  Note that midnight is the beginning of the day rather than the end.
-func (d Date) Local() time.Time {
-	return d.In(time.Local)
+func (d Date) Midnight() time.Time {
+	return d.MidnightIn(time.Local)
 }
 
-// In returns a Time value corresponding to midnight on the given date,
+// MidnightIn returns a Time value corresponding to midnight on the given date d,
 // relative to the specified time zone.  Note that midnight is the beginning
 // of the day rather than the end.
-func (d Date) In(loc *time.Location) time.Time {
+func (d Date) MidnightIn(loc *time.Location) time.Time {
+	return d.Time(0, loc)
+}
+
+// Time returns a Time value corresponding to a clock time on the given date d,
+// relative to the specified time zone. A common use-case is to obtain the midnight
+// time, for which the clock value is simply zero.
+func (d Date) Time(clock clock.Clock, loc *time.Location) time.Time {
 	t := decode(d).In(loc)
 	_, offset := t.Zone()
-	return t.Add(time.Duration(-offset) * time.Second)
+	return t.Add(time.Duration(-offset) * time.Second).Add(time.Duration(clock))
 }
 
 // Date returns the year, month, and day of d.
@@ -116,7 +124,7 @@ func (d Date) Date() (year int, month time.Month, day int) {
 // The first day of the month is 1.
 func (d Date) LastDayOfMonth() int {
 	y, m, _ := d.Date()
-	return DaysIn(y, m)
+	return gregorian.DaysIn(y, m)
 }
 
 // Day returns the day of the month specified by d.
@@ -176,28 +184,10 @@ func (d Date) AddDate(years, months, days int) Date {
 // AddPeriod returns the date corresponding to adding the given period. If the
 // period's fields are be negative, this results in an earlier date.
 //
-// Any time component is ignored. Therefore, be careful with periods containing
-// more that 24 hours in the hours/minutes/seconds fields. These will not be
-// normalised for you; if you want this behaviour, call delta.Normalise(false)
-// on the input parameter.
-//
-// For example, PT24H adds nothing, whereas P1D adds one day as expected. To
-// convert a period such as PT24H to its equivalent P1D, use
-// delta.Normalise(false) as the input.
-//
-// See the description for AddDate.
+// Any time component only affects the result for periods containing
+// more that 24 hours in the hours/minutes/seconds fields
 func (d Date) AddPeriod(delta period.Period) Date {
 	t1 := decode(d)
 	t2, _ := delta.AddTo(t1)
 	return encode(t2)
-}
-
-// IsLeap simply tests whether a given year is a leap year, using the proleptic Gregorian calendar algorithm.
-func IsLeap(year int) bool {
-	return gregorian.IsLeap(year)
-}
-
-// DaysIn gives the number of days in a given month, according to the proleptic Gregorian calendar.
-func DaysIn(year int, month time.Month) int {
-	return gregorian.DaysIn(year, month)
 }

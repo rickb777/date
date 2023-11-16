@@ -37,24 +37,37 @@ This library has been in reliable production use for some time. Versioning follo
 
 Changes since v1:
 
- * `date.Date` is now an integer that holds the number of days since year zero. Previously, it was a struct based on year 1970.
- * `date.Date` arithmetic and comparison operations now rely on Go operators; the corresponding methods have been deleted (see below).
- * `date.Date` zero value is now year 0 (Gregorian proleptic astronomical) so 1970 will no longer cause issues.
- * `date.PeriodOfDays` has been moved to `timespan.PeriodOfDays`
- * `date.DateString` has been deleted; the SQL `driver.Valuer` implementation is now pluggable and serves the same purpose more simply.
- * The [period.Period](https://pkg.go.dev/github.com/rickb777/period) type has moved.
- * The `clock.Clock` type is now nanosecond resolution (formerly millisecond resolution). 
+* The [period.Period](https://pkg.go.dev/github.com/rickb777/period) type has moved.
+* `clock.Clock` now has nanosecond resolution (formerly millisecond resolution). 
+* `date.Date` is now an integer that holds the number of days since year zero. Previously, it was a struct based on year 1970.
+* `date.Date` time conversion methods have more explicit names - see table below.
+* `date.Date` arithmetic and comparison operations now rely on Go operators; the corresponding methods have been deleted - see table below.
+* `date.Date` zero value is now year 0 (Gregorian proleptic astronomical) so 1970 will no longer cause issues.
+* `date.PeriodOfDays` has been moved to `timespan.PeriodOfDays`
+* `date.DateString` has been deleted; the SQL `driver.Valuer` implementation is now pluggable and serves the same purpose more simply.
 
-Deleted methods:
+Renamed methods:
 
-| Was    | Use instead |
-| ------ |-------------|
-| Add    | `+`         |
-| Sub    | `-`         |
-| IsZero | `== 0`      |
-| Equal  | `==`        |
-| Before | `<`         |
-| After  | `>`         |
+| Was        | Use instead         |
+|------------|---------------------|
+| Date`.Local` | Date`.Midnight`     |
+| Date`.UTC`   | Date`.MidnightUTC`  |
+| Date`.In`    | Date`.MidnightIn`   |
+
+Deleted methods and functions:
+
+| Was         | Use instead        |
+|-------------|--------------------|
+| Date`.Add`    | `+`                |
+| Date`.Sub`    | `-`                |
+| Date`.IsZero` | `== 0`             |
+| Date`.Equal`  | `==`               |
+| Date`.Before` | `<`                |
+| Date`.After`  | `>`                |
+| `date.IsLeap` | `gregorian.IsLeap` |
+| `date.DaysIn` | `gregorian.DaysIn` |
+
+Any v1 dates stored as integers will be incorrect; these can be corrected by adding 719528 to them, which is the number of days between year zero (v2) and 1970 (v1). Dates stored as strings will be unaffected.
 
 ## Credits
 

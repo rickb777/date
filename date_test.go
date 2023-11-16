@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rickb777/date/v2/clock"
 	"github.com/rickb777/period"
 )
 
@@ -92,28 +93,58 @@ func TestDate_Time(t *testing.T) {
 	zones := []int{-12, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 12}
 	for i, c := range cases {
 		d := c.d
-		tUTC := d.UTC()
+		tUTC := d.MidnightUTC()
 		if !same(d, tUTC) {
-			t.Errorf("%d: TimeUTC(%v) == %v, want date part %v", i, d, tUTC, d)
+			t.Errorf("%d: %v.MidnightUTC() == %v, want date part %v", i, d, tUTC, d)
 		}
 		if tUTC.Location() != time.UTC {
-			t.Errorf("%d: TimeUTC(%v) == %v, want %v", i, d, tUTC.Location(), time.UTC)
+			t.Errorf("%d: %v.MidnightUTC() == %v, want %v", i, d, tUTC.Location(), time.UTC)
 		}
-		tLocal := d.Local()
+
+		tLocal := d.Midnight()
 		if !same(d, tLocal) {
-			t.Errorf("%d: TimeLocal(%v) == %v, want date part %v", i, d, tLocal, d)
+			t.Errorf("%d: %v.Midnight() == %v, want date part %v", i, d, tLocal, d)
 		}
 		if tLocal.Location() != time.Local {
-			t.Errorf("%d: TimeLocal(%v) == %v, want %v", i, d, tLocal.Location(), time.Local)
+			t.Errorf("%d: %v.Midnight() == %v, want %v", i, d, tLocal.Location(), time.Local)
 		}
+
 		for _, z := range zones {
 			location := time.FixedZone("zone", z*60*60)
-			tInLoc := d.In(location)
+			tInLoc := d.MidnightIn(location)
 			if !same(d, tInLoc) {
-				t.Errorf("%d: TimeIn(%v) == %v, want date part %v", i, d, tInLoc, d)
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want date part %v", i, d, z, tInLoc, d)
+			}
+			h, m, s := tInLoc.Clock()
+			if s != 0 {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero seconds but got %d", i, d, z, tInLoc.Location(), s)
+			}
+			if m != 0 {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero minutes but got %d", i, d, z, tInLoc.Location(), m)
+			}
+			if h != 0 {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero hours but got %d", i, d, z, tInLoc.Location(), h)
 			}
 			if tInLoc.Location() != location {
-				t.Errorf("%d: TimeIn(%v) == %v, want %v", i, d, tInLoc.Location(), location)
+				t.Errorf("%d: MidnightIn(%v) == %v, want %v", i, d, tInLoc.Location(), z)
+			}
+
+			t2 := d.Time(clock.New(1, 2, 3, 0), location)
+			if !same(d, t2) {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want date part %v", i, d, z, t2, d)
+			}
+			h, m, s = t2.Clock()
+			if s != 3 {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want three seconds but got %d", i, d, z, t2.Location(), s)
+			}
+			if m != 2 {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want two minutes but got %d", i, d, z, t2.Location(), m)
+			}
+			if h != 1 {
+				t.Errorf("%d: %v.MidnightIn(%d) == %v, want one hour but got %d", i, d, z, t2.Location(), h)
+			}
+			if t2.Location() != location {
+				t.Errorf("%d: MidnightIn(%v) == %v, want %v", i, d, t2.Location(), z)
 			}
 		}
 	}
@@ -186,55 +217,15 @@ func TestDate_AddPeriod(t *testing.T) {
 		{New(1973, time.January, 1), period.NewYMWD(0, 0, 1, 0), New(1973, time.January, 8)},
 		{New(1973, time.January, 1), period.NewYMWD(0, 0, 0, 10), New(1973, time.January, 11)},
 		{New(1973, time.January, 1), period.NewYMWD(0, 0, 0, 365), New(1974, time.January, 1)},
+		{New(1973, time.January, 3), period.NewYMWD(0, 0, 0, -2), New(1973, time.January, 1)},
 		{New(1974, time.January, 1), period.NewHMS(1, 2, 3), New(1974, time.January, 1)},
-		// note: the period is not normalised so the HMS is ignored even though it's more than one day
 		{New(1975, time.January, 1), period.NewHMS(24, 2, 3), New(1975, time.January, 2)},
+		{New(1975, time.January, 1), period.NewHMS(0, 1440, 0), New(1975, time.January, 2)},
 	}
 	for i, c := range cases {
 		out := c.in.AddPeriod(c.delta)
 		if out != c.expected {
 			t.Errorf("%d: %v.AddPeriod(%v) == %v, want %v", i, c.in, c.delta, out, c.expected)
-		}
-	}
-}
-
-// See main testin in period_test.go
-func TestIsLeap(t *testing.T) {
-	cases := []struct {
-		year     int
-		expected bool
-	}{
-		{2000, true},
-		{2001, false},
-	}
-	for _, c := range cases {
-		got := IsLeap(c.year)
-		if got != c.expected {
-			t.Errorf("TestIsLeap(%d) == %v, want %v", c.year, got, c.expected)
-		}
-	}
-}
-
-func TestDaysIn(t *testing.T) {
-	cases := []struct {
-		year     int
-		month    time.Month
-		expected int
-	}{
-		{2000, time.January, 31},
-		{2000, time.February, 29},
-		{2001, time.February, 28},
-		{2001, time.April, 30},
-	}
-	for _, c := range cases {
-		got1 := DaysIn(c.year, c.month)
-		if got1 != c.expected {
-			t.Errorf("DaysIn(%d, %d) == %v, want %v", c.year, c.month, got1, c.expected)
-		}
-		d := New(c.year, c.month, 1)
-		got2 := d.LastDayOfMonth()
-		if got2 != c.expected {
-			t.Errorf("DaysIn(%d) == %v, want %v", c.year, got2, c.expected)
 		}
 	}
 }

@@ -31,7 +31,7 @@ func TestDate_Scan(t *testing.T) {
 		{v: "2018-12-31", expected: 17896 + zeroOffset},
 		{v: "31/12/2018", expected: 17896 + zeroOffset},
 		{v: []byte("10000"), expected: 10000},
-		{v: Date(10000).Local(), expected: 10000},
+		{v: Date(10000).Midnight(), expected: 10000},
 	}
 
 	for i, c := range cases {
