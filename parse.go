@@ -73,7 +73,7 @@ func AutoParse(value string) (Date, error) {
 			abs = fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
 		}
 	}
-	return ParseISO(sign + abs)
+	return parseISO(value, sign+abs)
 }
 
 // MustParseISO is as per ParseISO except that it panics if the string cannot be parsed.
@@ -87,83 +87,107 @@ func MustParseISO(value string) Date {
 }
 
 // ParseISO parses an ISO 8601 formatted string and returns the date value it represents.
-// In addition to the common formats (e.g. 2006-01-02 and 20060102), this function
-// accepts date strings using the expanded year representation
-// with possibly extra year digits beyond the prescribed four-digit minimum
-// and with a + or - sign prefix (e.g. , "+12345-06-07", "-0987-06-05").
+// It accepts the following formats:
 //
-// Note that ParseISO is a little looser than the ISO 8601 standard and will
-// be happy to parse dates with a year longer in length than the four-digit minimum even
-// if they are missing the + sign prefix.
+//   - the common formats ±YYYY-MM-DD and ±YYYYMMDD (e.g. 2006-01-02 and 20060102)
+//   - the ordinal date representation ±YYYY-OOO (e.g. 2006-217)
+//
+// ParseISO will accept dates with more year digits than the four-digit minimum. A
+// leading plus '+' sign is allowed and ignored.
 //
 // Function date.Parse can be used to parse date strings in other formats, but it
 // is currently not able to parse ISO 8601 formatted strings that use the
 // expanded year format.
 //
 // Background: https://en.wikipedia.org/wiki/ISO_8601#Dates
+// https://www.iso.org/obp/ui#iso:std:iso:8601:-1:ed-1:v1:en:term:3.1.3.1
 func ParseISO(value string) (Date, error) {
-	if len(value) < 8 {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
-	}
+	return parseISO(value, value)
+}
 
+func parseISO(input, value string) (Date, error) {
 	abs := value
-	if value[0] == '+' || value[0] == '-' {
+	sign := 1
+	switch value[0] {
+	case '+':
 		abs = value[1:]
+	case '-':
+		abs = value[1:]
+		sign = -1
 	}
 
 	dash1 := strings.IndexByte(abs, '-')
-	fm1 := dash1 + 1
-	fm2 := dash1 + 3
-	fd1 := dash1 + 4
-	fd2 := dash1 + 6
+	dash2 := strings.LastIndexByte(abs, '-')
 
 	if dash1 < 0 {
-		// switch to YYYYMMDD format
-		dash1 = 4
-		fm1 = 4
-		fm2 = 6
-		fd1 = 6
-		fd2 = 8
-	} else if abs[fm2] != '-' {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax", value)
-	}
-	//fmt.Printf("%s %d %d %d %d %d\n", value, dash1, fm1, fm2, fd1, fd2)
-
-	if len(abs) != fd2 {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
+		// parse YYYYMMDD (more Y digits are allowed)
+		ln := len(abs)
+		fm := ln - 4
+		fd := ln - 2
+		return parseYYYYMMDD(input, abs[:fm], abs[fm:fd], abs[fd:], sign)
 	}
 
-	year, err := parseField(value, abs[:dash1], "year", 4, -1)
+	if dash2 > dash1 {
+		// parse YYYY-MM-DD (more Y digits are allowed)
+		fy1 := dash1
+		fm1 := dash1 + 1
+		fm2 := dash2
+		fd1 := dash2 + 1
+
+		if abs[fm2] != '-' {
+			return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax for date yyyy-mm-dd", input)
+		}
+
+		return parseYYYYMMDD(input, abs[:fy1], abs[fm1:fm2], abs[fd1:], sign)
+	}
+
+	// parse YYYY-OOO (more Y digits are allowed)
+	fy1 := dash1
+	fo1 := dash1 + 1
+
+	if len(abs) != fo1+3 {
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length for ordinal date yyyy-ooo", input)
+	}
+
+	return parseYYYYOOO(input, abs[:fy1], abs[fo1:], sign)
+}
+
+func parseYYYYMMDD(input, yyyy, mm, dd string, sign int) (Date, error) {
+	year, e1 := parseField(yyyy, "year", 4, -1)
+	month, e2 := parseField(mm, "month", -1, 2)
+	day, e3 := parseField(dd, "day", -1, 2)
+
+	err := errors.Join(e1, e2, e3)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: %w", input, err)
 	}
 
-	month, err := parseField(value, abs[fm1:fm2], "month", -1, 2)
-	if err != nil {
-		return 0, err
-	}
-
-	day, err := parseField(value, abs[fd1:], "day", -1, 2)
-	if err != nil {
-		return 0, err
-	}
-
-	if value[0] == '-' {
-		year = -year
-	}
-
-	t := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	t := time.Date(sign*year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 
 	return encode(t), nil
 }
 
-func parseField(value, field, name string, minLength, requiredLength int) (int, error) {
+func parseYYYYOOO(input, yyyy, ooo string, sign int) (Date, error) {
+	year, e1 := parseField(yyyy, "year", 4, -1)
+	ordinal, e2 := parseField(ooo, "ordinal", -1, 3)
+
+	err := errors.Join(e1, e2)
+	if err != nil {
+		return 0, fmt.Errorf("Date.ParseISO: cannot parse ordinal date %q: %w", input, err)
+	}
+
+	t := time.Date(sign*year, time.January, ordinal, 0, 0, 0, 0, time.UTC)
+
+	return encode(t), nil
+}
+
+func parseField(field, name string, minLength, requiredLength int) (int, error) {
 	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: invalid %s", value, name)
+		return 0, fmt.Errorf("%s has wrong length", name)
 	}
 	number, err := strconv.Atoi(field)
 	if err != nil {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: invalid %s", value, name)
+		return 0, fmt.Errorf("invalid %s", name)
 	}
 	return number, nil
 }
