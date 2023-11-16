@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var zeroDateTime = time.Date(0, time.January, 1, 0, 0, 0, 0, time.UTC)
+var zeroDateTime = time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 func TestEncode(t *testing.T) {
 	cases := []int{
@@ -19,11 +19,11 @@ func TestEncode(t *testing.T) {
 	for i, c := range cases {
 		d := encode(zeroDateTime.AddDate(0, 0, c))
 		if d != Date(c) {
-			t.Errorf("Encode(%v) == %v, want %v", i, d, c)
+			t.Errorf("Encode(%d) == %d (%s), want %v", i, d, d, c)
 		}
 		d = encode(zeroDateTime.AddDate(0, 0, -c))
 		if d != Date(-c) {
-			t.Errorf("Encode(%v) == %v, want %v", i, d, c)
+			t.Errorf("Encode(%d) == %d (%s), want %v", i, d, d, c)
 		}
 	}
 }

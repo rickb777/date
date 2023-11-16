@@ -7,10 +7,7 @@ package date
 import "time"
 
 const (
-	secondsPerDay = 60 * 60 * 24
-
-	// zeroOffset is the number of days between 0001-01-01 and 1970-01-01
-	zeroOffset = 719528
+	secondsPerDay int64 = 60 * 60 * 24
 )
 
 // encode returns the number of days elapsed from date zero to the date

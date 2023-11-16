@@ -12,43 +12,50 @@ import (
 func ExampleMax() {
 	d := Max()
 	fmt.Println(d)
-	// Output: +5877640-07-10
+	// Output: +5877642-07-12
 }
 
 func ExampleMin() {
 	d := Min()
 	fmt.Println(d)
-	// Output: -5879611-06-23
+	// Output: -5879610-06-24
 }
 
 func ExampleZero() {
-	d := Zero
-	fmt.Println(d)
-	// Output: 0000-01-01
+	unix := New(1970, time.January, 1)
+	fmt.Printf("Day 1 was defined as %s 1st January 1AD (%s).\n", Zero.Weekday(), Zero)
+	fmt.Printf("%s 1st Jan 1970 was day %d.\n", unix.Weekday(), unix)
+	// Output: Day 1 was defined as Monday 1st January 1AD (0001-01-01).
+	// Thursday 1st Jan 1970 was day 719162.
 }
 
 func ExampleNew() {
 	d := New(9999, time.December, 31)
-	fmt.Printf("The world ends on %s\n", d)
-	// Output: The world ends on 9999-12-31
+	fmt.Printf("%s (day %d) is a long time in the future but calendars don't stop then.\n", d, d)
+	// Output: 9999-12-31 (day 3652058) is a long time in the future but calendars don't stop then.
 }
 
 func ExampleParse() {
 	// longForm shows by example how the reference date would be
 	// represented in the desired layout.
 	const longForm = "Mon, January 2, 2006"
-	d, _ := Parse(longForm, "Tue, February 3, 2013")
+	d, _ := Parse(longForm, "Thu, February 14, 2013")
 	fmt.Println(d)
 
-	// shortForm is another way the reference date would be represented
-	// in the desired layout.
+	// shortForm is another way the reference date would be represented.
 	const shortForm = "2006-Jan-02"
-	d, _ = Parse(shortForm, "2013-Feb-03")
+	d, _ = Parse(shortForm, "2013-Feb-14")
+	fmt.Println(d)
+
+	// usForm is a typical US way the reference date would be represented.
+	const usForm = "01/02/2006"
+	d, _ = Parse(usForm, "02/14/2013")
 	fmt.Println(d)
 
 	// Output:
-	// 2013-02-03
-	// 2013-02-03
+	// 2013-02-14
+	// 2013-02-14
+	// 2013-02-14
 }
 
 func ExampleParseISO() {
