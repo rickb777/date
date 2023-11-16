@@ -56,6 +56,17 @@ func (d Date) WriteTo(w io.Writer) (n64 int64, err error) {
 	return int64(n), err
 }
 
+// FormatOrdinal returns a textual representation of the date value formatted
+// according to the ordinal date variant of the ISO 8601 format.
+// The year of the date is represented as a signed integer. The three-digit
+// ordinal day number is appended.
+func (d Date) FormatOrdinal() string {
+	t := decode(d)
+	year := t.Year()
+	ordinal := d.YearDay()
+	return fmt.Sprintf("%04d-%03d", year, ordinal)
+}
+
 // FormatISO returns a textual representation of the date value formatted
 // according to the expanded year variant of the ISO 8601 extended format;
 // the year of the date is represented as a signed integer using the
