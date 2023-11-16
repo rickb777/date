@@ -7,7 +7,6 @@ package date
 import (
 	"database/sql/driver"
 	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -50,16 +49,6 @@ func (d *Date) scanAny(value interface{}) (err error) {
 func (d *Date) scanString(value string) error {
 	var err1 error
 	*d, err1 = AutoParse(value)
-	if err1 == nil {
-		return nil
-	}
-
-	n, err2 := strconv.ParseInt(value, 10, 64)
-	*d = Date(n)
-	if err2 == nil {
-		return nil
-	}
-
 	return err1
 }
 

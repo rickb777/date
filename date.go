@@ -31,16 +31,32 @@ import (
 // Because a Date is a number of days since Zero, + and - operations
 // add or subtract some number of days.
 //
-// The first official date of the Gregorian calendar was Friday, October 15th
-// 1582, quite unrelated to the Unix epoch or the year 0 used here. The Date
-// type does not distinguish between official Gregorian dates and earlier
+// The zero value of Date is equivalent to the zero value of time.Time.
+//
+// Date does not distinguish between official Gregorian dates and earlier
 // proleptic dates, which can also be represented when needed.
+//
+// Although the first official date of the Gregorian calendar was Friday,
+// October 15th 1582, this is unrelated to the Unix epoch or day 0 used here.
+// However, for a date before 1582 to be meaningful, it must be clarified
+// separately whether it is a proleptic Gregorian date, or a Julian date, or
+// some other.
 type Date int
 
 const (
-	// Zero is the named zero value for Date and corresponds to Saturday, January 1,
-	// year 0 in the proleptic Gregorian calendar using astronomical year numbering.
+	// Zero is the named zero value for Date and corresponds to Monday, January 1,
+	// year 1 AD in the proleptic Gregorian calendar.
+	// This is the same zero as used by time.Time.
 	Zero Date = 0
+
+	// ZeroDay was the day of 1st January year 1 AD.
+	ZeroDay = time.Monday
+
+	// zeroOffset is the number of days between 0001-01-01 and 1970-01-01, using the
+	// proleptic Gregorian calendar. It is similar to the Rata Die numbering system,
+	// for which the offset would be 719163 instead.
+	// This is based on the same Unix calculation as used by time.Time.
+	zeroOffset = 719162
 )
 
 // New returns the Date value corresponding to the given year, month, and day.
@@ -53,7 +69,7 @@ func New(year int, month time.Month, day int) Date {
 }
 
 // NewAt returns the Date value corresponding to the given time.
-// Note that the date is computed relative to the time zone specified by
+// Note that the date is relative to the time zone specified by
 // the given Time value.
 func NewAt(t time.Time) Date {
 	return encode(t)
@@ -151,10 +167,8 @@ func (d Date) YearDay() int {
 
 // Weekday returns the day of the week specified by d.
 func (d Date) Weekday() time.Weekday {
-	// Date zero, January 1, 0000, fell on a Saturday
-	const weekdayZero = time.Saturday
 	// Taking into account potential for overflow and negative offset
-	return time.Weekday((int(weekdayZero) + int(d)%7 + 7) % 7)
+	return time.Weekday((int(ZeroDay) + int(d)%7 + 7) % 7)
 }
 
 // ISOWeek returns the ISO 8601 year and week number in which d occurs.

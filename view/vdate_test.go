@@ -32,10 +32,10 @@ func TestBasicFormatting(t *testing.T) {
 func TestZeroFormatting(t *testing.T) {
 	d := NewVDate(0)
 	is(t, d.String(), "")
-	is(t, d.Format(), "01/01/0000")
-	is(t, d.WithFormat(ISOFormat).Format(), "0000-01-01")
-	is(t, d.Mon(), "Sat")
-	is(t, d.Monday(), "Saturday")
+	is(t, d.Format(), "01/01/0001")
+	is(t, d.WithFormat(ISOFormat).Format(), "0001-01-01")
+	is(t, d.Mon(), date.ZeroDay.String()[:3])
+	is(t, d.Monday(), date.ZeroDay.String())
 	is(t, d.Day2(), "1")
 	is(t, d.Day02(), "01")
 	is(t, d.Day2nd(), "1st")
@@ -43,7 +43,7 @@ func TestZeroFormatting(t *testing.T) {
 	is(t, d.Month01(), "01")
 	is(t, d.Jan(), "Jan")
 	is(t, d.January(), "January")
-	is(t, d.Year(), "0000")
+	is(t, d.Year(), "0001")
 }
 
 func TestDate(t *testing.T) {
