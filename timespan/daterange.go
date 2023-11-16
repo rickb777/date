@@ -222,14 +222,14 @@ func (dateRange DateRange) Contains(d date.Date) bool {
 // StartUTC assumes that the start date is a UTC date and gets the start time of that date, as UTC.
 // It returns midnight on the first day of the range.
 func (dateRange DateRange) StartUTC() time.Time {
-	return dateRange.Start().UTC()
+	return dateRange.Start().MidnightUTC()
 }
 
 // EndUTC assumes that the end date is a UTC date and returns the time a nanosecond after the end time
 // in a specified location. Along with StartUTC, this gives a 'half-open' range where the start
 // is inclusive and the end is exclusive.
 func (dateRange DateRange) EndUTC() time.Time {
-	return dateRange.End().UTC()
+	return dateRange.End().MidnightUTC()
 }
 
 // ContainsTime tests whether a given local time is within the date range. The time range is
@@ -274,7 +274,7 @@ func (dateRange DateRange) Merge(otherRange DateRange) DateRange {
 // If the range is greater than approximately 290 years, the result will hard-limit to the
 // minimum or maximum possible duration (see time.Sub(t)).
 func (dateRange DateRange) Duration() time.Duration {
-	return dateRange.End().UTC().Sub(dateRange.Start().UTC())
+	return dateRange.End().MidnightUTC().Sub(dateRange.Start().MidnightUTC())
 }
 
 // DurationIn computes the duration (in nanoseconds) from midnight at the start of the date
@@ -291,14 +291,14 @@ func (dateRange DateRange) DurationIn(loc *time.Location) time.Duration {
 
 // StartTimeIn returns the start time in a specified location.
 func (dateRange DateRange) StartTimeIn(loc *time.Location) time.Time {
-	return dateRange.Start().In(loc)
+	return dateRange.Start().MidnightIn(loc)
 }
 
 // EndTimeIn returns the nanosecond after the end time in a specified location. Along with
 // StartTimeIn, this gives a 'half-open' range where the start is inclusive and the end is
 // exclusive.
 func (dateRange DateRange) EndTimeIn(loc *time.Location) time.Time {
-	return dateRange.End().In(loc)
+	return dateRange.End().MidnightIn(loc)
 }
 
 // TimeSpanIn obtains the time span corresponding to the date range in a specified location.
