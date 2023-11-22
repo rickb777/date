@@ -7,7 +7,7 @@ package date
 import "time"
 
 const (
-	secondsPerDay int64 = 60 * 60 * 24
+	secondsPerDay = 60 * 60 * 24
 )
 
 // encode returns the number of days elapsed from date zero to the date
@@ -22,17 +22,17 @@ func encode(t time.Time) Date {
 	_, offset := t.Zone()
 	secs := t.Unix() + int64(offset)
 	if secs >= 0 {
-		return zeroOffset + Date(secs/secondsPerDay)
+		return ZeroOffset + Date(secs/secondsPerDay)
 	}
 
 	// Unfortunately operator / rounds towards 0, so negative values
 	// must be handled differently
-	return zeroOffset - Date((secondsPerDay-1-secs)/secondsPerDay)
+	return ZeroOffset - Date((secondsPerDay-1-secs)/secondsPerDay)
 }
 
 // decode returns the Time value corresponding to 00:00:00 UTC of the date
 // represented by d, the number of days elapsed since date zero.
 func decode(d Date) time.Time {
-	secs := int64(d-zeroOffset) * secondsPerDay
+	secs := int64(d-ZeroOffset) * secondsPerDay
 	return time.Unix(secs, 0).UTC()
 }

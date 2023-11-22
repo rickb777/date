@@ -5,6 +5,7 @@
 package date
 
 import (
+	"fmt"
 	"runtime/debug"
 	"testing"
 	"time"
@@ -80,73 +81,95 @@ func TestDate_Time(t *testing.T) {
 	cases := []struct {
 		d Date
 	}{
-		{New(-1234, time.February, 5)},
-		{New(-1, time.January, 1)},
-		{New(0, time.April, 12)},
-		{New(1, time.January, 1)},
-		{New(1946, time.February, 4)},
-		{New(1970, time.January, 1)},
-		{New(1976, time.April, 1)},
-		{New(1999, time.December, 1)},
-		{New(1111111, time.June, 21)},
+		{d: New(-1234, time.February, 5)},
+		{d: New(-1, time.January, 1)},
+		{d: New(0, time.April, 12)},
+		{d: New(1, time.January, 1)},
+		{d: New(1946, time.February, 4)},
+		{d: New(1970, time.January, 1)},
+		{d: New(1976, time.April, 1)},
+		{d: New(1999, time.December, 1)},
+		{d: New(1111111, time.June, 21)},
 	}
 	zones := []int{-12, -10, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 8, 12}
 	for i, c := range cases {
-		d := c.d
-		tUTC := d.MidnightUTC()
-		if !same(d, tUTC) {
-			t.Errorf("%d: %v.MidnightUTC() == %v, want date part %v", i, d, tUTC, d)
-		}
-		if tUTC.Location() != time.UTC {
-			t.Errorf("%d: %v.MidnightUTC() == %v, want %v", i, d, tUTC.Location(), time.UTC)
-		}
-
-		tLocal := d.Midnight()
-		if !same(d, tLocal) {
-			t.Errorf("%d: %v.Midnight() == %v, want date part %v", i, d, tLocal, d)
-		}
-		if tLocal.Location() != time.Local {
-			t.Errorf("%d: %v.Midnight() == %v, want %v", i, d, tLocal.Location(), time.Local)
-		}
-
-		for _, z := range zones {
-			location := time.FixedZone("zone", z*60*60)
-			tInLoc := d.MidnightIn(location)
-			if !same(d, tInLoc) {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want date part %v", i, d, z, tInLoc, d)
+		t.Run(fmt.Sprintf("%d %s", i, c.d), func(t *testing.T) {
+			d := c.d
+			tUTC := d.MidnightUTC()
+			if !same(d, tUTC) {
+				t.Errorf("%d: %v.MidnightUTC() == %v, want date part %v", i, d, tUTC, d)
 			}
-			h, m, s := tInLoc.Clock()
-			if s != 0 {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero seconds but got %d", i, d, z, tInLoc.Location(), s)
-			}
-			if m != 0 {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero minutes but got %d", i, d, z, tInLoc.Location(), m)
-			}
-			if h != 0 {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero hours but got %d", i, d, z, tInLoc.Location(), h)
-			}
-			if tInLoc.Location() != location {
-				t.Errorf("%d: MidnightIn(%v) == %v, want %v", i, d, tInLoc.Location(), z)
+			if tUTC.Location() != time.UTC {
+				t.Errorf("%d: %v.MidnightUTC() == %v, want %v", i, d, tUTC.Location(), time.UTC)
 			}
 
-			t2 := d.Time(clock.New(1, 2, 3, 0), location)
-			if !same(d, t2) {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want date part %v", i, d, z, t2, d)
+			tLocal := d.Midnight()
+			if !same(d, tLocal) {
+				t.Errorf("%d: %v.Midnight() == %v, want date part %v", i, d, tLocal, d)
 			}
-			h, m, s = t2.Clock()
-			if s != 3 {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want three seconds but got %d", i, d, z, t2.Location(), s)
+			if tLocal.Location() != time.Local {
+				t.Errorf("%d: %v.Midnight() == %v, want %v", i, d, tLocal.Location(), time.Local)
 			}
-			if m != 2 {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want two minutes but got %d", i, d, z, t2.Location(), m)
+
+			for _, z := range zones {
+				location := time.FixedZone("zone", z*60*60)
+				tInLoc := d.MidnightIn(location)
+				if !same(d, tInLoc) {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want date part %v", i, d, z, tInLoc, d)
+				}
+				h, m, s := tInLoc.Clock()
+				if s != 0 {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero seconds but got %d", i, d, z, tInLoc.Location(), s)
+				}
+				if m != 0 {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero minutes but got %d", i, d, z, tInLoc.Location(), m)
+				}
+				if h != 0 {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want zero hours but got %d", i, d, z, tInLoc.Location(), h)
+				}
+				if tInLoc.Location() != location {
+					t.Errorf("%d: MidnightIn(%v) == %v, want %v", i, d, tInLoc.Location(), z)
+				}
+
+				t2 := d.Time(clock.New(1, 2, 3, 0), location)
+				if !same(d, t2) {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want date part %v", i, d, z, t2, d)
+				}
+				h, m, s = t2.Clock()
+				if s != 3 {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want three seconds but got %d", i, d, z, t2.Location(), s)
+				}
+				if m != 2 {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want two minutes but got %d", i, d, z, t2.Location(), m)
+				}
+				if h != 1 {
+					t.Errorf("%d: %v.MidnightIn(%d) == %v, want one hour but got %d", i, d, z, t2.Location(), h)
+				}
+				if t2.Location() != location {
+					t.Errorf("%d: MidnightIn(%v) == %v, want %v", i, d, t2.Location(), z)
+				}
 			}
-			if h != 1 {
-				t.Errorf("%d: %v.MidnightIn(%d) == %v, want one hour but got %d", i, d, z, t2.Location(), h)
+		})
+	}
+}
+
+func TestDate_LastDayOfMonth(t *testing.T) {
+	cases := []struct {
+		d   Date
+		exp int
+	}{
+		{d: New(2005, time.January, 15), exp: 31},
+		{d: New(2006, time.June, 15), exp: 30},
+		{d: New(1971, time.February, 5), exp: 28},
+		{d: New(1972, time.February, 5), exp: 29},
+	}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, c.d), func(t *testing.T) {
+			ld := c.d.LastDayOfMonth()
+			if ld != c.exp {
+				t.Errorf("%d: want %d, got %d", i, c.exp, ld)
 			}
-			if t2.Location() != location {
-				t.Errorf("%d: MidnightIn(%v) == %v, want %v", i, d, t2.Location(), z)
-			}
-		}
+		})
 	}
 }
 
@@ -186,21 +209,23 @@ func TestDate_AddDate(t *testing.T) {
 		years, months, days int
 		expected            Date
 	}{
-		{New(1970, time.January, 1), 1, 2, 3, New(1971, time.March, 4)},
-		{New(1999, time.September, 28), 6, 4, 2, New(2006, time.January, 30)},
-		{New(1999, time.September, 28), 0, 0, 3, New(1999, time.October, 1)},
-		{New(1999, time.September, 28), 0, 1, 3, New(1999, time.October, 31)},
+		{d: New(1970, time.January, 1), years: 1, months: 2, days: 3, expected: New(1971, time.March, 4)},
+		{d: New(1999, time.September, 28), years: 6, months: 4, days: 2, expected: New(2006, time.January, 30)},
+		{d: New(1999, time.September, 28), days: 3, expected: New(1999, time.October, 1)},
+		{d: New(1999, time.September, 28), months: 1, days: 3, expected: New(1999, time.October, 31)},
 	}
-	for _, c := range cases {
-		di := c.d
-		dj := di.AddDate(c.years, c.months, c.days)
-		if dj != c.expected {
-			t.Errorf("%v AddDate(%v,%v,%v) == %v, want %v", di, c.years, c.months, c.days, dj, c.expected)
-		}
-		dk := dj.AddDate(-c.years, -c.months, -c.days)
-		if dk != di {
-			t.Errorf("%v AddDate(%v,%v,%v) == %v, want %v", dj, -c.years, -c.months, -c.days, dk, di)
-		}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, c.d), func(t *testing.T) {
+			di := c.d
+			dj := di.AddDate(c.years, c.months, c.days)
+			if dj != c.expected {
+				t.Errorf("%v AddDate(%v,%v,%v) == %v, want %v", di, c.years, c.months, c.days, dj, c.expected)
+			}
+			dk := dj.AddDate(-c.years, -c.months, -c.days)
+			if dk != di {
+				t.Errorf("%v AddDate(%v,%v,%v) == %v, want %v", dj, -c.years, -c.months, -c.days, dk, di)
+			}
+		})
 	}
 }
 
@@ -210,22 +235,24 @@ func TestDate_AddPeriod(t *testing.T) {
 		delta    period.Period
 		expected Date
 	}{
-		{New(1970, time.January, 1), period.NewYMWD(0, 0, 0, 0), New(1970, time.January, 1)},
-		{New(1971, time.January, 1), period.NewYMWD(10, 0, 0, 0), New(1981, time.January, 1)},
-		{New(1972, time.January, 1), period.NewYMWD(0, 10, 0, 0), New(1972, time.November, 1)},
-		{New(1972, time.January, 1), period.NewYMWD(0, 24, 0, 0), New(1974, time.January, 1)},
-		{New(1973, time.January, 1), period.NewYMWD(0, 0, 1, 0), New(1973, time.January, 8)},
-		{New(1973, time.January, 1), period.NewYMWD(0, 0, 0, 10), New(1973, time.January, 11)},
-		{New(1973, time.January, 1), period.NewYMWD(0, 0, 0, 365), New(1974, time.January, 1)},
-		{New(1973, time.January, 3), period.NewYMWD(0, 0, 0, -2), New(1973, time.January, 1)},
-		{New(1974, time.January, 1), period.NewHMS(1, 2, 3), New(1974, time.January, 1)},
-		{New(1975, time.January, 1), period.NewHMS(24, 2, 3), New(1975, time.January, 2)},
-		{New(1975, time.January, 1), period.NewHMS(0, 1440, 0), New(1975, time.January, 2)},
+		{in: New(1970, time.January, 1), delta: period.NewYMWD(0, 0, 0, 0), expected: New(1970, time.January, 1)},
+		{in: New(1971, time.January, 1), delta: period.NewYMWD(10, 0, 0, 0), expected: New(1981, time.January, 1)},
+		{in: New(1972, time.January, 1), delta: period.NewYMWD(0, 10, 0, 0), expected: New(1972, time.November, 1)},
+		{in: New(1972, time.January, 1), delta: period.NewYMWD(0, 24, 0, 0), expected: New(1974, time.January, 1)},
+		{in: New(1973, time.January, 1), delta: period.NewYMWD(0, 0, 1, 0), expected: New(1973, time.January, 8)},
+		{in: New(1973, time.January, 1), delta: period.NewYMWD(0, 0, 0, 10), expected: New(1973, time.January, 11)},
+		{in: New(1973, time.January, 1), delta: period.NewYMWD(0, 0, 0, 365), expected: New(1974, time.January, 1)},
+		{in: New(1973, time.January, 3), delta: period.NewYMWD(0, 0, 0, -2), expected: New(1973, time.January, 1)},
+		{in: New(1974, time.January, 1), delta: period.NewHMS(1, 2, 3), expected: New(1974, time.January, 1)},
+		{in: New(1975, time.January, 1), delta: period.NewHMS(24, 2, 3), expected: New(1975, time.January, 2)},
+		{in: New(1975, time.January, 1), delta: period.NewHMS(0, 1440, 0), expected: New(1975, time.January, 2)},
 	}
 	for i, c := range cases {
-		out := c.in.AddPeriod(c.delta)
-		if out != c.expected {
-			t.Errorf("%d: %v.AddPeriod(%v) == %v, want %v", i, c.in, c.delta, out, c.expected)
-		}
+		t.Run(fmt.Sprintf("%d %s", i, c.in), func(t *testing.T) {
+			out := c.in.AddPeriod(c.delta)
+			if out != c.expected {
+				t.Errorf("%d: %v.AddPeriod(%v) == %v, want %v", i, c.in, c.delta, out, c.expected)
+			}
+		})
 	}
 }

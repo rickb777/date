@@ -52,11 +52,11 @@ const (
 	// ZeroDay was the day of 1st January year 1 AD.
 	ZeroDay = time.Monday
 
-	// zeroOffset is the number of days between 0001-01-01 and 1970-01-01, using the
-	// proleptic Gregorian calendar. It is similar to the Rata Die numbering system,
-	// for which the offset would be 719163 instead.
+	// ZeroOffset is the number of days between 0001-01-01 and 1970-01-01, using the
+	// proleptic Gregorian calendar.
 	// This is based on the same Unix calculation as used by time.Time.
-	zeroOffset = 719162
+	// It is similar to the "Rata Die" numbering system, for which the offset would be 719163 instead.
+	ZeroOffset = 719162
 )
 
 // New returns the Date value corresponding to the given year, month, and day.
@@ -99,7 +99,7 @@ func Min() Date {
 
 // Max returns the largest representable date, which is nearly 6 million years in the future.
 func Max() Date {
-	return Date(math.MaxInt32 - zeroOffset)
+	return Date(math.MaxInt32 - ZeroOffset)
 }
 
 // MidnightUTC returns a Time value corresponding to midnight on the given date d,
