@@ -16,6 +16,8 @@ github.com/rickb777/period v1.0.1-beta h1:/+sCJBdraZGfWAlotFRohhuyHPhaoZ+f3vh6EW
 github.com/rickb777/period v1.0.1-beta/go.mod h1:YjZyKY4ZR0iTA0G72rSUmhgPzLzeyM9kjzFpchbW9xg=
 github.com/rickb777/period v1.0.2-beta h1:8eK5rM6vAq1LzsZ34kuVi5y31rNEqaB8TrIeiiagfOU=
 github.com/rickb777/period v1.0.2-beta/go.mod h1:YjZyKY4ZR0iTA0G72rSUmhgPzLzeyM9kjzFpchbW9xg=
+github.com/rickb777/period v1.0.3-beta h1:SDLaDRLpvec2o86GVfaBwnlk8g9Ch1u/WP078hD6h7Q=
+github.com/rickb777/period v1.0.3-beta/go.mod h1:YjZyKY4ZR0iTA0G72rSUmhgPzLzeyM9kjzFpchbW9xg=
 github.com/rickb777/plural v1.4.1 h1:5MMLcbIaapLFmvDGRT5iPk8877hpTPt8Y9cdSKRw9sU=
 github.com/rickb777/plural v1.4.1/go.mod h1:kdmXUpmKBJTS0FtG/TFumd//VBWsNTD7zOw7x4umxNw=
 golang.org/x/net v0.18.0 h1:mIYleuAkSbHh0tCv7RvjL3F6ZVbLjq4+R7zbOn3Kokg=

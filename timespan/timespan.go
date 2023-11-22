@@ -32,22 +32,23 @@ func ZeroTimeSpan(start time.Time) TimeSpan {
 	return TimeSpan{start, 0}
 }
 
-// TimeSpanOf creates a new time span at a specified time and duration.
+// TimeSpanOf creates a new time span at a specified time and duration. The duration can
+// be negative, e.g. for an alarm event before the mark time.
 func TimeSpanOf(start time.Time, d time.Duration) TimeSpan {
 	return TimeSpan{start, d}
 }
 
-// NewTimeSpan creates a new time span from two times. The start and end can be in either
+// BetweenTimes creates a new time span from two times. The start and end can be in either
 // order; the result will be normalised. The inputs are half-open: the start is included and
 // the end is excluded.
-func NewTimeSpan(t1, t2 time.Time) TimeSpan {
+func BetweenTimes(t1, t2 time.Time) TimeSpan {
 	if t2.Before(t1) {
 		return TimeSpan{t2, t1.Sub(t2)}
 	}
 	return TimeSpan{t1, t2.Sub(t1)}
 }
 
-// Start gets the end time of the time span.
+// Start gets the start time of the time span.
 func (ts TimeSpan) Start() time.Time {
 	if ts.duration < 0 {
 		return ts.mark.Add(ts.duration)
@@ -62,6 +63,12 @@ func (ts TimeSpan) End() time.Time {
 		return ts.mark
 	}
 	return ts.mark.Add(ts.duration)
+}
+
+// Mark gets the time marked by this timespan. Typically this is the same as Start, but
+// it's the same as End for time spans with negative duration.
+func (ts TimeSpan) Mark() time.Time {
+	return ts.mark
 }
 
 // Duration gets the duration of the time span.
@@ -126,7 +133,7 @@ func (ts TimeSpan) DateRangeIn(loc *time.Location) DateRange {
 	no := ts.Normalise()
 	startDate := date.NewAt(no.mark.In(loc))
 	endDate := date.NewAt(no.End().In(loc))
-	return NewDateRange(startDate, endDate)
+	return BetweenDates(startDate, endDate)
 }
 
 // Contains tests whether a given moment of time is enclosed within the time span. The
@@ -151,16 +158,20 @@ func (ts TimeSpan) Merge(other TimeSpan) TimeSpan {
 		return ts
 
 	} else {
-		return NewTimeSpan(ts.mark, other.End())
+		return BetweenTimes(ts.mark, other.End())
 	}
 }
 
 // RFC5545DateTimeLayout is the format string used by iCalendar (RFC5545). Note
 // that "Z" is to be appended when the time is UTC.
+//
+// No dashes are used; this follows ISO-8601 Basic Format practice.
 const RFC5545DateTimeLayout = "20060102T150405"
 
 // RFC5545DateTimeZulu is the UTC format string used by iCalendar (RFC5545). Note
 // that this cannot be used for parsing with time.Parse.
+//
+// No dashes are used; this follows ISO-8601 Basic Format practice.
 const RFC5545DateTimeZulu = RFC5545DateTimeLayout + "Z"
 
 func layoutHasTimezone(layout string) bool {
@@ -196,15 +207,27 @@ func (ts TimeSpan) Format(layout, separator string, useDuration bool) string {
 		layout = RFC5545DateTimeZulu
 	}
 
-	s := ts.Start()
-	e := ts.End()
-
 	if useDuration {
-		p := period.Between(s, e).Normalise(false)
-		return fmt.Sprintf("%s%s%s", s.Format(layout), separator, p)
+		return ts.formatWithDuration(layout, separator)
 	}
+	return ts.formatTwoTimestamps(layout, separator)
+}
 
-	return fmt.Sprintf("%s%s%s", s.Format(layout), separator, e.Format(layout))
+func (ts TimeSpan) formatTwoTimestamps(layout, separator string) string {
+	s := ts.Start().Format(layout)
+	e := ts.End().Format(layout)
+	return fmt.Sprintf("%s%s%s", s, separator, e)
+}
+
+func (ts TimeSpan) formatWithDuration(layout, separator string) string {
+	if ts.duration < 0 {
+		p := period.NewOf(-ts.duration).Normalise(false)
+		return fmt.Sprintf("%s%s%s", p, separator, ts.mark.Format(layout))
+
+	} else {
+		p := period.NewOf(ts.duration).Normalise(false)
+		return fmt.Sprintf("%s%s%s", ts.mark.Format(layout), separator, p)
+	}
 }
 
 // FormatRFC5545 formats the timespan as a string containing the start time and end time, or the
@@ -226,50 +249,83 @@ func (ts TimeSpan) MarshalText() (text []byte, err error) {
 //
 //	time "/" time
 //	time "/" period
+//	period "/" time
 //
 // If the input time(s) ends in "Z", the location is UTC (as per RFC5545). Otherwise, the
 // specified location will be used for the resulting times; this behaves the same as
-// time.ParseInLocation.
-func ParseRFC5545InLocation(text string, loc *time.Location) (TimeSpan, error) {
+// time.ParseInLocation. Its expected format is RFC5545DateTimeLayout (with optional "Z").
+//
+// The period can optionally be preceded by '+' or '-'. If the period comes first, it is treated
+// as being the same as a negative period after the '/'.
+//
+// RFC5545 does not allow the period to contain years or months. However, in this implementation
+// they are permitted but discouraged.
+func ParseRFC5545InLocation(text string, loc *time.Location) (ts TimeSpan, err error) {
 	slash := strings.IndexByte(text, '/')
 	if slash < 0 {
 		return TimeSpan{}, fmt.Errorf("cannot parse %q because there is no separator '/'", text)
 	}
 
-	start := text[:slash]
-	rest := text[slash+1:]
+	first := text[:slash]
+	second := text[slash+1:]
 
-	st, err := parseTimeInLocation(start, loc)
+	p := strings.IndexByte(text, 'P')
+	if p < 0 {
+		ts, err = parseTwoTimes(first, second, loc)
+	} else if p < slash {
+		ts, err = parseTimeAndPeriod(second, first, loc, -1)
+	} else {
+		ts, err = parseTimeAndPeriod(first, second, loc, 1)
+	}
+
 	if err != nil {
-		return TimeSpan{}, fmt.Errorf("cannot parse start time in %q: %s", text, err.Error())
+		return TimeSpan{}, fmt.Errorf("cannot parse %q: ", text)
+	}
+	return ts, err
+}
+
+func parseTwoTimes(s1, s2 string, loc *time.Location) (TimeSpan, error) {
+	t1, err := parseTimeInLocation(s1, loc)
+	if err != nil {
+		return TimeSpan{}, err
 	}
 
-	//fmt.Printf("got %20s %s\n", st.Location(), st.Format(RFC5545DateTimeLayout))
-
-	if rest == "" {
-		return TimeSpan{}, fmt.Errorf("cannot parse %q because there is end time or duration", text)
+	t2, err := parseTimeInLocation(s2, loc)
+	if err != nil {
+		return TimeSpan{}, err
 	}
 
-	if rest[0] == 'P' {
-		pe, e2 := period.Parse(rest)
-		if e2 != nil {
-			return TimeSpan{}, fmt.Errorf("cannot parse period in %q: %s", text, e2.Error())
-		}
+	return TimeSpan{t1, t2.Sub(t1)}, nil
+}
 
-		du, precise := pe.Duration()
-		if precise {
-			return TimeSpan{st, du}, nil
-		}
-
-		et, _ := pe.AddTo(st)
-		return NewTimeSpan(st, et), nil
+func parseTimeAndPeriod(sa, sb string, loc *time.Location, sign time.Duration) (TimeSpan, error) {
+	t1, err := parseTimeInLocation(sa, loc)
+	if err != nil {
+		return TimeSpan{}, err
 	}
 
-	et, err := parseTimeInLocation(rest, loc)
-	return NewTimeSpan(st, et), err
+	if sb == "" {
+		return TimeSpan{}, fmt.Errorf("there is no end time or duration")
+	}
+
+	pe, e2 := period.Parse(sb)
+	if e2 != nil {
+		return TimeSpan{}, e2
+	}
+
+	du, precise := pe.Duration()
+	if precise {
+		return TimeSpan{t1, sign * du}, nil
+	}
+
+	t2, _ := pe.AddTo(t1)
+	return TimeSpan{t1, sign * t2.Sub(t1)}, nil
 }
 
 func parseTimeInLocation(text string, loc *time.Location) (time.Time, error) {
+	if strings.HasPrefix(text, "+") {
+		text = text[1:] // lenient but not strictly required
+	}
 	if strings.HasSuffix(text, "Z") {
 		text = text[:len(text)-1]
 		return time.ParseInLocation(RFC5545DateTimeLayout, text, time.UTC)
@@ -280,7 +336,7 @@ func parseTimeInLocation(text string, loc *time.Location) (time.Time, error) {
 // UnmarshalText parses a string as a timespan. It expects RFC5545 layout.
 //
 // If the receiver timespan is non-nil and has a time with a location,
-// this location is used for parsing. Otherwise time.Local is used.
+// this location is used for parsing. Otherwise, time.Local is used.
 //
 // This implements the encoding.TextUnmarshaler interface.
 func (ts *TimeSpan) UnmarshalText(text []byte) (err error) {

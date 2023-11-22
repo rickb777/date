@@ -34,6 +34,8 @@ var (
 	d0410 = New(2015, time.April, 10)
 	d0501 = New(2015, time.May, 1)
 	d1025 = New(2015, time.October, 25)
+	d1026 = New(2015, time.October, 26)
+	d1027 = New(2015, time.October, 27)
 )
 
 var london *time.Location = mustLoadLocation("Europe/London")
@@ -47,44 +49,70 @@ func mustLoadLocation(name string) *time.Location {
 }
 
 func TestNewDateRangeOf(t *testing.T) {
-	dr := NewDateRangeOf(t0327, 7*24*time.Hour)
-	isEq(t, 0, dr.mark, d0327)
-	isEq(t, 0, dr.Days(), PeriodOfDays(7))
-	isEq(t, 0, dr.IsEmpty(), false)
-	isEq(t, 0, dr.Start(), d0327)
-	isEq(t, 0, dr.Last(), d0402)
-	isEq(t, 0, dr.End(), d0403)
+	dr1 := NewDateRangeOf(t0327, 7*24*time.Hour)
+	isEq(t, 0, dr1.start, d0327)
+	isEq(t, 0, dr1.Days(), PeriodOfDays(7))
+	isEq(t, 0, dr1.IsEmpty(), false)
+	isEq(t, 0, dr1.Start(), d0327)
+	isEq(t, 0, dr1.Last(), d0402)
+	isEq(t, 0, dr1.End(), d0403)
 
 	dr2 := NewDateRangeOf(t0327, -7*24*time.Hour)
-	isEq(t, 0, dr2.mark, d0327)
+	isEq(t, 0, dr2.start, d0320)
 	isEq(t, 0, dr2.Days(), PeriodOfDays(7))
 	isEq(t, 0, dr2.IsEmpty(), false)
-	isEq(t, 0, dr2.Start(), d0321)
-	isEq(t, 0, dr2.Last(), d0327)
-	isEq(t, 0, dr2.End(), d0328)
+	isEq(t, 0, dr2.Start(), d0320)
+	isEq(t, 0, dr2.Last(), d0326)
+	isEq(t, 0, dr2.End(), d0327)
 }
 
-func TestNewDateRangeWithNormalise(t *testing.T) {
-	r1 := NewDateRange(d0327, d0402)
+func TestNewDateRangePeriod(t *testing.T) {
+	dr0 := NewDateRangePeriod(t0327, period.Zero)
+	isEq(t, 0, dr0.start, d0327)
+	isEq(t, 0, dr0.Days(), PeriodOfDays(0))
+	isEq(t, 0, dr0.IsEmpty(), true)
+	isEq(t, 0, dr0.Start(), d0327)
+	isEq(t, 0, dr0.Last(), Zero)
+	isEq(t, 0, dr0.End(), d0327)
+
+	dr1 := NewDateRangePeriod(t0327, period.NewYMWD(0, 0, 1, 0))
+	isEq(t, 0, dr1.start, d0327)
+	isEq(t, 0, dr1.Days(), PeriodOfDays(7))
+	isEq(t, 0, dr1.IsEmpty(), false)
+	isEq(t, 0, dr1.Start(), d0327)
+	isEq(t, 0, dr1.Last(), d0402)
+	isEq(t, 0, dr1.End(), d0403)
+
+	dr2 := NewDateRangePeriod(t0327, period.NewYMWD(0, 0, -1, 0))
+	isEq(t, 0, dr2.start, d0320)
+	isEq(t, 0, dr2.Days(), PeriodOfDays(7))
+	isEq(t, 0, dr2.IsEmpty(), false)
+	isEq(t, 0, dr2.Start(), d0320)
+	isEq(t, 0, dr2.Last(), d0326)
+	isEq(t, 0, dr2.End(), d0327)
+
+	dr3 := NewDateRangePeriod(t0327, period.NewYMWD(0, 7, 0, 0))
+	isEq(t, 0, dr3.start, d0327)
+	isEq(t, 0, dr3.Days(), PeriodOfDays(214))
+	isEq(t, 0, dr3.IsEmpty(), false)
+	isEq(t, 0, dr3.Start(), d0327)
+	isEq(t, 0, dr3.Last(), d1026)
+	isEq(t, 0, dr3.End(), d1027)
+}
+
+func TestBetweenDates_normalise(t *testing.T) {
+	r1 := BetweenDates(d0327, d0402)
 	isEq(t, 0, r1.Start(), d0327)
 	isEq(t, 0, r1.Last(), d0401)
 	isEq(t, 0, r1.End(), d0402)
 
-	r2 := NewDateRange(d0402, d0327)
+	r2 := BetweenDates(d0402, d0327)
 	isEq(t, 0, r2.Start(), d0327)
 	isEq(t, 0, r2.Last(), d0401)
 	isEq(t, 0, r2.End(), d0402)
 }
 
 func TestEmptyRange(t *testing.T) {
-	drN0 := DateRange{d0327, -1}
-	isEq(t, 0, drN0.Days(), PeriodOfDays(1))
-	isEq(t, 0, drN0.IsZero(), false)
-	isEq(t, 0, drN0.IsEmpty(), false)
-	isEq(t, 0, drN0.Start(), d0327)
-	isEq(t, 0, drN0.Last(), d0327)
-	isEq(t, 0, drN0.String(), "1 day on 2015-03-26")
-
 	dr0 := DateRange{}
 	isEq(t, 0, dr0.Days(), PeriodOfDays(0))
 	isEq(t, 0, dr0.IsZero(), true)
@@ -169,7 +197,7 @@ func TestShiftAndExtend(t *testing.T) {
 		{DayRange(d0327, 6).ShiftBy(7), 6, d0403, d0409, "6 days from 2015-04-03 to 2015-04-08"},
 		{DayRange(d0327, 6).ShiftBy(-1), 6, d0326, d0401, "6 days from 2015-03-26 to 2015-03-31"},
 		{DayRange(d0327, 6).ShiftBy(-7), 6, d0320, d0326, "6 days from 2015-03-20 to 2015-03-25"},
-		{NewDateRange(d0327, d0402).ShiftBy(-7), 6, d0320, d0326, "6 days from 2015-03-20 to 2015-03-25"},
+		{BetweenDates(d0327, d0402).ShiftBy(-7), 6, d0320, d0326, "6 days from 2015-03-20 to 2015-03-25"},
 
 		{EmptyRange(d0327).ExtendBy(0), 0, d0327, d0327, "0 days at 2015-03-27"},
 		{EmptyRange(d0327).ExtendBy(6), 6, d0327, d0402, "6 days from 2015-03-27 to 2015-04-01"},
@@ -334,7 +362,7 @@ func TestDurationInZoneWithDaylightSaving(t *testing.T) {
 	isEq(t, 0, OneDayRange(d0328).DurationIn(london), time.Hour*24)
 	isEq(t, 0, OneDayRange(d0329).DurationIn(london), time.Hour*23)
 	isEq(t, 0, OneDayRange(d1025).DurationIn(london), time.Hour*25)
-	isEq(t, 0, NewDateRange(d0328, d0331).DurationIn(london), time.Hour*71)
+	isEq(t, 0, BetweenDates(d0328, d0331).DurationIn(london), time.Hour*71)
 }
 
 func isEq(t *testing.T, i int, a, b interface{}, msg ...interface{}) {

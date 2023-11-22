@@ -48,26 +48,27 @@ Changes since v1:
 
 Renamed methods:
 
-| Was          | Use instead         |
-|--------------|---------------------|
-| Date`.Local` | Date`.Midnight`     |
-| Date`.UTC`   | Date`.MidnightUTC`  |
-| Date`.In`    | Date`.MidnightIn`   |
+| Was               | Use instead             |
+|-------------------|-------------------------|
+| date.Date`.Local` | date.Date`.Midnight`    |
+| date.Date`.UTC`   | date.Date`.MidnightUTC` |
+| date.Date`.In`    | date.Date`.MidnightIn`  |
 
 Deleted methods and functions:
 
-| Was           | Use instead        |
-|---------------|--------------------|
-| Date`.Add`    | `+`                |
-| Date`.Sub`    | `-`                |
-| Date`.IsZero` | `== 0`             |
-| Date`.Equal`  | `==`               |
-| Date`.Before` | `<`                |
-| Date`.After`  | `>`                |
-| `date.IsLeap` | `gregorian.IsLeap` |
-| `date.DaysIn` | `gregorian.DaysIn` |
+| Was                            | Use instead        |
+|--------------------------------|--------------------|
+| date.Date.`Add`                | `+`                |
+| date.Date.`Sub`                | `-`                |
+| date.Date.`IsZero`             | `== 0`             |
+| date.Date.`Equal`              | `==`               |
+| date.Date.`Before`             | `<`                |
+| date.Date.`After`              | `>`                |
+| `date.IsLeap`                  | `gregorian.IsLeap` |
+| `date.DaysIn`                  | `gregorian.DaysIn` |
+| timespan.DateRange.`Normalise` | (not needed)       |
 
-Any v1 dates stored as integers will be incorrect; these can be corrected by adding 719528 to them, which is the number of days between year zero (v2) and 1970 (v1). Dates stored as strings will be unaffected.
+Any v1 dates persistently stored as integers will be incorrect; these can be corrected by adding 719162 (`date.ZeroOffset`) to them, which is the number of days between year zero (v2) and 1970 (v1). Dates stored as strings will be unaffected.
 
 ## Credits
 

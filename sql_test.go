@@ -21,12 +21,12 @@ func TestDate_Scan(t *testing.T) {
 		//{v: "00000101", expected: 0},
 		//{v: "00000102", expected: 1},
 		{v: "0001-01-01", expected: 0},
-		{v: "19700101", expected: zeroOffset},
-		{v: "1970-01-01", expected: zeroOffset},
-		{v: "1971-01-01", expected: 365 + zeroOffset},
-		{v: "2018-12-31", expected: 17896 + zeroOffset},
-		{v: "31/12/2018", expected: 17896 + zeroOffset},
-		{v: []byte("19700101"), expected: zeroOffset},
+		{v: "19700101", expected: ZeroOffset},
+		{v: "1970-01-01", expected: ZeroOffset},
+		{v: "1971-01-01", expected: 365 + ZeroOffset},
+		{v: "2018-12-31", expected: 17896 + ZeroOffset},
+		{v: "31/12/2018", expected: 17896 + ZeroOffset},
+		{v: []byte("19700101"), expected: ZeroOffset},
 		{v: Date(10000).Midnight(), expected: 10000},
 	}
 
