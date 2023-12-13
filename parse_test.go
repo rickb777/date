@@ -10,7 +10,7 @@ import (
 	time "time"
 )
 
-func TestAutoParse(t *testing.T) {
+func TestAutoParse_both(t *testing.T) {
 	cases := []struct {
 		value string
 		year  int
@@ -20,7 +20,6 @@ func TestAutoParse(t *testing.T) {
 		{value: "01-01-1970", year: 1970, month: time.January, day: 1},
 		{value: "+1970-01-01", year: 1970, month: time.January, day: 1},
 		{value: "+01970-01-02", year: 1970, month: time.January, day: 2},
-		{value: " 31/12/1969 ", year: 1969, month: time.December, day: 31},
 		{value: "1969/12/31", year: 1969, month: time.December, day: 31},
 		{value: "1969.12.31", year: 1969, month: time.December, day: 31},
 		{value: "1969-12-31", year: 1969, month: time.December, day: 31},
@@ -48,6 +47,42 @@ func TestAutoParse(t *testing.T) {
 		{value: "+12340506", year: 1234, month: time.May, day: 6},
 		{value: "-00191012", year: -19, month: time.October, day: 12},
 		{value: " -00191012 ", year: -19, month: time.October, day: 12},
+		// yyyy-ooo ordinal cases
+		{value: "2004-001", year: 2004, month: time.January, day: 1},
+		{value: "2004-060", year: 2004, month: time.February, day: 29},
+		{value: "2004-366", year: 2004, month: time.December, day: 31},
+		{value: "2003-365", year: 2003, month: time.December, day: 31},
+		// basic format is only supported for yyyymmdd (yyyyooo ordinal is not supported)
+		{value: "12340506", year: 1234, month: time.May, day: 6},
+		{value: "+12340506", year: 1234, month: time.May, day: 6},
+		{value: "-00191012", year: -19, month: time.October, day: 12},
+	}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, c.value), func(t *testing.T) {
+			d := MustAutoParse(c.value)
+			year, month, day := d.Date()
+			if year != c.year || month != c.month || day != c.day {
+				t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
+			}
+
+			d = MustAutoParseUS(c.value)
+			year, month, day = d.Date()
+			if year != c.year || month != c.month || day != c.day {
+				t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
+			}
+		})
+	}
+}
+
+func TestAutoParse(t *testing.T) {
+	cases := []struct {
+		value string
+		year  int
+		month time.Month
+		day   int
+	}{
+		{value: " 31/12/1969 ", year: 1969, month: time.December, day: 31},
+		{value: " 5/6/1905 ", year: 1905, month: time.June, day: 5},
 	}
 	for i, c := range cases {
 		t.Run(fmt.Sprintf("%d %s", i, c.value), func(t *testing.T) {
@@ -58,7 +93,30 @@ func TestAutoParse(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestAutoParseUS(t *testing.T) {
+	cases := []struct {
+		value string
+		year  int
+		month time.Month
+		day   int
+	}{
+		{value: " 12/31/1969 ", year: 1969, month: time.December, day: 31},
+		{value: " 6/5/1905 ", year: 1905, month: time.June, day: 5},
+	}
+	for i, c := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, c.value), func(t *testing.T) {
+			d := MustAutoParseUS(c.value)
+			year, month, day := d.Date()
+			if year != c.year || month != c.month || day != c.day {
+				t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
+			}
+		})
+	}
+}
+
+func TestAutoParse_errors(t *testing.T) {
 	badCases := []string{
 		"1234-05",
 		"1234-5-6",
@@ -81,6 +139,11 @@ func TestAutoParse(t *testing.T) {
 	}
 	for _, c := range badCases {
 		d, err := AutoParse(c)
+		if err == nil {
+			t.Errorf("ParseISO(%v) == %v", c, d)
+		}
+
+		d, err = AutoParseUS(c)
 		if err == nil {
 			t.Errorf("ParseISO(%v) == %v", c, d)
 		}
@@ -144,6 +207,10 @@ func TestParseISO_errors(t *testing.T) {
 		value string
 		want  string
 	}{
+		{value: ``, want: `Date.ParseISO: cannot parse "": ` + "too short"},
+		{value: `-`, want: `Date.ParseISO: cannot parse "-": ` + "too short"},
+		{value: `z`, want: `Date.ParseISO: cannot parse "z": ` + "too short"},
+		{value: `z--`, want: `Date.ParseISO: cannot parse "z--": ` + "year has wrong length\nmonth has wrong length\nday has wrong length"},
 		{value: `not-a-date`, want: `Date.ParseISO: cannot parse "not-a-date": ` + "year has wrong length\nmonth has wrong length\nday has wrong length"},
 		{value: `foot-of-og`, want: `Date.ParseISO: cannot parse "foot-of-og": ` + "invalid year\ninvalid month\ninvalid day"},
 		{value: `215-08-15`, want: `Date.ParseISO: cannot parse "215-08-15": year has wrong length`},
@@ -237,9 +304,10 @@ func TestParse(t *testing.T) {
 func TestParse_errors(t *testing.T) {
 	// Test inability to parse ISO 8601 expanded year format
 	badCases := []string{
-		"+1234-05-06",
+		"+1234-05-06", // plus sign is not allowed
 		"+12345-06-07",
-		"-1234-05-06",
+		"12345-06-07", // five digits are not allowed
+		"-1234-05-06", // negative sign is not allowed
 		"-12345-06-07",
 	}
 	for i, c := range badCases {
