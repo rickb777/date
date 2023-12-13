@@ -23,9 +23,21 @@ func MustAutoParse(value string) Date {
 	return d
 }
 
+// MustAutoParseUS is as per AutoParseUS except that it panics if the string cannot be parsed.
+// This is intended for setup code; don't use it for user inputs.
+func MustAutoParseUS(value string) Date {
+	d, err := AutoParseUS(value)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
 // AutoParse is like ParseISO, except that it automatically adapts to a variety of date formats
-// provided that they can be detected unambiguously. Specifically, this includes the "European"
-// and "British" date formats but not the common US format. Surrounding whitespace is ignored.
+// provided that they can be detected unambiguously. Specifically, this includes the widely-used
+// "European" and "British" date formats but not the common US format. Surrounding whitespace is
+// ignored.
+//
 // The supported formats are:
 //
 // * all formats supported by ParseISO
@@ -34,8 +46,34 @@ func MustAutoParse(value string) Date {
 //
 // * dd/mm/yyyy | dd.mm.yyyy (or any similar pattern)
 //
+// * d/m/yyyy | d.m.yyyy (or any similar pattern)
+//
 // * surrounding whitespace is ignored
 func AutoParse(value string) (Date, error) {
+	return autoParse(value, func(yyyy, f1, f2 string) string { return fmt.Sprintf("%s-%s-%s", yyyy, f1, f2) })
+}
+
+// AutoParseUS is like ParseISO, except that it automatically adapts to a variety of date formats
+// provided that they can be detected unambiguously. Specifically, this includes the widely-used
+// "European" and "US" date formats but not the common "British" format. Surrounding whitespace is
+// ignored.
+//
+// The supported formats are:
+//
+// * all formats supported by ParseISO
+//
+// * yyyy/mm/dd | yyyy.mm.dd (or any similar pattern)
+//
+// * mm/dd/yyyy | mm.dd.yyyy (or any similar pattern)
+//
+// * m/d/yyyy | m.d.yyyy (or any similar pattern)
+//
+// * surrounding whitespace is ignored
+func AutoParseUS(value string) (Date, error) {
+	return autoParse(value, func(yyyy, f1, f2 string) string { return fmt.Sprintf("%s-%s-%s", yyyy, f2, f1) })
+}
+
+func autoParse(value string, compose func(yyyy, f1, f2 string) string) (Date, error) {
 	abs := strings.TrimSpace(value)
 	if len(abs) == 0 {
 		return 0, errors.New("Date.AutoParse: cannot parse a blank string")
@@ -47,7 +85,7 @@ func AutoParse(value string) (Date, error) {
 		abs = abs[1:]
 	}
 
-	if len(abs) >= 10 {
+	if len(abs) >= 8 {
 		i1 := -1
 		i2 := -1
 		for i, r := range abs {
@@ -59,18 +97,26 @@ func AutoParse(value string) (Date, error) {
 				}
 			}
 		}
+
 		if i1 >= 4 && i2 > i1 && abs[i1] == abs[i2] {
 			// just normalise the punctuation
 			a := []byte(abs)
 			a[i1] = '-'
 			a[i2] = '-'
 			abs = string(a)
-		} else if i1 >= 2 && i2 > i1 && abs[i1] == abs[i2] {
+
+		} else if i1 >= 1 && i2 > i1 && abs[i1] == abs[i2] {
 			// harder case - need to swap the field order
-			dd := abs[0:i1]
-			mm := abs[i1+1 : i2]
+			f1 := abs[0:i1]      // day or month
+			f2 := abs[i1+1 : i2] // month or day
+			if len(f1) == 1 {
+				f1 = "0" + f1
+			}
+			if len(f2) == 1 {
+				f2 = "0" + f2
+			}
 			yyyy := abs[i2+1:]
-			abs = fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
+			abs = compose(yyyy, f2, f1)
 		}
 	}
 	return parseISO(value, sign+abs)
@@ -92,12 +138,15 @@ func MustParseISO(value string) Date {
 //   - the common formats ±YYYY-MM-DD and ±YYYYMMDD (e.g. 2006-01-02 and 20060102)
 //   - the ordinal date representation ±YYYY-OOO (e.g. 2006-217)
 //
-// ParseISO will accept dates with more year digits than the four-digit minimum. A
-// leading plus '+' sign is allowed and ignored.
+// For common formats, ParseISO will accept dates with more year digits than the four-digit
+// minimum. A leading plus '+' sign is allowed and ignored. Basic format (without '-'
+// separators) is allowed.
 //
-// Function date.Parse can be used to parse date strings in other formats, but it
-// is currently not able to parse ISO 8601 formatted strings that use the
-// expanded year format.
+// For ordinal dates, the extended format (including '-') is supported, but the basic format
+// (without '-') is not supported because it could not be distinguished from the YYYYMMDD format.
+//
+// See also date.Parse, which can be used to parse date strings in other formats; however, it
+// only accepts years represented with exactly four digits.
 //
 // Background: https://en.wikipedia.org/wiki/ISO_8601#Dates
 // https://www.iso.org/obp/ui#iso:std:iso:8601:-1:ed-1:v1:en:term:3.1.3.1
@@ -108,12 +157,15 @@ func ParseISO(value string) (Date, error) {
 func parseISO(input, value string) (Date, error) {
 	abs := value
 	sign := 1
-	switch value[0] {
-	case '+':
-		abs = value[1:]
-	case '-':
-		abs = value[1:]
-		sign = -1
+
+	if len(value) > 0 {
+		switch value[0] {
+		case '+':
+			abs = value[1:]
+		case '-':
+			abs = value[1:]
+			sign = -1
+		}
 	}
 
 	dash1 := strings.IndexByte(abs, '-')
@@ -124,6 +176,10 @@ func parseISO(input, value string) (Date, error) {
 		ln := len(abs)
 		fm := ln - 4
 		fd := ln - 2
+		if fm < 0 || fd < 0 {
+			return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: too short", input)
+		}
+
 		return parseYYYYMMDD(input, abs[:fm], abs[fm:fd], abs[fd:], sign)
 	}
 
@@ -217,6 +273,7 @@ func MustParse(layout, value string) Date {
 //
 // This function cannot currently parse ISO 8601 strings that use the expanded
 // year format; you should use date.ParseISO to parse those strings correctly.
+// That is, it only accepts years represented with exactly four digits.
 func Parse(layout, value string) (Date, error) {
 	t, err := time.Parse(layout, value)
 	if err != nil {
