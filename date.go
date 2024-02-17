@@ -19,7 +19,7 @@ import (
 // (i.e. year 0 is 1 BC; year -1 is 2 BC, and so on).
 //
 // On 32-bit architectures, dates range from about year -5 million to +5 million.
-// On 64-bit architecturew, the range is huge.
+// On 64-bit architectures, the range is huge.
 //
 // Programs using dates should typically store and pass them as values,
 // not pointers.  That is, date variables and struct fields should be of
@@ -31,7 +31,8 @@ import (
 // Because a Date is a number of days since Zero, + and - operations
 // add or subtract some number of days.
 //
-// The zero value of Date is equivalent to the zero value of time.Time.
+// The zero value of Date is equivalent to the zero value of time.Time;
+// the zero value of time.Time is January 1, year 1, 00:00:00.000000000 UTC.
 //
 // Date does not distinguish between official Gregorian dates and earlier
 // proleptic dates, which can also be represented when needed.
@@ -53,9 +54,11 @@ const (
 	ZeroDay = time.Monday
 
 	// ZeroOffset is the number of days between 0001-01-01 and 1970-01-01, using the
-	// proleptic Gregorian calendar.
-	// This is based on the same Unix calculation as used by time.Time.
-	// It is similar to the "Rata Die" numbering system, for which the offset would be 719163 instead.
+	// proleptic Gregorian calendar. It is based on the same Unix calculation as used
+	// by time.Time.
+	//
+	// It is similar to the "Rata Die" numbering system, for which the offset would
+	// be 719163 instead.
 	ZeroOffset = 719162
 )
 
