@@ -6,7 +6,7 @@ require (
 	golang.org/x/text v0.14.0
 )
 
-require github.com/rickb777/plural v1.4.1 // indirect
+require github.com/rickb777/plural v1.4.2 // indirect
 
 go 1.21
 
