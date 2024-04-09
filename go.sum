@@ -1,11 +1,13 @@
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
-github.com/govalues/decimal v0.1.22 h1:h2i3Cpc9AH7pZwU4TTFs/kfCWU0i9JvcsmZcT7WPKfQ=
-github.com/govalues/decimal v0.1.22/go.mod h1:irMp3+UfATz5dlLhUagswX2ATLhGDmo/Hoq2MP4/9gg=
+github.com/govalues/decimal v0.1.23 h1:LNR59gK2LW2kCjCNvV93g00vbwMpQN9+n4b6E1Y3wRE=
+github.com/govalues/decimal v0.1.23/go.mod h1:irMp3+UfATz5dlLhUagswX2ATLhGDmo/Hoq2MP4/9gg=
 github.com/onsi/gomega v1.30.0 h1:hvMK7xYz4D3HapigLTeGdId/NcfQx1VHMJc60ew99+8=
 github.com/onsi/gomega v1.30.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
 github.com/rickb777/period v1.0.3-beta h1:SDLaDRLpvec2o86GVfaBwnlk8g9Ch1u/WP078hD6h7Q=
 github.com/rickb777/period v1.0.3-beta/go.mod h1:YjZyKY4ZR0iTA0G72rSUmhgPzLzeyM9kjzFpchbW9xg=
+github.com/rickb777/period v1.0.4-beta h1:PvHLaFR6QfYWfxY6JWQDJ7XQdO4RO1zpevW82GeLQlk=
+github.com/rickb777/period v1.0.4-beta/go.mod h1:LQhhsNtA7MClo7rqa6POPHRrFnoBzYgTGigXEyltrBo=
 github.com/rickb777/plural v1.4.1 h1:5MMLcbIaapLFmvDGRT5iPk8877hpTPt8Y9cdSKRw9sU=
 github.com/rickb777/plural v1.4.1/go.mod h1:kdmXUpmKBJTS0FtG/TFumd//VBWsNTD7zOw7x4umxNw=
 golang.org/x/net v0.18.0 h1:mIYleuAkSbHh0tCv7RvjL3F6ZVbLjq4+R7zbOn3Kokg=

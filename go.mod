@@ -1,8 +1,8 @@
 module github.com/rickb777/date/v2
 
 require (
-	github.com/govalues/decimal v0.1.22
-	github.com/rickb777/period v1.0.3-beta
+	github.com/govalues/decimal v0.1.23
+	github.com/rickb777/period v1.0.4-beta
 	golang.org/x/text v0.14.0
 )
 
