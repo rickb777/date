@@ -18,8 +18,7 @@ import (
 // so it includes a year 0 and represents earlier years as negative numbers
 // (i.e. year 0 is 1 BC; year -1 is 2 BC, and so on).
 //
-// On 32-bit architectures, dates range from about year -5 million to +5 million.
-// On 64-bit architectures, the range is huge.
+// A Date is a 64-bit integer, so the total range is huge.
 //
 // Programs using dates should typically store and pass them as values,
 // not pointers.  That is, date variables and struct fields should be of
@@ -42,7 +41,7 @@ import (
 // However, for a date before 1582 to be meaningful, it must be clarified
 // separately whether it is a proleptic Gregorian date, or a Julian date, or
 // some other.
-type Date int
+type Date int64
 
 const (
 	// Zero is the named zero value for Date and corresponds to Monday, January 1,
