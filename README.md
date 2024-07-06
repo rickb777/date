@@ -68,7 +68,7 @@ Deleted methods and functions:
 | `date.DaysIn`                  | `gregorian.DaysIn` |
 | timespan.DateRange.`Normalise` | (not needed)       |
 
-Any v1 dates persistently stored as integers will be incorrect; these can be corrected by adding 719162 (`date.ZeroOffset`) to them, which is the number of days between year zero (v2) and 1970 (v1). Dates stored as strings will be unaffected.
+Any v1 dates persistently stored as integers will be incorrect; these can be corrected by **adding 719162** (`date.ZeroOffset`) to them, which is the number of days between year zero (v2) and 1970 (v1). Dates stored as strings will be unaffected.
 
 ## Credits
 
