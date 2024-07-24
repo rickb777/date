@@ -7,6 +7,7 @@ package date
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -92,6 +93,9 @@ func MustParseISO(value string) Date {
 // with possibly extra year digits beyond the prescribed four-digit minimum
 // and with a + or - sign prefix (e.g. , "+12345-06-07", "-0987-06-05").
 //
+// If a time field is present, it is ignored. For example, "2018-02-03T00:00:00Z" is parsed
+// as 3rd February 2018.
+//
 // Note that ParseISO is a little looser than the ISO 8601 standard and will
 // be happy to parse dates with a year longer in length than the four-digit minimum even
 // if they are missing the + sign prefix.
@@ -102,13 +106,21 @@ func MustParseISO(value string) Date {
 //
 // Background: https://en.wikipedia.org/wiki/ISO_8601#Dates
 func ParseISO(value string) (Date, error) {
-	if len(value) < 8 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
-	}
-
 	abs := value
 	if value[0] == '+' || value[0] == '-' {
 		abs = value[1:]
+	}
+
+	if len(abs) < 8 {
+		return Date{}, fmt.Errorf("date.ParseISO: cannot parse %q: incorrect length", value)
+	}
+
+	tee := strings.IndexByte(abs, 'T')
+	if tee == 8 || tee == 10 {
+		if !timeRegex1.MatchString(abs[tee:]) && !timeRegex2.MatchString(abs[tee:]) {
+			return Date{}, fmt.Errorf("date.ParseISO: date-time %q: not a time", value)
+		}
+		abs = abs[:tee]
 	}
 
 	dash1 := strings.IndexByte(abs, '-')
@@ -125,12 +137,12 @@ func ParseISO(value string) (Date, error) {
 		fd1 = 6
 		fd2 = 8
 	} else if abs[fm2] != '-' {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax", value)
+		return Date{}, fmt.Errorf("date.ParseISO: cannot parse %q: incorrect syntax", value)
 	}
 	//fmt.Printf("%s %d %d %d %d %d\n", value, dash1, fm1, fm2, fd1, fd2)
 
 	if len(abs) != fd2 {
-		return Date{}, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length", value)
+		return Date{}, fmt.Errorf("date.ParseISO: cannot parse %q: incorrect length", value)
 	}
 
 	year, err := parseField(value, abs[:dash1], "year", 4, -1)
@@ -157,13 +169,18 @@ func ParseISO(value string) (Date, error) {
 	return Date{encode(t)}, nil
 }
 
+var (
+	timeRegex1 = regexp.MustCompile("^T[0-9][0-9].[0-9][0-9].[0-9][0-9]")
+	timeRegex2 = regexp.MustCompile("^T[0-9]{2,6}")
+)
+
 func parseField(value, field, name string, minLength, requiredLength int) (int, error) {
 	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: invalid %s", value, name)
+		return 0, fmt.Errorf("date.ParseISO: cannot parse %q: invalid %s", value, name)
 	}
 	number, err := strconv.Atoi(field)
 	if err != nil {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: invalid %s", value, name)
+		return 0, fmt.Errorf("date.ParseISO: cannot parse %q: invalid %s", value, name)
 	}
 	return number, nil
 }

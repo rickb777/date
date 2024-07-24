@@ -24,7 +24,11 @@ func TestAutoParse(t *testing.T) {
 		{"1969.12.31", 1969, time.December, 31},
 		{"1969-12-31", 1969, time.December, 31},
 		{"2000-02-28", 2000, time.February, 28},
+		{"20000228", 2000, time.February, 28},
+		{"2018-02-03T00:00:00Z", 2018, time.February, 3}, // datetime is allowed
+		{"20180203T000000Z", 2018, time.February, 3},     // datetime is allowed
 		{"+2000-02-29", 2000, time.February, 29},
+		{"+20000229", 2000, time.February, 29},
 		{"+02000-03-01", 2000, time.March, 1},
 		{"+002004-02-28", 2004, time.February, 28},
 		{"2004-02-29", 2004, time.February, 29},
@@ -54,7 +58,9 @@ func TestAutoParse(t *testing.T) {
 			t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
 		}
 	}
+}
 
+func TestAutoParse_errors(t *testing.T) {
 	badCases := []string{
 		"1234-05",
 		"1234-5-6",
@@ -91,10 +97,15 @@ func TestParseISO(t *testing.T) {
 		day   int
 	}{
 		{"1969-12-31", 1969, time.December, 31},
+		{"19691231", 1969, time.December, 31},
+		{"2018-02-03T00:00:00Z", 2018, time.February, 3}, // datetime is allowed
+		{"20180203T000000Z", 2018, time.February, 3},     // datetime is allowed
 		{"+1970-01-01", 1970, time.January, 1},
 		{"+01970-01-02", 1970, time.January, 2},
 		{"2000-02-28", 2000, time.February, 28},
+		{"20000228", 2000, time.February, 28},
 		{"+2000-02-29", 2000, time.February, 29},
+		{"+20000229", 2000, time.February, 29},
 		{"+02000-03-01", 2000, time.March, 1},
 		{"+002004-02-28", 2004, time.February, 28},
 		{"2004-02-29", 2004, time.February, 29},
@@ -125,7 +136,9 @@ func TestParseISO(t *testing.T) {
 			t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
 		}
 	}
+}
 
+func TestParseISO_errors(t *testing.T) {
 	badCases := []string{
 		"1234-05",
 		"1234-5-6",
@@ -143,6 +156,8 @@ func TestParseISO(t *testing.T) {
 		"+10-11-12",
 		"+100-02-03",
 		"-123-05-06",
+		"2018-02-03T0:0:0Z",
+		"2018-02-03T0Z",
 	}
 	for _, c := range badCases {
 		d, err := ParseISO(c)
@@ -205,7 +220,9 @@ func TestParse(t *testing.T) {
 			t.Errorf("Parse(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
 		}
 	}
+}
 
+func TestParse_errors(t *testing.T) {
 	// Test inability to parse ISO 8601 expanded year format
 	badCases := []string{
 		"+1234-05-06",
