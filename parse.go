@@ -7,6 +7,7 @@ package date
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -142,6 +143,9 @@ func MustParseISO(value string) Date {
 // minimum. A leading plus '+' sign is allowed and ignored. Basic format (without '-'
 // separators) is allowed.
 //
+// If a time field is present, it is ignored. For example, "2018-02-03T00:00:00Z" is parsed as
+// 3rd February 2018.
+//
 // For ordinal dates, the extended format (including '-') is supported, but the basic format
 // (without '-') is not supported because it could not be distinguished from the YYYYMMDD format.
 //
@@ -168,6 +172,14 @@ func parseISO(input, value string) (Date, error) {
 		}
 	}
 
+	tee := strings.IndexByte(abs, 'T')
+	if tee == 8 || tee == 10 {
+		if !timeRegex1.MatchString(abs[tee:]) && !timeRegex2.MatchString(abs[tee:]) {
+			return 0, fmt.Errorf("date.ParseISO: date-time %q: not a time", value)
+		}
+		abs = abs[:tee]
+	}
+
 	dash1 := strings.IndexByte(abs, '-')
 	dash2 := strings.LastIndexByte(abs, '-')
 
@@ -177,7 +189,7 @@ func parseISO(input, value string) (Date, error) {
 		fm := ln - 4
 		fd := ln - 2
 		if fm < 0 || fd < 0 {
-			return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: too short", input)
+			return 0, fmt.Errorf("date.ParseISO: cannot parse %q: too short", input)
 		}
 
 		return parseYYYYMMDD(input, abs[:fm], abs[fm:fd], abs[fd:], sign)
@@ -191,7 +203,7 @@ func parseISO(input, value string) (Date, error) {
 		fd1 := dash2 + 1
 
 		if abs[fm2] != '-' {
-			return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect syntax for date yyyy-mm-dd", input)
+			return 0, fmt.Errorf("date.ParseISO: cannot parse %q: incorrect syntax for date yyyy-mm-dd", input)
 		}
 
 		return parseYYYYMMDD(input, abs[:fy1], abs[fm1:fm2], abs[fd1:], sign)
@@ -202,7 +214,7 @@ func parseISO(input, value string) (Date, error) {
 	fo1 := dash1 + 1
 
 	if len(abs) != fo1+3 {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: incorrect length for ordinal date yyyy-ooo", input)
+		return 0, fmt.Errorf("date.ParseISO: cannot parse %q: incorrect length for ordinal date yyyy-ooo", input)
 	}
 
 	return parseYYYYOOO(input, abs[:fy1], abs[fo1:], sign)
@@ -215,7 +227,7 @@ func parseYYYYMMDD(input, yyyy, mm, dd string, sign int) (Date, error) {
 
 	err := errors.Join(e1, e2, e3)
 	if err != nil {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse %q: %w", input, err)
+		return 0, fmt.Errorf("date.ParseISO: cannot parse %q: %w", input, err)
 	}
 
 	t := time.Date(sign*year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
@@ -229,13 +241,18 @@ func parseYYYYOOO(input, yyyy, ooo string, sign int) (Date, error) {
 
 	err := errors.Join(e1, e2)
 	if err != nil {
-		return 0, fmt.Errorf("Date.ParseISO: cannot parse ordinal date %q: %w", input, err)
+		return 0, fmt.Errorf("date.ParseISO: cannot parse ordinal date %q: %w", input, err)
 	}
 
 	t := time.Date(sign*year, time.January, ordinal, 0, 0, 0, 0, time.UTC)
 
 	return encode(t), nil
 }
+
+var (
+	timeRegex1 = regexp.MustCompile("^T[0-9][0-9].[0-9][0-9].[0-9][0-9]")
+	timeRegex2 = regexp.MustCompile("^T[0-9]{2,6}")
+)
 
 func parseField(field, name string, minLength, requiredLength int) (int, error) {
 	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {
