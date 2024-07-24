@@ -150,15 +150,15 @@ func TestDate_UnmarshalText_invalid_date_text(t *testing.T) {
 		value string
 		want  string
 	}{
-		{`not-a-date`, "Date.ParseISO: cannot parse \"not-a-date\": year has wrong length\nmonth has wrong length\nday has wrong length"},
-		{`foot-of-og`, "Date.ParseISO: cannot parse \"foot-of-og\": invalid year\ninvalid month\ninvalid day"},
-		{`215-08-15`, `Date.ParseISO: cannot parse "215-08-15": invalid year`},
+		{`not-a-date`, "date.ParseISO: cannot parse \"not-a-date\": year has wrong length\nmonth has wrong length\nday has wrong length"},
+		{`foot-of-og`, "date.ParseISO: cannot parse \"foot-of-og\": invalid year\ninvalid month\ninvalid day"},
+		{`215-08-15`, `date.ParseISO: cannot parse "215-08-15": invalid year`},
 	}
 	for _, c := range cases {
 		var d Date
 		err := d.UnmarshalText([]byte(c.value))
 		if err == nil {
-			t.Errorf("InvalidText(%v) == %v, want %v", c.value, err, c.want)
+			t.Errorf("InvalidText(%v) want %v", c.value, c.want)
 		}
 	}
 }
