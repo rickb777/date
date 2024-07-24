@@ -209,8 +209,8 @@ func TestDate_UnmarshalText_invalid_date_text(t *testing.T) {
 		value string
 		want  string
 	}{
-		{`not-a-date`, `Date.ParseISO: cannot parse "not-a-date": incorrect syntax`},
-		{`215-08-15`, `Date.ParseISO: cannot parse "215-08-15": invalid year`},
+		{`not-a-date`, `date.ParseISO: cannot parse "not-a-date": incorrect syntax`},
+		{`215-08-15`, `date.ParseISO: cannot parse "215-08-15": invalid year`},
 	}
 	for _, c := range cases {
 		var d Date
