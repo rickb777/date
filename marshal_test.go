@@ -42,32 +42,36 @@ func TestDate_gob_Encode_round_tripe(t *testing.T) {
 	}
 }
 
+type Thing struct {
+	D Date `json:"d,omitempty"`
+}
+
 func TestDate_MarshalJSON_round_trip(t *testing.T) {
 	cases := []struct {
 		value Date
 		want  string
 	}{
-		{New(-11111, time.February, 3), `"-11111-02-03"`},
-		{New(-1, time.December, 31), `"-0001-12-31"`},
-		{New(0, time.January, 1), `"0000-01-01"`},
-		{New(1, time.January, 1), `"0001-01-01"`},
-		{New(1970, time.January, 1), `"1970-01-01"`},
-		{New(2012, time.June, 25), `"2012-06-25"`},
-		{New(12345, time.June, 7), `"+12345-06-07"`},
+		{New(-11111, time.February, 3), `{"d":"-11111-02-03"}`},
+		{New(-1, time.December, 31), `{"d":"-0001-12-31"}`},
+		{New(0, time.January, 1), `{"d":"0000-01-01"}`},
+		{New(1, time.January, 1), `{}`},
+		{New(1970, time.January, 1), `{"d":"1970-01-01"}`},
+		{New(2012, time.June, 25), `{"d":"2012-06-25"}`},
+		{New(12345, time.June, 7), `{"d":"+12345-06-07"}`},
 	}
 	for _, c := range cases {
-		var d Date
-		bb1, err := json.Marshal(c.value)
+		bb1, err := json.Marshal(Thing{D: c.value})
 		if err != nil {
 			t.Errorf("JSON(%v) marshal error %v", c, err)
 		} else if string(bb1) != c.want {
 			t.Errorf("JSON(%v) == %v, want %v", c.value, string(bb1), c.want)
 		} else {
-			err = json.Unmarshal(bb1, &d)
+			var thing Thing
+			err = json.Unmarshal(bb1, &thing)
 			if err != nil {
 				t.Errorf("JSON(%v) unmarshal error %v", c.value, err)
-			} else if d != c.value {
-				t.Errorf("JSON(%v) unmarshal got %v", c.value, d)
+			} else if thing.D != c.value {
+				t.Errorf("JSON(%v) unmarshal got %v", c.value, thing.D)
 			}
 		}
 	}
@@ -152,36 +156,21 @@ func TestDate_UnmarshalText_invalid_date_text(t *testing.T) {
 	}{
 		{`not-a-date`, "date.ParseISO: cannot parse \"not-a-date\": year has wrong length\nmonth has wrong length\nday has wrong length"},
 		{`foot-of-og`, "date.ParseISO: cannot parse \"foot-of-og\": invalid year\ninvalid month\ninvalid day"},
-		{`215-08-15`, `date.ParseISO: cannot parse "215-08-15": invalid year`},
-		{``, `date.ParseISO: cannot parse "": invalid year`},
+		{`215-08-15`, `date.ParseISO: cannot parse "215-08-15": year has wrong length`},
+		{``, `date.ParseISO: cannot parse "": too short`},
 	}
 	for _, c := range cases {
 		var d Date
 		err := d.UnmarshalText([]byte(c.value))
 		if err == nil {
-			t.Errorf("InvalidText(%v) want %v", c.value, c.want)
+			t.Errorf("UnmarshalText(%v) want %v", c.value, c.want)
+		} else if c.want != err.Error() {
+			t.Errorf("Expected error (%s) doesn't match: %v", c.want, err)
 		}
 	}
 }
 
-func TestDate_UnmarshalText_empty(t *testing.T) {
-	cases := []struct {
-		value    string
-		expected Date
-	}{
-		{``, New(1, time.January, 1)},
-	}
-	for _, c := range cases {
-		var d Date
-		err := d.UnmarshalText([]byte(c.value))
-		if err != nil {
-			t.Errorf("Errored parsing date (%s): %s", c.value, err.Error())
-		} else if c.expected != d {
-			t.Errorf("Expected date (%s) doesn't match output: %v", c.expected, d)
-		}
-	}
-}
-
+// TestDate_UnmarshalTime_invalid_time_text is included for comparing Date behaviour with 'time.Time'.
 func TestDate_UnmarshalTime_invalid_time_text(t *testing.T) {
 	cases := []struct {
 		value string
@@ -198,8 +187,7 @@ func TestDate_UnmarshalTime_invalid_time_text(t *testing.T) {
 		if err == nil {
 			t.Errorf("InvalidText(%v) want %v", c.value, c.want)
 		} else if err.Error() != c.want {
-			t.Errorf("Wrong error message(%s) want: %s", err.Error(), c.want)
+			t.Errorf("Expected error (%s) doesn't match: %s", c.want, err)
 		}
-
 	}
 }

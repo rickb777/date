@@ -53,11 +53,7 @@ func (d Date) MarshalText() ([]byte, error) {
 // (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
 // the year must use at least 4 digits and if outside the [0,9999] range
 // must be prefixed with a + or - sign.
-// Note that the a blank string is unmarshalled as the zero value.
 func (d *Date) UnmarshalText(data []byte) (err error) {
-	if len(data) == 0 {
-		return nil
-	}
 	u, err := ParseISO(string(data))
 	if err == nil {
 		*d = u
