@@ -153,6 +153,7 @@ func TestDate_UnmarshalText_invalid_date_text(t *testing.T) {
 		{`not-a-date`, "date.ParseISO: cannot parse \"not-a-date\": year has wrong length\nmonth has wrong length\nday has wrong length"},
 		{`foot-of-og`, "date.ParseISO: cannot parse \"foot-of-og\": invalid year\ninvalid month\ninvalid day"},
 		{`215-08-15`, `date.ParseISO: cannot parse "215-08-15": invalid year`},
+		{``, `date.ParseISO: cannot parse "": invalid year`},
 	}
 	for _, c := range cases {
 		var d Date
@@ -160,5 +161,45 @@ func TestDate_UnmarshalText_invalid_date_text(t *testing.T) {
 		if err == nil {
 			t.Errorf("InvalidText(%v) want %v", c.value, c.want)
 		}
+	}
+}
+
+func TestDate_UnmarshalText_empty(t *testing.T) {
+	cases := []struct {
+		value    string
+		expected Date
+	}{
+		{``, New(1, time.January, 1)},
+	}
+	for _, c := range cases {
+		var d Date
+		err := d.UnmarshalText([]byte(c.value))
+		if err != nil {
+			t.Errorf("Errored parsing date (%s): %s", c.value, err.Error())
+		} else if c.expected != d {
+			t.Errorf("Expected date (%s) doesn't match output: %v", c.expected, d)
+		}
+	}
+}
+
+func TestDate_UnmarshalTime_invalid_time_text(t *testing.T) {
+	cases := []struct {
+		value string
+		want  string
+	}{
+		{`not-a-date`, "parsing time \"not-a-date\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"not-a-date\" as \"2006\""},
+		{`foot-of-og`, "parsing time \"foot-of-og\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"foot-of-og\" as \"2006\""},
+		{`215-08-15`, `parsing time "215-08-15" as "2006-01-02T15:04:05Z07:00": cannot parse "215-08-15" as "2006"`},
+		{``, `parsing time "" as "2006-01-02T15:04:05Z07:00": cannot parse "" as "2006"`},
+	}
+	for _, c := range cases {
+		var d time.Time
+		err := d.UnmarshalText([]byte(c.value))
+		if err == nil {
+			t.Errorf("InvalidText(%v) want %v", c.value, c.want)
+		} else if err.Error() != c.want {
+			t.Errorf("Wrong error message(%s) want: %s", err.Error(), c.want)
+		}
+
 	}
 }
