@@ -11,7 +11,7 @@ import (
 	"math"
 )
 
-// MarshalBinary implements the encoding.BinaryMarshaler interface.
+// MarshalBinary implements the [encoding.BinaryMarshaler] interface.
 func (d Date) MarshalBinary() (b []byte, err error) {
 	if math.MaxInt == math.MaxInt32 {
 		b = make([]byte, 4)
@@ -23,7 +23,7 @@ func (d Date) MarshalBinary() (b []byte, err error) {
 	return b, nil
 }
 
-// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+// UnmarshalBinary implements the [encoding.BinaryUnmarshaler] interface.
 func (d *Date) UnmarshalBinary(data []byte) error {
 	switch len(data) {
 	case 0:
@@ -38,7 +38,7 @@ func (d *Date) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// MarshalText implements the encoding.TextMarshaler interface.
+// MarshalText implements the [encoding.TextMarshaler] interface.
 // The date is given in ISO 8601 extended format (e.g. "2006-01-02").
 // If the year of the date falls outside the [0,9999] range, this format
 // produces an expanded year representation with possibly extra year digits
@@ -48,7 +48,7 @@ func (d Date) MarshalText() ([]byte, error) {
 	return []byte(d.String()), nil
 }
 
-// UnmarshalText implements the encoding.TextUnmarshaler interface.
+// UnmarshalText implements the [encoding.TextUnmarshaler] interface.
 // The date is expected to be in ISO 8601 extended format
 // (e.g. "2006-01-02", "+12345-06-07", "-0987-06-05");
 // the year must use at least 4 digits and if outside the [0,9999] range

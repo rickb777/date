@@ -9,13 +9,13 @@
 //
 // Subpackages provide:
 //
-// * `clock.Clock` which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
+// * [clock.Clock] which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
 //
-// * `timespan.DateRange` which expresses a period between two dates.
+// * [timespan.DateRange] which expresses a period between two dates.
 //
-// * `timespan.TimeSpan` which expresses a duration of time between two instants.
+// * [timespan.TimeSpan which expresses a duration of time between two instants.
 //
-// * `view.VDate` which wraps `Date` for use in templates etc.
+// * [view.VDate] which wraps `Date` for use in templates etc.
 //
 // # Credits
 //
@@ -26,21 +26,13 @@
 //
 // # References
 //
-// https://golang.org/src/time/time.go
-//
-// https://en.wikipedia.org/wiki/Gregorian_calendar
-//
-// https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar
-//
-// https://en.wikipedia.org/wiki/Astronomical_year_numbering
-//
-// https://en.wikipedia.org/wiki/ISO_8601
-//
-// https://tools.ietf.org/html/rfc822
-//
-// https://tools.ietf.org/html/rfc850
-//
-// https://tools.ietf.org/html/rfc1123
-//
-// https://tools.ietf.org/html/rfc3339
+//   - https://golang.org/src/time/time.go
+//   - https://en.wikipedia.org/wiki/Gregorian_calendar
+//   - https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar
+//   - https://en.wikipedia.org/wiki/Astronomical_year_numbering
+//   - https://en.wikipedia.org/wiki/ISO_8601
+//   - https://tools.ietf.org/html/rfc822
+//   - https://tools.ietf.org/html/rfc850
+//   - https://tools.ietf.org/html/rfc1123
+//   - https://tools.ietf.org/html/rfc3339
 package date

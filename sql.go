@@ -15,12 +15,12 @@ import (
 // The underlying column type can be a string, an integer (period of days since
 // year 0), or a DATE.
 
-// Scan parses some value. If the value holds a string, the AutoParse function is used.
+// Scan parses some value. If the value holds a string, the [AutoParse] function is used.
 // Otherwise, if the value holds an integer, it is treated as the period of days
-// since year 0 value that represents a Date.
+// since year 0 value that represents a [Date].
 //
-// This implements sql.Scanner https://golang.org/pkg/database/sql/#Scanner
-func (d *Date) Scan(value interface{}) (err error) {
+// This implements [database/sql.Scanner].
+func (d *Date) Scan(value any) (err error) {
 	if value == nil {
 		return nil
 	}
@@ -28,7 +28,7 @@ func (d *Date) Scan(value interface{}) (err error) {
 	return d.scanAny(value)
 }
 
-func (d *Date) scanAny(value interface{}) (err error) {
+func (d *Date) scanAny(value any) (err error) {
 	err = nil
 	switch v := value.(type) {
 	case int64:
@@ -52,16 +52,16 @@ func (d *Date) scanString(value string) error {
 	return err1
 }
 
-// Value converts the value for DB storage. It uses Valuer, which returns strings
+// Value converts the value for DB storage. It uses [Valuer], which returns strings
 // by default.
 //
-// This implements driver.Valuer https://golang.org/pkg/database/sql/driver/#Valuer
+// This implements [driver.Valuer].
 func (d Date) Value() (driver.Value, error) {
 	return Valuer(d)
 }
 
-// Valuer is the pluggable implementation function for converting dates to driver.Value.
-// It is initialised with ValueAsString.
+// Valuer is the pluggable implementation function for converting dates to [driver.Value].
+// It is initialised with [ValueAsString].
 var Valuer = ValueAsString
 
 // ValueAsInt converts a date for DB storage using an integer.

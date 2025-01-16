@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// These are predefined layouts for use in Date.Format and Date.Parse.
+// These are predefined layouts for use in [Date.Format] and [Parse].
 // The reference date used in the layouts is the same date used by the
 // time package in the standard library:
 //
@@ -19,7 +19,7 @@ import (
 // To define your own format, write down what the reference date would look
 // like formatted your way; see the values of the predefined layouts for
 // examples. The model is to demonstrate what the reference date looks like
-// so that the Parse function and Format method can apply the same
+// so that the [Parse] function and [Date.Format] method can apply the same
 // transformation to a general date value.
 const (
 	ISO8601  = "2006-01-02" // ISO 8601 extended format
@@ -59,7 +59,7 @@ func (d Date) WriteTo(w io.Writer) (n64 int64, err error) {
 // FormatOrdinal returns a textual representation of the date value formatted
 // according to the ordinal date variant of the ISO 8601 format.
 // The year of the date is represented as a signed integer. The three-digit
-// ordinal day number is appended.
+// ordinal day number is appended, e.g. "2024-107".
 func (d Date) FormatOrdinal() string {
 	t := decode(d)
 	year := t.Year()
@@ -74,7 +74,7 @@ func (d Date) FormatOrdinal() string {
 // The string representation of the year will take more than the specified
 // number of digits if the magnitude of the year is too large to fit.
 //
-// Function Date.Format can be used to format Date values in other formats,
+// [Date.Format] can be used to format Date values in other formats,
 // but it is currently not able to format dates according to the expanded
 // year variant of the ISO 8601 format.
 func (d Date) FormatISO(yearDigits int) string {
@@ -95,8 +95,8 @@ func (d Date) FormatISO(yearDigits int) string {
 // would be displayed if it were the value; it serves as an example of the
 // desired output.
 //
-// This function actually uses time.Format to format the input and can use any
-// layout accepted by time.Format by extending its date to a time at
+// This function actually uses [time.Time.Format] to format the input and can use any
+// layout accepted by [time.Time.Format] by extending its date to a time at
 // 00:00:00.000 UTC.
 //
 // Additionally, it is able to insert the day-number suffix into the output string.
@@ -105,11 +105,11 @@ func (d Date) FormatISO(yearDigits int) string {
 //	Mon, Jan 2nd, 2006
 //
 // For example, New Year's Day might be rendered as "Fri, Jan 1st, 2016". To alter
-// the suffix strings for a different locale, change DaySuffixes or use FormatWithSuffixes
-// instead.
+// the suffix strings for a different locale, change [DaySuffixes] or use
+// [Date.FormatWithSuffixes] instead.
 //
 // This function cannot currently format Date values according to the expanded
-// year variant of ISO 8601; you should use Date.FormatISO to that effect.
+// year variant of ISO 8601; you should use [Date.FormatISO] to do that.
 func (d Date) Format(layout string) string {
 	return d.FormatWithSuffixes(layout, DaySuffixes)
 }

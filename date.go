@@ -23,15 +23,15 @@ import (
 // Programs using dates should typically store and pass them as values,
 // not pointers.  That is, date variables and struct fields should be of
 // type date.Date, not *date.Date unless the pointer indicates an optional
-// value.  A Date value can be used by multiple goroutines simultaneously.
+// value. A Date value can be used by multiple goroutines simultaneously.
 //
 // Date values can be compared using the ==, !=, >, >=, <, and <= operators.
 //
-// Because a Date is a number of days since Zero, + and - operations
+// Because a Date is a number of days since [Zero], + and - operations
 // add or subtract some number of days.
 //
-// The zero value of Date is equivalent to the zero value of time.Time;
-// the zero value of time.Time is January 1, year 1, 00:00:00.000000000 UTC.
+// The zero value of Date is equivalent to the zero value of [time.Time];
+// the zero value of [time.Time] is January 1, year 1, 00:00:00.000000000 UTC.
 //
 // Date does not distinguish between official Gregorian dates and earlier
 // proleptic dates, which can also be represented when needed.
@@ -44,9 +44,9 @@ import (
 type Date int64
 
 const (
-	// Zero is the named zero value for Date and corresponds to Monday, January 1,
-	// year 1 AD in the proleptic Gregorian calendar.
-	// This is the same zero as used by time.Time.
+	// Zero is the named zero value for Date and corresponds to
+	// Monday, January 1, year 1 AD in the proleptic Gregorian calendar.
+	// This is the same zero as used by [time.Time].
 	Zero Date = 0
 
 	// ZeroDay was the day of 1st January year 1 AD.
@@ -54,7 +54,7 @@ const (
 
 	// ZeroOffset is the number of days between 0001-01-01 and 1970-01-01, using the
 	// proleptic Gregorian calendar. It is based on the same Unix calculation as used
-	// by time.Time.
+	// by [time.Time].
 	//
 	// It is similar to the "Rata Die" numbering system, for which the offset would
 	// be 719163 instead.
@@ -104,26 +104,26 @@ func Max() Date {
 	return Date(math.MaxInt32 - ZeroOffset)
 }
 
-// MidnightUTC returns a Time value corresponding to midnight on the given date d,
+// MidnightUTC returns a [time.Time] value corresponding to midnight on the given date d,
 // UTC time.  Note that midnight is the beginning of the day rather than the end.
 func (d Date) MidnightUTC() time.Time {
 	return decode(d)
 }
 
-// Midnight returns a Time value corresponding to midnight on the given date d,
+// Midnight returns a [time.Time] value corresponding to midnight on the given date d,
 // local time.  Note that midnight is the beginning of the day rather than the end.
 func (d Date) Midnight() time.Time {
 	return d.MidnightIn(time.Local)
 }
 
-// MidnightIn returns a Time value corresponding to midnight on the given date d,
+// MidnightIn returns a [time.Time] value corresponding to midnight on the given date d,
 // relative to the specified time zone.  Note that midnight is the beginning
 // of the day rather than the end.
 func (d Date) MidnightIn(loc *time.Location) time.Time {
 	return d.Time(0, loc)
 }
 
-// Time returns a Time value corresponding to a clock time on the given date d,
+// Time returns a [time.Time] value corresponding to a clock time on the given date d,
 // relative to the specified time zone. A common use-case is to obtain the midnight
 // time, for which the clock value is simply zero.
 func (d Date) Time(clock clock.Clock, loc *time.Location) time.Time {
