@@ -7,7 +7,7 @@ package clock
 import "fmt"
 
 // Hh gets the clock-face number of hours as a two-digit string.
-// It is calculated from the modulo time; see Mod24.
+// It is calculated from the modulo time; see [Clock.Mod24].
 // Note the special case of midnight at the end of a day is "24".
 func (c Clock) Hh() string {
 	if c == Day {
@@ -18,7 +18,7 @@ func (c Clock) Hh() string {
 }
 
 // HhMm gets the clock-face number of hours and minutes as a five-character ISO-8601 time string.
-// It is calculated from the modulo time; see Mod24.
+// It is calculated from the modulo time; see [Clock.Mod24].
 // Note the special case of midnight at the end of a day is "24:00".
 func (c Clock) HhMm() string {
 	if c == Day {
@@ -29,7 +29,7 @@ func (c Clock) HhMm() string {
 }
 
 // HhMmSs gets the clock-face number of hours, minutes, seconds as an eight-character ISO-8601 time string.
-// It is calculated from the modulo time; see Mod24.
+// It is calculated from the modulo time; see [Clock.Mod24].
 // Note the special case of midnight at the end of a day is "24:00:00".
 func (c Clock) HhMmSs() string {
 	if c == Day {
@@ -41,7 +41,7 @@ func (c Clock) HhMmSs() string {
 
 // Hh12 gets the clock-face number of hours as a one- or two-digit string, followed by am or pm.
 // Remember that midnight is 12am, noon is 12pm.
-// It is calculated from the modulo time; see Mod24.
+// It is calculated from the modulo time; see [Clock.Mod24].
 func (c Clock) Hh12() string {
 	cm := c.Mod24()
 	h, sfx := clockHour12(cm)
@@ -50,7 +50,7 @@ func (c Clock) Hh12() string {
 
 // HhMm12 gets the clock-face number of hours and minutes, followed by am or pm.
 // Remember that midnight is 12am, noon is 12pm.
-// It is calculated from the modulo time; see Mod24.
+// It is calculated from the modulo time; see [Clock.Mod24].
 func (c Clock) HhMm12() string {
 	cm := c.Mod24()
 	h, sfx := clockHour12(cm)
@@ -59,7 +59,7 @@ func (c Clock) HhMm12() string {
 
 // HhMmSs12 gets the clock-face number of hours, minutes and seconds, followed by am or pm.
 // Remember that midnight is 12am, noon is 12pm.
-// It is calculated from the modulo time; see Mod24.
+// It is calculated from the modulo time; see [Clock.Mod24].
 func (c Clock) HhMmSs12() string {
 	cm := c.Mod24()
 	h, sfx := clockHour12(cm)
@@ -69,13 +69,13 @@ func (c Clock) HhMmSs12() string {
 // String gets the clock-face number of hours, minutes, seconds and fraction as an ISO-8601 time
 // string.
 //
-// If the clock value has more than 24 hours, the excess is discarded (see Mod24).
+// If the clock value has more than 24 hours, the excess is discarded (see [Clock.Mod24]).
 //
 // The number of decimal places depends on the clock value. If microsecond and nanosecond digits
 // are non-zero, the result is given to nanosecond precision. Otherwise, a shorter form is used that
 // only has millisecond precision.
 //
-// See TruncateMillisecond to obtain the shorter form always.
+// See [Clock.TruncateMillisecond] to obtain the shorter form always.
 //
 // The special case of midnight at the end of a day is "24:00:00.000".
 func (c Clock) String() string {

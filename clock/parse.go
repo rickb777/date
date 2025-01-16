@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// MustParse is as per Parse except that it panics if the string cannot be parsed.
+// MustParse is as per [Parse] except that it panics if the string cannot be parsed.
 // This is intended for setup code; don't use it for user inputs.
 func MustParse(hms string) Clock {
 	t, err := Parse(hms)
@@ -21,11 +21,13 @@ func MustParse(hms string) Clock {
 	return t
 }
 
-// Parse converts a string representation to a Clock. Acceptable representations
-// are as per ISO-8601 - see https://en.wikipedia.org/wiki/ISO_8601#Times
+// Parse converts a string representation to a [Clock]. Acceptable representations
+// are as per [ISO-8601].
 //
 // Also, conventional AM- and PM-based strings are parsed, such as "2am", "2:45pm".
 // Remember that 12am is midnight and 12pm is noon.
+//
+// [ISO-8601]: https://en.wikipedia.org/wiki/ISO_8601#Times
 func Parse(hms string) (clock Clock, err error) {
 	if strings.HasSuffix(hms, "am") || strings.HasSuffix(hms, "AM") {
 		return parseAmPm(hms, 0)
