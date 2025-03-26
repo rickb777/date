@@ -194,6 +194,7 @@ func TestParseISO(t *testing.T) {
 		{value: "+12340506", year: 1234, month: time.May, day: 6},
 		{value: "-00191012", year: -19, month: time.October, day: 12},
 		{value: "20210506T010203Z", year: 2021, month: time.May, day: 6},
+		{value: "-0004-01-01T00:00:00Z", year: -4, month: time.January, day: 1},
 	}
 	for i, c := range cases {
 		t.Run(fmt.Sprintf("%d %s", i, c.value), func(t *testing.T) {
