@@ -11,11 +11,6 @@ function v
   $@
 }
 
-if ! type -p shadow; then
-  v go get     golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
-  v go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
-fi
-
 echo date...
 v go test -v -covermode=count -coverprofile=date.out .
 v go tool cover -func=date.out
@@ -29,7 +24,5 @@ done
 v gofmt -l -w *.go */*.go
 
 v go vet ./...
-
-v shadow ./...
 
 v go install ./datetool

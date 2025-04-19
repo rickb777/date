@@ -288,7 +288,7 @@ func TestTSParseInLocationErrors(t *testing.T) {
 		t.Run(fmt.Sprintf("%d %s", i, c.text), func(t *testing.T) {
 			ts, err := ParseRFC5545InLocation(c.text, time.UTC)
 			if err == nil {
-				t.Errorf(ts.String())
+				t.Error(ts.String())
 			}
 		})
 	}
