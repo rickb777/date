@@ -8,13 +8,14 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"strconv"
-
+	"github.com/govalues/decimal"
 	"github.com/rickb777/date/v2"
 	"github.com/rickb777/date/v2/clock"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"os"
+	"strings"
+	"time"
 )
 
 func usage() {
@@ -38,38 +39,68 @@ func sprintf(num interface{}) string {
 	}
 }
 
+func printDate(d date.Date) string { return d.String() + " " + d.Weekday().String() }
+
 func title() {
 	if !terse && !titled {
 		titled = true
-		fmt.Printf("%-15s %-15s %-15s %s\n", "input", "number", "clock", "date")
-		fmt.Printf("%-15s %-15s %-15s %s\n", "-----", "------", "-----", "----")
+		fmt.Printf("%-30s        possible value\n", "input")
+		fmt.Printf("%-30s        --------------\n", "-----")
 	}
 }
 
+const isoTimeNanos = "2006-01-02T15:04:05.999999999"
+
 func printArg(arg string) {
 
-	i, err := strconv.ParseInt(arg, 10, 64)
+	number, err := decimal.Parse(arg)
 	if err == nil {
 		title()
-		d := date.Date(i)
-		c := clock.Clock(i)
-		fmt.Printf("%-15s %-15s %-15s %-12s %s\n", arg, sprintf(i), c, d, d.Weekday())
+		i, _, _ := number.Int64(0)
+		if number.IsInt() && i < 1000000 {
+			d := date.Date(i)
+			c := clock.Clock(i)
+			fmt.Printf("%-30s clock: %-30s %sms since midnight\n", arg, c, sprintf(c))
+			fmt.Printf("%-30s date:  %-30s %s days since 1AD\n", arg, printDate(d), sprintf(d))
+			success = true
+		}
+		s, ns, _ := number.Int64(9)
+		t := time.Unix(s, ns).UTC()
+		fmt.Printf("%-30s time:  %s\n", arg, t.Format(isoTimeNanos))
 		success = true
-		return
 	}
 
 	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
 		title()
-		fmt.Printf("%-15s %-15s %15s %-12s %s\n", arg, sprintf(d), "", d, d.Weekday())
+		fmt.Printf("%-30s date:  %-30s %s days since 1AD\n", arg, printDate(d), sprintf(d))
 		success = true
 	}
 
 	c, err := clock.Parse(arg)
 	if err == nil {
 		title()
-		fmt.Printf("%-15s %-15s %s\n", arg, sprintf(c), c)
+		fmt.Printf("%-30s clock: %-30s %sms since midnight\n", arg, c, sprintf(c))
 		success = true
+	}
+
+	aug := arg
+	if strings.IndexByte(arg, 'T') < 0 {
+		aug += "T00:00:00"
+	}
+	t, err := time.Parse(isoTimeNanos, aug)
+	if err == nil {
+		if t.Year() > 1970+290 {
+			number, _ := decimal.New(t.UTC().UnixMicro(), 6)
+			fmt.Printf("%-30s time:  %ss\n", arg, number)
+		} else {
+			number, _ := decimal.New(t.UTC().UnixNano(), 9)
+			fmt.Printf("%-30s time:  %ss\n", arg, number)
+		}
+		success = true
+	}
+	if success {
+		fmt.Println()
 	}
 }
 
@@ -90,10 +121,5 @@ func main() {
 
 	if !success {
 		usage()
-	}
-
-	if titled {
-		fmt.Printf("\n# dates are counted using days since Thursday 1st Jan 1970\n")
-		fmt.Printf("# clock operates via milliseconds since midnight\n")
 	}
 }

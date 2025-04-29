@@ -27,6 +27,17 @@ to the ISO-8601 form (e.g. "PT30S").
 
     go get github.com/rickb777/date/v2
 
+### To build the source code
+
+You need to have [Go](https://go.dev/dl) installed first.
+
+    git clone https://github.com/rickb777/date.git
+    cd date
+    go install tool
+    mage
+
+This relies on [Mage](https://magefile.org/), which will be installed for you. You can use plain Go commands too.
+
 ## Status
 
 This library has been in reliable production use for some time. Versioning follows the well-known semantic version pattern.
