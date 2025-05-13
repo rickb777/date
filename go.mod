@@ -6,11 +6,11 @@ toolchain go1.24.2
 
 require (
 	github.com/govalues/decimal v0.1.36
-	github.com/rickb777/period v1.0.11
-	golang.org/x/text v0.24.0
+	github.com/rickb777/period v1.0.13
+	golang.org/x/text v0.25.0
 )
 
-require github.com/rickb777/plural v1.4.3 // indirect
+require github.com/rickb777/plural v1.4.4 // indirect
 
 require github.com/magefile/mage v1.15.0
 
