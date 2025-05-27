@@ -2,39 +2,32 @@
 
 //go:build mage
 
-// Build steps for the expect API:
+// Build steps for the date API:
 package main
 
 import (
 	"github.com/magefile/mage/sh"
+	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 )
 
-var Default = Build
+var Default = Coverage
 
 func Build() error {
-	if err := Tidy(); err != nil {
-		return err
-	}
-	if err := Test(); err != nil {
+	if err := sh.RunV("go", "test", "./..."); err != nil {
 		return err
 	}
 	if err := sh.RunV("gofmt", "-l", "-w", "-s", "."); err != nil {
 		return err
 	}
+	if err := sh.RunV("go", "vet", "./..."); err != nil {
+		return err
+	}
 	if err := Install(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// runs go mod download & tidy
-func Tidy() error {
-	if err := sh.RunV("go", "mod", "download"); err != nil {
-		return err
-	}
-	if err := sh.RunV("go", "mod", "tidy"); err != nil {
 		return err
 	}
 	return nil
@@ -49,23 +42,17 @@ func Install() error {
 }
 
 // tests all the code and prints coverage information
-func Test() error {
-	dirs := []string{".", "./clock", "./gregorian", "./timespan", "./view"}
-	for _, pkg := range dirs {
-		if err := sh.RunV("go", "test", "-v", "-covermode=count", "-coverprofile="+nameOf(pkg), pkg); err != nil {
-			return err
-		}
-	}
-	for _, pkg := range dirs {
-		if err := sh.RunV("go", "tool", "cover", "-func="+nameOf(pkg)); err != nil {
-			return err
-		}
-		if err := sh.Run("rm", nameOf(pkg)); err != nil {
-			return err
-		}
-	}
-	if err := sh.RunV("go", "vet", "./..."); err != nil {
+func Coverage() error {
+	if err := Build(); err != nil {
 		return err
+	}
+	for _, dir := range listOfFoldersContainingTests() {
+		if err := sh.RunV("go", "test", "-covermode=count", "-coverprofile="+dir+"test.out", packageName(dir)); err != nil {
+			return err
+		}
+		if err := sh.RunV("go", "tool", "cover", "-func="+dir+"test.out"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -83,9 +70,34 @@ func CrossCompile() error {
 	return nil
 }
 
-func nameOf(pkg string) string {
-	if pkg == "." {
-		return "date.out"
+func listOfFoldersContainingTests() []string {
+	root, _ := os.Getwd()
+	fileSystem := os.DirFS(root)
+	set := map[string]struct{}{}
+
+	fs.WalkDir(fileSystem, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			log.Fatal(err)
+		}
+		if strings.HasSuffix(path, "_test.go") {
+			dir, _ := filepath.Split(path)
+			set[dir] = struct{}{}
+		}
+		return nil
+	})
+
+	list := make([]string, 0, len(set))
+	for dir := range set {
+		list = append(list, dir)
 	}
-	return pkg + ".out"
+	sort.Strings(list)
+	return list
+}
+
+func packageName(dir string) string {
+	dir, _ = strings.CutSuffix(dir, "/")
+	if dir == "" {
+		return dir
+	}
+	return "./" + dir
 }
