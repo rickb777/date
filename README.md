@@ -2,6 +2,7 @@
 
 [![GoDoc](https://img.shields.io/badge/api-Godoc-blue.svg)](https://pkg.go.dev/github.com/rickb777/date/v2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rickb777/date)](https://goreportcard.com/report/github.com/rickb777/date/v2)
+[![Build](https://github.com/rickb777/date/actions/workflows/go.yml/badge.svg)](https://github.com/rickb777/date/actions)
 [![Issues](https://img.shields.io/github/issues/rickb777/date.svg)](https://github.com/rickb777/date/issues)
 
 Package `date` provides functionality for working with dates.
