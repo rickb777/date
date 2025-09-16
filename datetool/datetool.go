@@ -8,18 +8,19 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	"github.com/govalues/decimal"
 	"github.com/rickb777/date/v2"
 	"github.com/rickb777/date/v2/clock"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"os"
-	"strings"
-	"time"
 )
 
 func usage() {
-	fmt.Printf("Usage: %s [-t] number | date | time\n\n", os.Args[0])
+	fmt.Printf("Usage: %s [-t] number | date | time | now\n\n", os.Args[0])
 	fmt.Printf(" -t:    terse output\n")
 	fmt.Printf(" date:  [+-]yyyy/mm/dd | yyyy.mm.dd | dd/mm/yyyy | dd.mm.yyyy\n")
 	fmt.Printf(" time:  e.g. 11:15:20 | 2:45pm | 1:15:10.101\n")
@@ -44,14 +45,32 @@ func printDate(d date.Date) string { return d.String() + " " + d.Weekday().Strin
 func title() {
 	if !terse && !titled {
 		titled = true
-		fmt.Printf("%-30s        possible value\n", "input")
-		fmt.Printf("%-30s        --------------\n", "-----")
+		fmt.Printf("%-30s        interpretations\n", "input")
+		fmt.Printf("%-30s        ---------------\n", "-----")
 	}
 }
 
 const isoTimeNanos = "2006-01-02T15:04:05.999999999"
 
+func print3Columns(a, b, c string) {
+	fmt.Printf("%-30s %-6s %s\n", a, b, c)
+}
+
+func print4Columns(a, b, c, d string) {
+	fmt.Printf("%-30s %-6s %-30s %s\n", a, b, c, d)
+}
+
 func printArg(arg string) {
+	if arg == "now" {
+		title()
+		d := date.Today()
+		t := time.Now()
+		print4Columns(arg, "date:", printDate(d), sprintf(d)+" days since 1AD")
+		number, _ := decimal.New(t.UTC().UnixMicro(), 6)
+		print4Columns(arg, "time:", number.String(), "since 1970 Unix epoch")
+		success = true
+		return
+	}
 
 	number, err := decimal.Parse(arg)
 	if err == nil {
@@ -60,27 +79,27 @@ func printArg(arg string) {
 		if number.IsInt() && i < 1000000 {
 			d := date.Date(i)
 			c := clock.Clock(i)
-			fmt.Printf("%-30s clock: %-30s %sms since midnight\n", arg, c, sprintf(c))
-			fmt.Printf("%-30s date:  %-30s %s days since 1AD\n", arg, printDate(d), sprintf(d))
+			print4Columns(arg, "clock:", c.String(), sprintf(c)+"ns since midnight")
+			print4Columns(arg, "date:", printDate(d), sprintf(d)+" days since 1AD")
 			success = true
 		}
 		s, ns, _ := number.Int64(9)
 		t := time.Unix(s, ns).UTC()
-		fmt.Printf("%-30s time:  %s\n", arg, t.Format(isoTimeNanos))
+		print3Columns(arg, "time:", t.Format(isoTimeNanos))
 		success = true
 	}
 
 	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
 		title()
-		fmt.Printf("%-30s date:  %-30s %s days since 1AD\n", arg, printDate(d), sprintf(d))
+		print4Columns(arg, "date:", printDate(d), sprintf(d)+" days since 1AD")
 		success = true
 	}
 
 	c, err := clock.Parse(arg)
 	if err == nil {
 		title()
-		fmt.Printf("%-30s clock: %-30s %sms since midnight\n", arg, c, sprintf(c))
+		print4Columns(arg, "clock:", c.String(), sprintf(c)+"ns since midnight")
 		success = true
 	}
 
@@ -92,15 +111,12 @@ func printArg(arg string) {
 	if err == nil {
 		if t.Year() > 1970+290 {
 			number, _ := decimal.New(t.UTC().UnixMicro(), 6)
-			fmt.Printf("%-30s time:  %ss\n", arg, number)
+			print4Columns(arg, "time:", number.String()+"s", "since 1970 Unix epoch")
 		} else {
 			number, _ := decimal.New(t.UTC().UnixNano(), 9)
-			fmt.Printf("%-30s time:  %ss\n", arg, number)
+			print4Columns(arg, "time:", number.String()+"s", "since 1970 Unix epoch")
 		}
 		success = true
-	}
-	if success {
-		fmt.Println()
 	}
 }
 
@@ -115,8 +131,12 @@ func main() {
 		argsWithoutProg = argsWithoutProg[1:]
 	}
 
-	for _, arg := range argsWithoutProg {
+	for i, arg := range argsWithoutProg {
 		printArg(arg)
+
+		if success && i < len(argsWithoutProg)-1 {
+			fmt.Println()
+		}
 	}
 
 	if !success {
