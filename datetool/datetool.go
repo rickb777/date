@@ -60,14 +60,20 @@ func print4Columns(a, b, c, d string) {
 	fmt.Printf("%-30s %-6s %-30s %s\n", a, b, c, d)
 }
 
+const (
+	secondsSinceEpoch = "seconds since 1970 Unix epoch"
+	daysSince1AD      = " days since 1AD"
+	nsSinceMidnight   = "ns since midnight"
+)
+
 func printArg(arg string) {
 	if arg == "now" {
 		title()
 		d := date.Today()
 		t := time.Now()
-		print4Columns(arg, "date:", printDate(d), sprintf(d)+" days since 1AD")
+		print4Columns(arg, "date:", printDate(d), sprintf(d)+daysSince1AD)
 		number, _ := decimal.New(t.UTC().UnixMicro(), 6)
-		print4Columns(arg, "time:", number.String(), "since 1970 Unix epoch")
+		print4Columns(arg, "time:", number.String(), secondsSinceEpoch)
 		success = true
 		return
 	}
@@ -79,8 +85,8 @@ func printArg(arg string) {
 		if number.IsInt() && i < 1000000 {
 			d := date.Date(i)
 			c := clock.Clock(i)
-			print4Columns(arg, "clock:", c.String(), sprintf(c)+"ns since midnight")
-			print4Columns(arg, "date:", printDate(d), sprintf(d)+" days since 1AD")
+			print4Columns(arg, "clock:", c.String(), sprintf(c)+nsSinceMidnight)
+			print4Columns(arg, "date:", printDate(d), sprintf(d)+daysSince1AD)
 			success = true
 		}
 		s, ns, _ := number.Int64(9)
@@ -92,14 +98,14 @@ func printArg(arg string) {
 	d, e1 := date.AutoParse(arg)
 	if e1 == nil {
 		title()
-		print4Columns(arg, "date:", printDate(d), sprintf(d)+" days since 1AD")
+		print4Columns(arg, "date:", printDate(d), sprintf(d)+daysSince1AD)
 		success = true
 	}
 
 	c, err := clock.Parse(arg)
 	if err == nil {
 		title()
-		print4Columns(arg, "clock:", c.String(), sprintf(c)+"ns since midnight")
+		print4Columns(arg, "clock:", c.String(), sprintf(c)+nsSinceMidnight)
 		success = true
 	}
 
@@ -111,10 +117,10 @@ func printArg(arg string) {
 	if err == nil {
 		if t.Year() > 1970+290 {
 			number, _ := decimal.New(t.UTC().UnixMicro(), 6)
-			print4Columns(arg, "time:", number.String()+"s", "since 1970 Unix epoch")
+			print4Columns(arg, "time:", number.String(), secondsSinceEpoch)
 		} else {
 			number, _ := decimal.New(t.UTC().UnixNano(), 9)
-			print4Columns(arg, "time:", number.String()+"s", "since 1970 Unix epoch")
+			print4Columns(arg, "time:", number.String(), secondsSinceEpoch)
 		}
 		success = true
 	}
