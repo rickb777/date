@@ -266,7 +266,7 @@ func TestTSParseInLocationErrors(t *testing.T) {
 	for _, c := range cases {
 		ts, err := ParseRFC5545InLocation(c.text, time.UTC)
 		if err == nil {
-			t.Errorf(ts.String())
+			t.Error(ts.String())
 		}
 	}
 }
