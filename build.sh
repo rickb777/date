@@ -1,4 +1,5 @@
 #!/bin/bash -ex
 cd "$(dirname "$0")"
 go install tool
-mage
+mage install coverage crosscompile
+cat report.out
