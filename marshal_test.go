@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func TestDate_gob_Encode_round_tripe(t *testing.T) {
+func TestDate_gob_Encode_round_trip(t *testing.T) {
 	cases := []Date{
 		New(-11111, time.February, 3),
 		New(-1, time.December, 31),
@@ -80,19 +80,27 @@ func TestDate_MarshalJSON_round_trip(t *testing.T) {
 func TestDate_MarshalText_round_trip(t *testing.T) {
 	cases := []struct {
 		value Date
+		in    string
 		want  string
 	}{
-		{New(-11111, time.February, 3), "-11111-02-03"},
-		{New(-1, time.December, 31), "-0001-12-31"},
-		{New(0, time.January, 1), "0000-01-01"},
-		{New(1, time.January, 1), "0001-01-01"},
-		{New(1970, time.January, 1), "1970-01-01"},
-		{New(2012, time.June, 25), "2012-06-25"},
-		{New(12345, time.June, 7), "+12345-06-07"},
+		{New(-11111, time.February, 3), "-11111-02-03", "-11111-02-03"},
+		{New(-1, time.December, 31), "-0001-12-31", "-0001-12-31"},
+		{New(0, time.January, 1), "0000-01-01", "0000-01-01"},
+		{New(1, time.January, 1), "0001-01-01", "0001-01-01"},
+		{New(1970, time.January, 1), "1970-01-01", "1970-01-01"},
+		{New(2012, time.June, 25), "25/06/2012", "2012-06-25"},
+		{New(12345, time.June, 7), "+12345-06-07", "+12345-06-07"},
 	}
 	for _, c := range cases {
 		var d Date
-		bb1, err := c.value.MarshalText()
+		err := d.UnmarshalText([]byte(c.in))
+		if err != nil {
+			t.Errorf("UnmarshalText(%s) marshal error %v", c.in, err)
+		}
+		if d != c.value {
+			t.Errorf("UnmarshalText(%s) marshal as %s %d", c.in, d, d)
+		}
+		bb1, err := d.MarshalText()
 		if err != nil {
 			t.Errorf("Text(%v) marshal error %v", c, err)
 		} else if string(bb1) != c.want {
@@ -112,6 +120,7 @@ func TestDate_MarshalBinary_round_trip(t *testing.T) {
 	cases := []struct {
 		value Date
 	}{
+		{0x0102030405060708},
 		{New(-11111, time.February, 3)},
 		{New(-1, time.December, 31)},
 		{New(0, time.January, 1)},
@@ -123,14 +132,17 @@ func TestDate_MarshalBinary_round_trip(t *testing.T) {
 	for _, c := range cases {
 		bb1, err := c.value.MarshalBinary()
 		if err != nil {
-			t.Errorf("Binary(%v) marshal error %v", c, err)
+			t.Errorf("Binary(%s) marshal error %v", c.value, err)
+		} else if len(bb1) != 8 {
+			t.Errorf("Binary(%s) marshal wrong length %v", c.value, bb1)
 		} else {
+			//t.Logf("Binary(%s) %d == %q", c.value, c.value, bb1)
 			var d Date
 			err = d.UnmarshalBinary(bb1)
 			if err != nil {
-				t.Errorf("Binary(%v) unmarshal error %v", c.value, err)
+				t.Errorf("Binary(%s) unmarshal error %v", c.value, err)
 			} else if d != c.value {
-				t.Errorf("Binary(%v) unmarshal got %v", c.value, d)
+				t.Errorf("Binary(%s) unmarshal got %v", c.value, d)
 			}
 		}
 	}
@@ -154,10 +166,10 @@ func TestDate_UnmarshalText_invalid_date_text(t *testing.T) {
 		value string
 		want  string
 	}{
-		{`not-a-date`, "date.ParseISO: cannot parse \"not-a-date\": year has wrong length\nmonth has wrong length\nday has wrong length"},
+		{`not-a-date`, "date.ParseISO: cannot parse \"not-a-date\": invalid year\ninvalid month\nday has wrong length"},
 		{`foot-of-og`, "date.ParseISO: cannot parse \"foot-of-og\": invalid year\ninvalid month\ninvalid day"},
-		{`215-08-15`, `date.ParseISO: cannot parse "215-08-15": year has wrong length`},
-		{``, `date.ParseISO: cannot parse "": too short`},
+		{`215-08-15`, "date.ParseISO: cannot parse \"215-08-15\": year has wrong length\nday has wrong length"},
+		{``, `date.AutoParse: cannot parse a blank string`},
 	}
 	for _, c := range cases {
 		var d Date

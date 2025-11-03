@@ -69,7 +69,7 @@ func AutoParseUS(value string) (Date, error) {
 func autoParse(value string, compose func(yyyy, f1, f2 string) string) (Date, error) {
 	abs := strings.TrimSpace(value)
 	if len(abs) == 0 {
-		return 0, errors.New("Date.AutoParse: cannot parse a blank string")
+		return 0, errors.New("date.AutoParse: cannot parse a blank string")
 	}
 
 	sign := ""
