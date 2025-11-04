@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/govalues/decimal v0.1.36
-	github.com/rickb777/period v1.0.18
+	github.com/rickb777/period v1.0.19
 	golang.org/x/text v0.30.0
 )
 
