@@ -19,7 +19,7 @@ It also provides
  * `timespan.TimeSpan` which expresses a duration of time between two instants (see RFC5545).
  * `view.VDate` which wraps `Date` for use in templates etc.
 
-See [package documentation](https://godoc.org/github.com/rickb777/date) for
+See [package documentation](https://pkg.go.dev/github.com/rickb777/date/v2) for
 full documentation and examples.
 
 See also [period.Period](https://pkg.go.dev/github.com/rickb777/period), which implements periods corresponding
