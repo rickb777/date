@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/govalues/decimal v0.1.36
 	github.com/rickb777/period v1.0.21
-	golang.org/x/text v0.31.0
+	golang.org/x/text v0.32.0
 )
 
 require github.com/rickb777/plural v1.4.7 // indirect

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package clock specifies a time of day with resolution to the nearest millisecond.
+// Package clock specifies a time of day with resolution to the nearest nanosecond.
 package clock
 
 import (
@@ -69,6 +69,7 @@ func New(hour, minute, second, millisec int) Clock {
 }
 
 // NewAt returns a new [Clock] with specified hour, minute, seconds (to nanosecond resolution).
+// The date and timezone information is discarded.
 func NewAt(t time.Time) Clock {
 	hour, minute, second := t.Clock()
 	hx := Clock(hour) * Hour
@@ -78,14 +79,21 @@ func NewAt(t time.Time) Clock {
 	return hx + mx + sx + ns
 }
 
-// SinceMidnight returns a new [Clock] based on a duration since some arbitrary midnight.
+// SinceMidnight returns a new [Clock] based on a duration since midnight.
 func SinceMidnight(d time.Duration) Clock {
 	return Clock(d)
 }
 
-// DurationSinceMidnight convert a [Clock] to a [time.Duration] since some arbitrary midnight.
+// DurationSinceMidnight convert a [Clock] to a [time.Duration] since midnight.
 func (c Clock) DurationSinceMidnight() time.Duration {
 	return time.Duration(c)
+}
+
+// ToTime converts the clock and a given date to a [time.Time].
+// For example, given a date.Date d, use c.ToTime(d.Date()).
+func (c Clock) ToTime(year int, month time.Month, day int) time.Time {
+	return time.Date(year, month, day,
+		c.Hour(), c.Minute(), c.Second(), c.Nanosecond(), time.UTC)
 }
 
 // Add returns a new [Clock] offset from this clock specified hour, minute, second and millisecond.
@@ -149,7 +157,7 @@ func (c Clock) IsMidnight() bool {
 
 // TruncateMillisecond discards any fractional digits within the millisecond represented by c.
 // For example, for 10:20:30.456111222 this will return 10:20:30.456.
-// This method will force the [Clock.String] method to limit its output to three decimal places.
+// This method will also force the [Clock.String] method to limit its output to three decimal places.
 func (c Clock) TruncateMillisecond() Clock {
 	return (c / Millisecond) * Millisecond
 }

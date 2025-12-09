@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package clock
+package clock_test
 
 import (
 	"fmt"
@@ -10,6 +10,8 @@ import (
 	time "time"
 
 	"github.com/govalues/decimal"
+	"github.com/rickb777/date/v2"
+	. "github.com/rickb777/date/v2/clock"
 	"github.com/rickb777/period"
 )
 
@@ -61,6 +63,28 @@ func TestClockSinceMidnight(t *testing.T) {
 			c2 := SinceMidnight(d)
 			if c2 != x.in {
 				t.Errorf("%d: got %v, want %v (%d)", i, c2, x.in, x.in)
+			}
+		})
+	}
+}
+
+func TestClockToTime(t *testing.T) {
+	cases := []struct {
+		c   Clock
+		in  date.Date
+		exp time.Time
+	}{
+		{
+			c:   New(4, 25, 6, 999),
+			in:  date.New(2001, 2, 3),
+			exp: time.Date(2001, 2, 3, 4, 25, 6, 999_000_000, time.UTC),
+		},
+	}
+	for i, x := range cases {
+		t.Run(fmt.Sprintf("%d %s", i, x.c), func(t *testing.T) {
+			a := x.c.ToTime(x.in.Date())
+			if !a.Equal(x.exp) {
+				t.Errorf("%d: got %v, want %v (%d)", i, a, x.exp, x.c)
 			}
 		})
 	}
