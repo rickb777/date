@@ -9,13 +9,10 @@
 //
 // Subpackages provide:
 //
-// * [clock.Clock] which expresses a wall-clock style hours-minutes-seconds with millisecond precision.
-//
-// * [timespan.DateRange] which expresses a period between two dates.
-//
-// * [timespan.TimeSpan which expresses a duration of time between two instants.
-//
-// * [view.VDate] which wraps `Date` for use in templates etc.
+//   - [clock.Clock] which expresses a wall-clock style hours-minutes-seconds with nanosecond precision.
+//   - [timespan.DateRange] which expresses a period between two dates.
+//   - [timespan.TimeSpan] which expresses a duration of time between two instants.
+//   - [view.VDate] which wraps `Date` for use in templates etc.
 //
 // # Credits
 //
@@ -35,4 +32,5 @@
 //   - https://tools.ietf.org/html/rfc850
 //   - https://tools.ietf.org/html/rfc1123
 //   - https://tools.ietf.org/html/rfc3339
+//   - draft https://tools.ietf.org/html/rfc9557
 package date
