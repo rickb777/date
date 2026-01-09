@@ -19,9 +19,11 @@ const TimestampFormat = "2006-01-02 15:04:05"
 //const ISOFormat = "2006-01-02T15:04:05"
 
 // TimeSpan holds a span of time between two instants with a 1 nanosecond resolution.
-// It is implemented using a time.Duration, therefore is limited to a maximum span of 292 years.
+// It is implemented using a [time.Duration], therefore is limited to a maximum span of 292 years.
 //
-// It supports RFC5545 timespan representations.
+// It supports RFC5545 timespan representations
+// (see https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.9)
+// via [ParseRFC5545InLocation] and [TimeSpan.FormatRFC5545].
 type TimeSpan struct {
 	mark     time.Time
 	duration time.Duration
@@ -34,6 +36,10 @@ func ZeroTimeSpan(start time.Time) TimeSpan {
 
 // TimeSpanOf creates a new time span at a specified time and duration. The duration can
 // be negative, e.g. for an alarm event before the mark time.
+//
+// To use this with a start time t and a [period.Period] p, use
+//
+//	_ = TimeSpanOf(t, p.DurationApprox())
 func TimeSpanOf(start time.Time, d time.Duration) TimeSpan {
 	return TimeSpan{start, d}
 }
@@ -260,6 +266,8 @@ func (ts TimeSpan) MarshalText() (text []byte, err error) {
 //
 // RFC5545 does not allow the period to contain years or months. However, in this implementation
 // they are permitted but discouraged.
+//
+// See https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.9
 func ParseRFC5545InLocation(text string, loc *time.Location) (ts TimeSpan, err error) {
 	slash := strings.IndexByte(text, '/')
 	if slash < 0 {
