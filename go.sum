@@ -4,10 +4,10 @@ github.com/govalues/decimal v0.1.36 h1:dojDpsSvrk0ndAx8+saW5h9WDIHdWpIwrH/yhl9ol
 github.com/govalues/decimal v0.1.36/go.mod h1:Ee7eI3Llf7hfqDZtpj8Q6NCIgJy1iY3kH1pSwDrNqlM=
 github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
 github.com/magefile/mage v1.15.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
-github.com/rickb777/expect v1.0.7 h1:dRaxZi7qmUpMzdmXxTTNRLHPRaoVLSunRV4w+y+IYFI=
-github.com/rickb777/expect v1.0.7/go.mod h1:qgeHN0z4toF3UWUgtewH/dd/BW19uUY8Afj3hDOpsJU=
-github.com/rickb777/period v1.0.23 h1:n0c/I6gxebbsdm68gMQ8DOohzOh7RODLvqWudJkOv5A=
-github.com/rickb777/period v1.0.23/go.mod h1:E5A5pKE5wtbsqKR8HymXPf2HwGjihBZMdvIH1OrQe20=
+github.com/rickb777/expect v1.0.8 h1:hsCTi3uHdl70G9xdAoInCW4Hbm36R7/rLNyua9jBfvs=
+github.com/rickb777/expect v1.0.8/go.mod h1:vIs26jRWQdH061zcSu9HPiuP9srnRHbwiBEPexXTWKA=
+github.com/rickb777/period v1.0.24 h1:0eCsts24udynoCjmBOZ87wLywDnq7IWiLlkhlI8NFaI=
+github.com/rickb777/period v1.0.24/go.mod h1:exQGL5krypGOSlW2AiXDatcafI2yGx4JcU+SK3QY43k=
 github.com/rickb777/plural v1.4.8 h1:vBjI5IoGH05ku8ZsmHJjsY4wKwWyXAgG5JFNkI4w52Q=
 github.com/rickb777/plural v1.4.8/go.mod h1:cEs0oT2ZVArOP76ZdBlJZQjYbhqnidSgOJM57/xRgB0=
 golang.org/x/text v0.34.0 h1:oL/Qq0Kdaqxa1KbNeMKwQq0reLCCaFtqu2eNuSeNHbk=
