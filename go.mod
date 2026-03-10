@@ -8,7 +8,7 @@ require (
 	golang.org/x/text v0.34.0
 )
 
-require github.com/rickb777/plural v1.4.8 // indirect
+require github.com/rickb777/plural v1.4.9 // indirect
 
 require github.com/magefile/mage v1.16.0
 

@@ -8,7 +8,7 @@ github.com/rickb777/expect v1.0.8 h1:hsCTi3uHdl70G9xdAoInCW4Hbm36R7/rLNyua9jBfvs
 github.com/rickb777/expect v1.0.8/go.mod h1:vIs26jRWQdH061zcSu9HPiuP9srnRHbwiBEPexXTWKA=
 github.com/rickb777/period v1.0.25 h1:r5dV55ZslpjwDlvguMUOd5JsR1CZchug+JtCMfT18QU=
 github.com/rickb777/period v1.0.25/go.mod h1:GBT9atCrA2cnj5Nmo2kIspcwRMgIbAfW5wuLvdfnayk=
-github.com/rickb777/plural v1.4.8 h1:vBjI5IoGH05ku8ZsmHJjsY4wKwWyXAgG5JFNkI4w52Q=
-github.com/rickb777/plural v1.4.8/go.mod h1:cEs0oT2ZVArOP76ZdBlJZQjYbhqnidSgOJM57/xRgB0=
+github.com/rickb777/plural v1.4.9 h1:oRs12FkLlhcadn1S4/b5wv5rSShzliG2lYqoCd9xYCU=
+github.com/rickb777/plural v1.4.9/go.mod h1:Bhp03WcY53+Blm5zzzNqolQUH0PI8s8mI4XOYPfTrJM=
 golang.org/x/text v0.34.0 h1:oL/Qq0Kdaqxa1KbNeMKwQq0reLCCaFtqu2eNuSeNHbk=
 golang.org/x/text v0.34.0/go.mod h1:homfLqTYRFyVYemLBFl5GgL/DWEiH5wcsQ5gSh1yziA=
