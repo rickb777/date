@@ -4,12 +4,12 @@ go 1.25.0
 
 require (
 	github.com/govalues/decimal v0.1.36
-	github.com/rickb777/period v1.0.24
+	github.com/rickb777/period v1.0.25
 	golang.org/x/text v0.34.0
 )
 
 require github.com/rickb777/plural v1.4.8 // indirect
 
-require github.com/magefile/mage v1.15.0
+require github.com/magefile/mage v1.16.0
 
 tool github.com/magefile/mage
