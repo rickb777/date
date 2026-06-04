@@ -10,5 +10,5 @@ github.com/rickb777/period v1.0.27 h1:RYyvBDyAmxGga5IHf7LBB3JMTz7Fyjl4TY0zv6SfCT
 github.com/rickb777/period v1.0.27/go.mod h1:9zPNNM4u3Sl/8XMdPAZKystbcbrb0ELDiC/d6milbHw=
 github.com/rickb777/plural v1.4.10 h1:qaHV20qA9F2o3F/aiGxvRP/idS6mrkz64YhoNSP7aSI=
 github.com/rickb777/plural v1.4.10/go.mod h1:NaRKc+CBxKgvrUu2aNX2+Ahbbv4J2YN9t8mVvS+mEF0=
-golang.org/x/text v0.36.0 h1:JfKh3XmcRPqZPKevfXVpI1wXPTqbkE5f7JA92a55Yxg=
-golang.org/x/text v0.36.0/go.mod h1:NIdBknypM8iqVmPiuco0Dh6P5Jcdk8lJL0CUebqK164=
+golang.org/x/text v0.37.0 h1:Cqjiwd9eSg8e0QAkyCaQTNHFIIzWtidPahFWR83rTrc=
+golang.org/x/text v0.37.0/go.mod h1:a5sjxXGs9hsn/AJVwuElvCAo9v8QYLzvavO5z2PiM38=
