@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/govalues/decimal v0.1.36
-	github.com/rickb777/period v1.2.0
+	github.com/rickb777/period v1.2.1
 	golang.org/x/text v0.42.0
 )
 
