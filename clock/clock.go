@@ -91,9 +91,14 @@ func (c Clock) DurationSinceMidnight() time.Duration {
 
 // ToTime converts the clock and a given date to a [time.Time].
 // For example, given a date.Date d, use c.ToTime(d.Date()).
+// [Day] represents midnight at the end of the given date.
 func (c Clock) ToTime(year int, month time.Month, day int) time.Time {
+	hour := c.Hour()
+	if c == Day {
+		hour = 24
+	}
 	return time.Date(year, month, day,
-		c.Hour(), c.Minute(), c.Second(), c.Nanosecond(), time.UTC)
+		hour, c.Minute(), c.Second(), c.Nanosecond(), time.UTC)
 }
 
 // Add returns a new [Clock] offset from this clock specified hour, minute, second and millisecond.
