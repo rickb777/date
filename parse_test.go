@@ -195,6 +195,7 @@ func TestParseISO(t *testing.T) {
 		{value: "-00191012", year: -19, month: time.October, day: 12},
 		{value: "20210506T010203Z", year: 2021, month: time.May, day: 6},
 		{value: "-0004-01-01T00:00:00Z", year: -4, month: time.January, day: 1},
+		{value: "+12345-06-07T00:00:00Z", year: 12345, month: time.June, day: 7},
 	}
 	for i, c := range cases {
 		t.Run(fmt.Sprintf("%d %s", i, c.value), func(t *testing.T) {
@@ -204,6 +205,17 @@ func TestParseISO(t *testing.T) {
 				t.Errorf("ParseISO(%v) == %v, want (%v, %v, %v)", c.value, d, c.year, c.month, c.day)
 			}
 		})
+	}
+}
+
+func TestParseISORejectsMalformedTimeSuffix(t *testing.T) {
+	for _, value := range []string{
+		"2024-02-03T12x00y00tail",
+		"+12345-06-07T12x00y00tail",
+	} {
+		if _, err := ParseISO(value); err == nil {
+			t.Errorf("ParseISO(%q) accepted malformed time suffix", value)
+		}
 	}
 }
 

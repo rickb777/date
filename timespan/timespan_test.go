@@ -196,8 +196,8 @@ func TestTSMarshalText(t *testing.T) {
 	}{
 		{start: t0, duration: time.Hour, exp: "20150214T101314Z/PT1H"},
 		{start: t1, duration: 2 * time.Hour, exp: "20150627T101315Z/PT2H"},
-		{start: t0.In(berlin), duration: time.Minute, exp: "20150214T111314Z/PT1M"}, // UTC+1 in winter
-		{start: t1.In(berlin), duration: time.Second, exp: "20150627T121315Z/PT1S"}, // UTC+2 in summer
+		{start: t0.In(berlin), duration: time.Minute, exp: "20150214T101314Z/PT1M"}, // UTC+1 in winter
+		{start: t1.In(berlin), duration: time.Second, exp: "20150627T101315Z/PT1S"}, // UTC+2 in summer
 	}
 
 	for i, c := range cases {
@@ -301,6 +301,21 @@ func TestTSContains(t *testing.T) {
 	isEq(t, 0, ts.Contains(t0328), true)
 	isEq(t, 0, ts.Contains(t0329.Add(minusOneNano)), true)
 	isEq(t, 0, ts.Contains(t0329), false)
+	isEq(t, 0, TimeSpanOf(t0328, -24*time.Hour).Contains(t0327), true)
+	isEq(t, 0, TimeSpanOf(t0328, -24*time.Hour).Contains(t0328), false)
+	isEq(t, 0, ZeroTimeSpan(t0327).Contains(t0327), false)
+}
+
+func TestTSMergeNegativeDurations(t *testing.T) {
+	a := TimeSpanOf(t0328, -24*time.Hour)
+	b := TimeSpanOf(t0329, 24*time.Hour)
+	merged := a.Merge(b)
+	if !merged.Start().Equal(t0327) || !merged.End().Equal(t0330) {
+		t.Fatalf("Merge(%v, %v) = [%v, %v), want [%v, %v)", a, b, merged.Start(), merged.End(), t0327, t0330)
+	}
+	if !merged.Equal(b.Merge(a)) {
+		t.Fatalf("Merge should be commutative: %v != %v", merged, b.Merge(a))
+	}
 }
 
 func TestTSIn(t *testing.T) {
