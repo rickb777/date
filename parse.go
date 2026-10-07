@@ -171,8 +171,8 @@ func parseISO(input, value string) (Date, error) {
 	}
 
 	tee := strings.IndexByte(abs, 'T')
-	if tee == 8 || tee == 10 {
-		if !timeRegex1.MatchString(abs[tee:]) && !timeRegex2.MatchString(abs[tee:]) {
+	if tee >= 8 {
+		if !timeRegex1.MatchString(abs[tee:]) {
 			return 0, fmt.Errorf("date.ParseISO: date-time %q: not a time", value)
 		}
 		abs = abs[:tee]
@@ -247,10 +247,7 @@ func parseYYYYOOO(input, yyyy, ooo string, sign int) (Date, error) {
 	return encode(t), nil
 }
 
-var (
-	timeRegex1 = regexp.MustCompile("^T[0-9][0-9].[0-9][0-9].[0-9][0-9]")
-	timeRegex2 = regexp.MustCompile("^T[0-9]{2,6}")
-)
+var timeRegex1 = regexp.MustCompile(`^T(?:[0-9]{2,6}|[0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:\.[0-9]+)?)?)(?:Z|[+-][0-9]{2}:?[0-9]{2})?$`)
 
 func parseField(field, name string, minLength, requiredLength int) (int, error) {
 	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {

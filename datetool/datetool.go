@@ -42,6 +42,17 @@ func sprintf(num interface{}) string {
 
 func printDate(d date.Date) string { return d.String() + " " + d.Weekday().String() }
 
+func unixSecondsString(t time.Time) string {
+	seconds, nanos := t.UTC().Unix(), t.UTC().Nanosecond()
+	if seconds < 0 {
+		if nanos == 0 {
+			return fmt.Sprintf("-%d.000000000", -seconds)
+		}
+		return fmt.Sprintf("-%d.%09d", -(seconds + 1), int64(time.Second)-int64(nanos))
+	}
+	return fmt.Sprintf("%d.%09d", seconds, nanos)
+}
+
 func title() {
 	if !terse && !titled {
 		titled = true
@@ -119,8 +130,7 @@ func printArg(arg string) {
 			number, _ := decimal.New(t.UTC().UnixMicro(), 6)
 			print4Columns(arg, "time:", number.String(), secondsSinceEpoch)
 		} else {
-			number, _ := decimal.New(t.UTC().UnixNano(), 9)
-			print4Columns(arg, "time:", number.String(), secondsSinceEpoch)
+			print4Columns(arg, "time:", unixSecondsString(t), secondsSinceEpoch)
 		}
 		success = true
 	}
