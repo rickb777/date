@@ -79,6 +79,31 @@ func TestClockToTime(t *testing.T) {
 			in:  date.New(2001, 2, 3),
 			exp: time.Date(2001, 2, 3, 4, 25, 6, 999_000_000, time.UTC),
 		},
+		{
+			c:   Midnight,
+			in:  date.New(2024, 2, 28),
+			exp: time.Date(2024, 2, 28, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			c:   Day - 1,
+			in:  date.New(2024, 2, 28),
+			exp: time.Date(2024, 2, 28, 23, 59, 59, 999_999_999, time.UTC),
+		},
+		{
+			c:   Day,
+			in:  date.New(2024, 2, 28),
+			exp: time.Date(2024, 2, 29, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			c:   Day,
+			in:  date.New(2024, 2, 29),
+			exp: time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
+		},
+		{
+			c:   Day,
+			in:  date.New(2024, 12, 31),
+			exp: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
 	}
 	for i, x := range cases {
 		t.Run(fmt.Sprintf("%d %s", i, x.c), func(t *testing.T) {
