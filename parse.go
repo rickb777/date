@@ -247,7 +247,7 @@ func parseYYYYOOO(input, yyyy, ooo string, sign int) (Date, error) {
 	return encode(t), nil
 }
 
-var timeRegex1 = regexp.MustCompile(`^T(?:[0-9]{2,6}|[0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:\.[0-9]+)?)?)(?:Z|[+-][0-9]{2}:?[0-9]{2})?$`)
+var timeRegex1 = regexp.MustCompile(`^T(?:[0-9]{2}(?:[0-9]{2}){0,2}|[0-9]{2}:[0-9]{2}(?::[0-9]{2})?)(?:[.,][0-9]+)?(?:Z|[+-][0-9]{2}(?::?[0-9]{2})?)?$`)
 
 func parseField(field, name string, minLength, requiredLength int) (int, error) {
 	if (minLength > 0 && len(field) < minLength) || (requiredLength > 0 && len(field) != requiredLength) {
