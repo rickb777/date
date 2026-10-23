@@ -147,7 +147,7 @@ func (ts TimeSpan) DateRangeIn(loc *time.Location) DateRange {
 // If t has a different locality to the time-span, it is adjusted accordingly.
 func (ts TimeSpan) Contains(t time.Time) bool {
 	tl := t.In(ts.mark.Location())
-	return ts.mark.Equal(tl) || ts.mark.Before(tl) && ts.End().After(tl)
+	return !tl.Before(ts.Start()) && tl.Before(ts.End())
 }
 
 // Merge combines two time spans by calculating a time span that just encompasses them both.
@@ -155,17 +155,14 @@ func (ts TimeSpan) Contains(t time.Time) bool {
 // the two is returned. Otherwise, the result is the start of the earlier one to the end of the
 // later one, even if the two spans don't overlap.
 func (ts TimeSpan) Merge(other TimeSpan) TimeSpan {
-	if ts.mark.After(other.mark) {
-		// swap the ranges to simplify the logic
-		return other.Merge(ts)
-
-	} else if ts.End().After(other.End()) {
-		// other is a proper subrange of ts
-		return ts
-
-	} else {
-		return BetweenTimes(ts.mark, other.End())
+	start, end := ts.Start(), ts.End()
+	if otherStart := other.Start(); otherStart.Before(start) {
+		start = otherStart
 	}
+	if otherEnd := other.End(); otherEnd.After(end) {
+		end = otherEnd
+	}
+	return BetweenTimes(start, end)
 }
 
 // RFC5545DateTimeLayout is the format string used by iCalendar (RFC5545). Note
@@ -241,13 +238,13 @@ func (ts TimeSpan) formatWithDuration(layout, separator string) string {
 // The time(s) is expressed as UTC zulu.
 // This is as required by iCalendar (RFC5545).
 func (ts TimeSpan) FormatRFC5545(useDuration bool) string {
-	return ts.Format(RFC5545DateTimeZulu, "/", useDuration)
+	return ts.In(time.UTC).Format(RFC5545DateTimeZulu, "/", useDuration)
 }
 
 // MarshalText formats the timespan as a string using, using RFC5545 layout.
 // This implements the encoding.TextMarshaler interface.
 func (ts TimeSpan) MarshalText() (text []byte, err error) {
-	s := ts.Format(RFC5545DateTimeZulu, "/", true)
+	s := ts.FormatRFC5545(true)
 	return []byte(s), nil
 }
 

@@ -50,10 +50,10 @@ Changes since v1:
 
 * The [period.Period](https://pkg.go.dev/github.com/rickb777/period) type has moved.
 * `clock.Clock` now has nanosecond resolution (formerly millisecond resolution). 
-* `date.Date` is now an integer that holds the number of days since year zero. Previously, it was a struct based on year 1970.
+* `date.Date` is now an integer that holds the number of days since 0001-01-01 (year 1). Previously, it was a struct based on year 1970.
 * `date.Date` time conversion methods have more explicit names - see table below.
 * `date.Date` arithmetic and comparison operations now rely on Go operators; the corresponding methods have been deleted - see table below.
-* `date.Date` zero value is now year 0 (Gregorian proleptic astronomical) so 1970 will no longer cause issues.
+* `date.Date` zero value is now year 1 (Gregorian proleptic astronomical) so 1970 will no longer cause issues.
 * `date.PeriodOfDays` has been moved to `timespan.PeriodOfDays`
 * `date.DateString` has been deleted; the SQL `driver.Valuer` implementation is now pluggable and serves the same purpose more simply.
 
@@ -79,7 +79,7 @@ Deleted methods and functions:
 | `date.DaysIn`                  | `gregorian.DaysIn` |
 | timespan.DateRange.`Normalise` | (not needed)       |
 
-Any v1 dates persistently stored as integers will be incorrect; these can be corrected by **adding 719162** (`date.ZeroOffset`) to them, which is the number of days between year zero (v2) and 1970 (v1). Dates stored as strings will be unaffected.
+Any v1 dates persistently stored as integers will be incorrect; these can be corrected by **adding 719162** (`date.ZeroOffset`) to them, which is the number of days between 0001-01-01 (v2) and 1970 (v1). Dates stored as strings will be unaffected.
 
 ## Credits
 
