@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/govalues/decimal v0.1.36
 	github.com/rickb777/period v1.3.0
-	golang.org/x/text v0.42.0
+	golang.org/x/text v0.43.0
 )
 
 require github.com/rickb777/plural/v2 v2.1.1 // indirect
