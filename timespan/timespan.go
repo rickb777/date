@@ -178,7 +178,7 @@ const RFC5545DateTimeLayout = "20060102T150405"
 const RFC5545DateTimeZulu = RFC5545DateTimeLayout + "Z"
 
 func layoutHasTimezone(layout string) bool {
-	return strings.IndexByte(layout, 'Z') >= 0 || strings.Contains(layout, "-07")
+	return strings.IndexByte(layout, 'Z') >= 0 || strings.Contains(layout, "-07") || strings.Contains(layout, "MST")
 }
 
 // Equal reports whether ts and us represent the same time start and duration.
@@ -193,7 +193,7 @@ func (ts TimeSpan) Equal(us TimeSpan) bool {
 // it returns a string containing the start time and the duration.
 //
 // The layout string is as specified for time.Format. If it doesn't have a timezone element
-// ("07" or "Z") and the times in the timespan are UTC, the "Z" zulu indicator is added.
+// (a numeric offset, "MST" or "Z") and the times in the timespan are UTC, the "Z" zulu indicator is added.
 // This is as required by iCalendar (RFC5545).
 //
 // Also, if the layout is blank, it defaults to RFC5545DateTimeLayout.
@@ -205,9 +205,8 @@ func (ts TimeSpan) Format(layout, separator string, useDuration bool) string {
 		layout = RFC5545DateTimeLayout
 	}
 
-	// if the time is UTC and the format doesn't contain zulu field ("Z") or timezone field ("07")
 	if ts.mark.Location().String() == "UTC" && !layoutHasTimezone(layout) {
-		layout = RFC5545DateTimeZulu
+		layout += "Z"
 	}
 
 	if useDuration {

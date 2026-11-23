@@ -156,6 +156,13 @@ func TestTSFormat(t *testing.T) {
 		useDuration            bool
 		layout, separator, exp string
 	}{
+		{start: tUTC, duration: time.Hour, useDuration: true, layout: "2006-01-02T15:04:05", separator: "/", exp: "2015-03-27T10:13:14Z/PT1H"},
+		{start: tUTC, duration: -time.Hour, useDuration: true, layout: "2006-01-02T15:04:05", separator: "/", exp: "PT1H/2015-03-27T10:13:14Z"},
+		{start: tUTC, duration: time.Hour, layout: "2006-01-02T15:04:05", separator: " to ", exp: "2015-03-27T10:13:14Z to 2015-03-27T11:13:14Z"},
+		{start: tUTC, duration: -time.Hour, layout: "2006-01-02T15:04:05", separator: "/", exp: "2015-03-27T09:13:14Z/2015-03-27T10:13:14Z"},
+		{start: tUTC, layout: "15:04", separator: "/", exp: "10:13Z/10:13Z"},
+		{start: tUTC, duration: time.Hour, useDuration: true, layout: time.RFC1123, separator: "/", exp: "Fri, 27 Mar 2015 10:13:14 UTC/PT1H"},
+		{start: tUTC.Add(123 * time.Millisecond), duration: time.Second, layout: "15:04:05.000", separator: "/", exp: "10:13:14.123Z/10:13:15.123Z"},
 		{start: tUTC, duration: time.Hour, useDuration: true, separator: " for ", exp: "20150327T101314Z for PT1H"},
 		{start: tUTC, duration: time.Hour, useDuration: true, separator: "/", exp: "20150327T101314Z/PT1H"},
 		{start: tBerlin, duration: time.Minute, useDuration: true, separator: "/", exp: "20150327T111314/PT1M"},
