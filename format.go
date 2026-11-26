@@ -64,6 +64,11 @@ func (d Date) FormatOrdinal() string {
 	t := decode(d)
 	year := t.Year()
 	ordinal := d.YearDay()
+	if year < 0 {
+		// The sign is part of the field width, so negative years need one
+		// extra column to keep four digits after the sign.
+		return fmt.Sprintf("%05d-%03d", year, ordinal)
+	}
 	return fmt.Sprintf("%04d-%03d", year, ordinal)
 }
 
